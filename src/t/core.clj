@@ -41,20 +41,24 @@
     (cond ;; Ambiguous in problem statement; we decided Sam wins if both have 21
           (== 21 (hand-value sam-initial-hand))
           :sam
+
           (== 21 (hand-value dealer-initial-hand))
           :dealer
+
           (> (hand-value sam-final-hand) 21)
           :dealer
+
           ;; Problem statement ambiguous: we assume if Sam has 21
           ;; at this point they win
           (== 21 (hand-value sam-final-hand))
           :sam
+
           (> (hand-value dealer-final-hand) 21)
           :sam
+
           :else
           :dealer)))
 
 (defn -main
-  "I don't do a whole lot ... yet."
   [& args]
-  (println "Hello, World!"))
+  (play-game (shuffle (deck))))
