@@ -136,6 +136,9 @@
   (println (->> d vals (remove #{\?}) sort (apply str))))
 
 (defn p->n
+  "Returns an abstract representation of a word pattern given fixed letters.
+  For example, given `o` as a fixed letter, `lasso` and `hello` would both
+  generate the pattern [0 1 2 2 o]."
   [fixed? p]
   (loop [p p d {} n []]
     (cond
@@ -147,7 +150,9 @@
 (defn find-words
   [^String pat forb]
   (let [p (.toLowerCase pat)
-        fixed? (->> pat (filter #(Character/isUpperCase (.charValue %))) (map #(Character/toLowerCase (.charValue %))) set)
+        fixed? (->> pat (filter #(Character/isUpperCase (.charValue %)))
+                    (map #(Character/toLowerCase (.charValue %)))
+                    set)
         p (p->n fixed? p)
         c (count pat)]
     (->> words
