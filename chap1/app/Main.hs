@@ -56,17 +56,16 @@ main = do
                                  else initenv s)
             (App (Var "inc") (Num 10))
             (Num 11)
-
   -- thrice f x = f (f (f x))
   -- thrice inc 100
---  assertExp initenv
---            (App (Abs "thrice" (App (Abs "inc" (App (App (Var "thrice")
---                                                         (Var "inc"))
---                                                    (Num 100)))
---                                    (Abs "x" (Add (Var "x") (Num 1)))))
---                 (Abs "f" (Abs "x" (App (Var "f")
---                                        (App (Var "f")
---                                             (App (Var "f")
---                                                  (Var "x")))))))
+--  assertExp (\s -> case s of
+--                        "inc" -> (Abs "x" (Add (Var "x") (Num 1)))
+--                        "thrice" -> (Abs "f" (Abs "x" (App (Var "f")
+--                                                           (App (Var "f")
+--                                                                (App (Var "f")
+--                                                                     (Var "x"))))))
+--                        _ -> (initenv s))
+--            (App (App (Var "thrice") (Var "inc"))
+--                 (Num 100))
 --            (Num 103)
   putStrLn "All good"
