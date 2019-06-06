@@ -135,9 +135,7 @@ main = do
             (Num 100))
        (Num 109)
   -- twice twice
-  test [("twice", (Abs "f" (Abs "x" (App (Var "f")
-                                         (App (Var "f")
-                                              (Var "x"))))))]
+  test []
        (App (Abs "f" (Abs "x" (App (Var "f")
                                          (App (Var "f")
                                               (Var "x")))))
