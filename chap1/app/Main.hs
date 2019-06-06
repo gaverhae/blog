@@ -13,13 +13,14 @@ eval exp env = case exp of
   Abs s e -> exp
   App abs arg -> case eval abs env of
     Abs n e -> eval e (\s -> if s == n then arg else env s)
-    _ -> error $ "Trying to apply non-function value: " ++ show abs
+    Var s -> App (Var s) (eval arg env)
+    _ -> error $ "Trying to apply " ++ show (eval abs env)
   Add a b -> case (eval a env, eval b env) of
     (Num x, Num y) -> Num (x + y)
     _ -> error $ "Trying to add non-numbers: (" ++ show a ++ ", " ++ show b ++ ")"
   Num i -> Num i
 
-initenv var = error $ "Could not find " ++ var
+initenv = Var
 
 assert x = if x then return () else error "bad"
 
@@ -50,6 +51,11 @@ main = do
                       (Abs "y" (Var "y")))
                  (Var "z"))
             (Var "z")
+  -- (\x.xy) z => xz
+  assertExp initenv
+            (App (Abs "x" (App (Var "x") (Var "y")))
+                 (Var "z"))
+            (App (Var "z") (Var "y"))
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
   -- inc 10
