@@ -10,15 +10,15 @@ data E = Var String
 eval :: E -> [(String, E)] -> E
 eval exp env = case exp of
   Var s -> find env s
-  Abs h e -> Abs h e
+  Abs h e -> Abs h $ eval e $ (h, Var h):env
   App abs arg -> case result of
     Abs h e -> eval e $ (h, arg):env
     Var s -> App (Var s) (eval arg env)
-    _ -> error $ "Trying to apply " ++ show result
+    _ -> App result (eval arg env)
     where result = eval abs env
   Add a b -> case (eval a env, eval b env) of
     (Num x, Num y) -> Num (x + y)
-    _ -> error $ "Trying to add non-numbers: (" ++ show a ++ ", " ++ show b ++ ")"
+    _ -> Add a b
   Num i -> Num i
 
 find env s =
@@ -63,11 +63,11 @@ main = do
        (App (Abs "x" (App (Var "x") (Var "y")))
             (Var "z"))
        (App (Var "z") (Var "y"))
---   -- (\xy.xy) (\z.a) => (\y.(\z.a)y)
---   test initenv
---        (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
---             (Abs "z" (Var "a")))
---        (Abs "y" (App (Abs "z" (Var "a")) (Var "y")))
+  -- (\xy.xy) (\z.a) => (\y.a)
+  test initenv
+       (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
+            (Abs "z" (Var "a")))
+       (Abs "y" (Var "a"))
 --  test initenv
 --       (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
 --                 (Abs "z" (Var "a")))
