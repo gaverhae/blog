@@ -41,10 +41,13 @@ main = do
   assertExp (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
             (Abs "y" (Var "y"))
   -- faking names with extra nesting
-  -- thrice = \f.\x.(f(f(f x)))
   -- inc = \x.(x + 1)
+  -- inc 10
+  assertExp (App (Abs "inc" (App (Var "inc") (Num 10)))
+                 (Abs "x" (Add (Var "x") (Num 1))))
+            (Num 11)
+  -- thrice f x = f (f (f x))
   -- thrice inc 100
-  -- \thrice.\inc.(thrice inc 100) (\f\x.(f(f(f x)))) (\x. x + 1)
 --  assertExp (App (Abs "thrice" (App (Abs "inc" (App (App (Var "thrice")
 --                                                         (Var "inc"))
 --                                                    (Num 100)))
