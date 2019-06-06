@@ -1,5 +1,6 @@
 module Main where
 
+import qualified Data.List
 import qualified Data.Set
 import qualified Control.Monad
 
@@ -13,6 +14,7 @@ data E = Var String
 data Program = Program E Env
 newtype Env = Env [(String, E)]
 
+names = tail $ (Data.List.inits . repeat) ['a'..'z'] >>= sequence
 
 usedNames :: Program -> Data.Set.Set String
 usedNames (Program exp env) =
@@ -25,6 +27,33 @@ usedNames (Program exp env) =
     Add a b -> used a `Data.Set.union` used b
     Num i -> Data.Set.empty
   predefined (Env e) = Data.Set.fromList (map fst e) `Data.Set.union` Data.Set.unions (map (used . snd) e)
+
+-- rename all variables to a new, unused name, starting from the leaves and
+-- moving up
+prep :: Program -> Program
+prep (Program exp (Env e)) =
+  Program (fst (disambiguate exp avn)) (Env e)
+  where un = usedNames (Program exp (Env e))
+        avn = filter (`Data.Set.notMember` un) names
+        r exp oldName newName =
+          let rec e = r e oldName newName
+          in case exp of
+            Var s -> if s == oldName then Var newName else Var s
+            Abs h b -> Abs h (rec b)
+            App abs arg -> App (rec abs) (rec arg)
+            Add t1 t2 -> Add (rec t1) (rec t2)
+            Num i -> Num i
+        disambiguate exp (n:ns) = case exp of
+          Var s -> (Var s, n:ns)
+          Abs h b -> (Abs n (r db h n), rs)
+                     where (db, rs) = disambiguate b ns
+          App abs arg -> (App dabs darg, rs')
+                         where (dabs, rs) = disambiguate abs (n:ns)
+                               (darg, rs') = disambiguate arg rs
+          Add t1 t2 -> (Add dt1 dt2, rs')
+                       where (dt1, rs) = disambiguate t1 (n:ns)
+                             (dt2, rs') = disambiguate t2 rs
+          Num i -> (Num i, n:ns)
 
 eval :: E -> [(String, E)] -> E
 eval exp env = case exp of
@@ -47,9 +76,11 @@ find env s =
 
 initenv = []
 
-test env e1 e2 s = do
+test env e1 er e2 s = do
   Control.Monad.when (result /= e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
   Control.Monad.when (Data.Set.fromList s /= usedNames (Program e1 (Env env))) $ error $ "NameError in:\n" ++ show e1 ++  "\nfound\n" ++ show (usedNames (Program e1 (Env env))) ++ "\nexpecting\n" ++ show s
+  let (Program er' _) = (prep (Program e1 (Env env)))
+  Control.Monad.when (er' /= er) $ error $ "RenameError:\n(" ++ show e1 ++ ")\nyielded:\n(" ++ show er' ++ ")\ninstead of:\n(" ++ show er ++ ")"
   where result = eval e1 env
 
 main :: IO ()
@@ -57,21 +88,25 @@ main = do
   -- \x.x => \x.x
   test initenv
        (Abs "x" (Var "x"))
+       (Abs "a" (Var "a"))
        (Abs "x" (Var "x"))
        ["x"]
   -- (\x.x) 2 => 2
   test initenv
        (App (Abs "x" (Var "x")) (Num 2))
+       (App (Abs "a" (Var "a")) (Num 2))
        (Num 2)
        ["x"]
   -- (\x.x + 1) 10 => 11
   test initenv
        (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
+       (App (Abs "a" (Add (Var "a") (Num 1))) (Num 10))
        (Num 11)
        ["x"]
   -- (\x.x) (\y.y) => (\y.y)
   test initenv
        (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
+       (App (Abs "a" (Var "a")) (Abs "b" (Var "b")))
        (Abs "y" (Var "y"))
        ["x", "y"]
   -- (\x.x) (\y.y) z => z
@@ -79,11 +114,16 @@ main = do
        (App (App (Abs "x" (Var "x"))
                  (Abs "y" (Var "y")))
             (Var "z"))
+       (App (App (Abs "a" (Var "a"))
+                 (Abs "b" (Var "b")))
+            (Var "z"))
        (Var "z")
        ["x", "y", "z"]
   -- (\x.xy) z => xz
   test initenv
        (App (Abs "x" (App (Var "x") (Var "y")))
+            (Var "z"))
+       (App (Abs "a" (App (Var "a") (Var "y")))
             (Var "z"))
        (App (Var "z") (Var "y"))
        ["x", "y", "z"]
@@ -91,11 +131,16 @@ main = do
   test initenv
        (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
             (Abs "z" (Var "a")))
+       (App (Abs "b" (Abs "c" (App (Var "b") (Var "c"))))
+            (Abs "d" (Var "a")))
        (Abs "y" (Var "a"))
        ["x", "y", "z", "a"]
   test initenv
        (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
                  (Abs "z" (Var "a")))
+            (Num 1))
+       (App (App (Abs "b" (Abs "c" (App (Var "b") (Var "c"))))
+                 (Abs "d" (Var "a")))
             (Num 1))
        (Var "a")
        ["x", "y", "z", "a"]
@@ -105,10 +150,13 @@ main = do
   test initenv
        (App (Abs "inc" (App (Var "inc") (Num 10)))
             (Abs "x" (Add (Var "x") (Num 1))))
+       (App (Abs "a" (App (Var "a") (Num 10)))
+            (Abs "b" (Add (Var "b") (Num 1))))
        (Num 11)
        ["inc", "x"]
   -- cheating: adding names to env
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
+       (App (Var "inc") (Num 10))
        (App (Var "inc") (Num 10))
        (Num 11)
        ["inc", "x"]
@@ -120,12 +168,16 @@ main = do
                                               (App (Var "f")
                                                    (Var "x"))))))]
        (App (Var "thrice") (Var "inc"))
+       (App (Var "thrice") (Var "inc"))
        (Abs "x" (Add (Add (Add (Var "x") (Num 1)) (Num 1)) (Num 1)))
        ["inc", "x", "thrice", "f"]
   -- (\x. inc x) 100 => 101
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
        (App (Abs "x" (App (Var "inc")
                           (Var "x")))
+            (Num 100))
+       (App (Abs "a" (App (Var "inc")
+                          (Var "a")))
             (Num 100))
        (Num 101)
        ["inc", "x"]
@@ -134,6 +186,10 @@ main = do
        (App (Abs "x" (App (Var "inc")
                           (App (Var "inc")
                                (Var "x"))))
+            (Num 100))
+       (App (Abs "a" (App (Var "inc")
+                          (App (Var "inc")
+                               (Var "a"))))
             (Num 100))
        (Num 102)
        ["inc", "x"]
@@ -144,6 +200,11 @@ main = do
                                (App (Var "inc")
                                     (Var "x")))))
             (Num 100))
+       (App (Abs "a" (App (Var "inc")
+                          (App (Var "inc")
+                               (App (Var "inc")
+                                    (Var "a")))))
+            (Num 100))
        (Num 103)
        ["inc", "x"]
   -- thrice inc 100
@@ -152,6 +213,8 @@ main = do
                                          (App (Var "f")
                                               (App (Var "f")
                                                    (Var "x"))))))]
+       (App (App (Var "thrice") (Var "inc"))
+            (Num 100))
        (App (App (Var "thrice") (Var "inc"))
             (Num 100))
        (Num 103)
@@ -166,6 +229,10 @@ main = do
                  (App (Var "thrice")
                       (Var "inc")))
             (Num 100))
+       (App (App (Var "thrice")
+                 (App (Var "thrice")
+                      (Var "inc")))
+            (Num 100))
        (Num 109)
        ["inc", "x", "thrice", "f"]
   -- twice twice
@@ -176,6 +243,12 @@ main = do
             (Abs "g" (Abs "y" (App (Var "g")
                                          (App (Var "g")
                                               (Var "y"))))))
+       (App (Abs "a" (Abs "b" (App (Var "a")
+                                         (App (Var "a")
+                                              (Var "b")))))
+            (Abs "c" (Abs "d" (App (Var "c")
+                                         (App (Var "c")
+                                              (Var "d"))))))
        (Abs "x" (Abs "y" (App (Var "x")
                               (App (Var "x")
                                    (App (Var "x")
