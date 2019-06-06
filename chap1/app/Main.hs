@@ -134,4 +134,41 @@ main = do
                       (Var "inc")))
             (Num 100))
        (Num 109)
+  -- twice twice
+  test [("twice", (Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (Var "x"))))))]
+       (App (Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (Var "x")))))
+            (Abs "g" (Abs "y" (App (Var "g")
+                                         (App (Var "g")
+                                              (Var "y"))))))
+       (Abs "x" (Abs "y" (App (Var "x")
+                              (App (Var "x")
+                                   (App (Var "x")
+                                        (App (Var "x")
+                                             (Var "y")))))))
+  -- twice twice
+--  test [("twice", Abs "f" (Abs "x" (App (Var "f")
+--                                        (App (Var "f")
+--                                             (Var "x")))))]
+--       (App (Var "twice")
+--            (Var "twice"))
+--       (Abs "x" (Abs "y" (App (Var "x")
+--                              (App (Var "x")
+--                                   (App (Var "x")
+--                                        (App (Var "x")
+--                                             (Var "y")))))))
+  -- thrice thrice inc 100
+--  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
+--        ("thrice", Abs "f" (Abs "x" (App (Var "f")
+--                                         (App (Var "f")
+--                                              (App (Var "f")
+--                                                   (Var "x"))))))]
+--       (App (App (App (Var "thrice")
+--                      (Var "thrice"))
+--                 (Var "inc"))
+--            (Num 100))
+--       (Num 127)
   putStrLn "All good"
