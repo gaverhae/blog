@@ -68,33 +68,30 @@ main = do
        (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
             (Abs "z" (Var "a")))
        (Abs "y" (Var "a"))
---  test initenv
---       (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
---                 (Abs "z" (Var "a")))
---            (Num 1))
---       (Var "a")
+  test initenv
+       (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
+                 (Abs "z" (Var "a")))
+            (Num 1))
+       (Var "a")
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
   -- inc 10
---  assertExp initenv
---            (App (Abs "inc" (App (Var "inc") (Num 10)))
---                 (Abs "x" (Add (Var "x") (Num 1))))
---            (Num 11)
---  -- cheating: adding names to env
---  assertExp (\s -> if s == "inc" then (Abs "x" (Add (Var "x") (Num 1)))
---                                 else initenv s)
---            (App (Var "inc") (Num 10))
---            (Num 11)
---  -- thrice f x = f (f (f x))
---  -- thrice inc 100
---  assertExp (\s -> case s of
---                        "inc" -> (Abs "x" (Add (Var "x") (Num 1)))
---                        "thrice" -> (Abs "f" (Abs "x" (App (Var "f")
---                                                           (App (Var "f")
---                                                                (App (Var "f")
---                                                                     (Var "x"))))))
---                        _ -> (initenv s))
---            (App (App (Var "thrice") (Var "inc"))
---                 (Num 100))
---            (Num 103)
+  test initenv
+       (App (Abs "inc" (App (Var "inc") (Num 10)))
+            (Abs "x" (Add (Var "x") (Num 1))))
+       (Num 11)
+  -- cheating: adding names to env
+  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
+       (App (Var "inc") (Num 10))
+       (Num 11)
+  -- thrice f x = f (f (f x))
+  -- thrice inc 100
+--  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
+--        ("thrice", Abs "f" (Abs "x" (App (Var "f")
+--                                         (App (Var "f")
+--                                              (App (Var "f")
+--                                                   (Var "x"))))))]
+--       (App (App (Var "thrice") (Var "inc"))
+--            (Num 100))
+--       (Num 103)
   putStrLn "All good"
