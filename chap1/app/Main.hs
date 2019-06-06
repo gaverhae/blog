@@ -255,6 +255,16 @@ main = do
                                         (App (Var "x")
                                              (Var "y")))))))
        ["x", "y", "f", "g"]
+  -- (\xy.xxy) (\x.xy) (\x.xz) => \z.z
+  test initenv
+       (App (App (Abs "x" (Abs "y" (App (App (Var "x")
+                                             (Var "x"))
+                                        (Var "y"))))
+                 (Abs "x" (App (Var "x")
+                               (Var "y"))))
+            (Abs "x" (App (Var "x")
+                          (Var "z"))))
+       (Abs "z" (Var "z"))
   -- twice twice
 --  test [("twice", Abs "f" (Abs "x" (App (Var "f")
 --                                        (App (Var "f")
