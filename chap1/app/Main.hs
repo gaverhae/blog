@@ -11,11 +11,10 @@ eval :: E -> [(String, E)] -> E
 eval exp env = case exp of
   Var s -> find env s
   Abs h e -> Abs h $ eval e $ (h, Var h):env
-  App abs arg -> case result of
-    Abs h e -> eval e $ (h, arg):env
-    Var s -> App (Var s) (eval arg env)
-    _ -> App result (eval arg env)
-    where result = eval abs env
+  App abs arg -> case (eval abs env, eval arg env) of
+    (Abs h e, arg') -> eval e $ (h, arg'):env
+    (Var s, arg') -> App (Var s) arg'
+    (a, b) -> App a b
   Add a b -> case (a', b') of
     (Num x, Num y) -> Num (x + y)
     _ -> Add a' b'
@@ -93,32 +92,28 @@ main = do
                                               (App (Var "f")
                                                    (Var "x"))))))]
        (App (Var "thrice") (Var "inc"))
-       (Abs "x" (App (Var "inc")
-                     (App (Var "inc")
-                          (App (Var "inc")
-                               (Var "x")))))
-  -- (\x. inc x) 100
+       (Abs "x" (Add (Add (Add (Var "x") (Num 1)) (Num 1)) (Num 1)))
+  -- (\x. inc x) 100 => 101
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
        (App (Abs "x" (App (Var "inc")
                           (Var "x")))
             (Num 100))
        (Num 101)
-  --
---  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
---       (App (Abs "x" (App (Var "inc")
---                          (App (Var "inc")
---                               (App (Var "inc")
---                                    (Var "x")))))
---            (Num 100))
---       (Num 103)
-  --
---  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
---       (App (Abs "x" (App (Var "inc")
---                          (App (Var "inc")
---                               (App (Var "inc")
---                                    (Var "x")))))
---            (Num 100))
---       (Num 103)
+  -- (\x. inc (inc x)) 100 => 102
+  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
+       (App (Abs "x" (App (Var "inc")
+                          (App (Var "inc")
+                               (Var "x"))))
+            (Num 100))
+       (Num 102)
+  -- (\x. inc (inc (inc x))) 100 => 103
+  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
+       (App (Abs "x" (App (Var "inc")
+                          (App (Var "inc")
+                               (App (Var "inc")
+                                    (Var "x")))))
+            (Num 100))
+       (Num 103)
   -- thrice inc 100
 --  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
 --        ("thrice", Abs "f" (Abs "x" (App (Var "f")
