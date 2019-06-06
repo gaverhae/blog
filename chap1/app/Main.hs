@@ -85,6 +85,25 @@ main = do
        (App (Var "inc") (Num 10))
        (Num 11)
   -- thrice f x = f (f (f x))
+  -- thrice inc
+  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
+        ("thrice", Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (App (Var "f")
+                                                   (Var "x"))))))]
+       (App (Var "thrice") (Var "inc"))
+       (Abs "x" (App (Var "inc")
+                     (App (Var "inc")
+                          (App (Var "inc")
+                               (Var "x")))))
+  --
+--  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
+--       (App (Abs "x" (App (Var "inc")
+--                          (App (Var "inc")
+--                               (App (Var "inc")
+--                                    (Var "x")))))
+--            (Num 100))
+--       (Num 103)
   -- thrice inc 100
 --  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
 --        ("thrice", Abs "f" (Abs "x" (App (Var "f")
