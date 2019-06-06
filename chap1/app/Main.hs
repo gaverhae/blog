@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Data.Set as Set
+import qualified Data.Set
 import qualified Control.Monad
 
 data E = Var String
@@ -14,17 +14,17 @@ data Program = Program E Env
 newtype Env = Env [(String, E)]
 
 
-usedNames :: Program -> Set.Set String
+usedNames :: Program -> Data.Set.Set String
 usedNames (Program exp env) =
-  used exp `Set.union` predefined env
+  used exp `Data.Set.union` predefined env
   where
   used exp = case exp of
-    Var s -> Set.singleton s
-    Abs h e -> Set.insert h $ used e
-    App abs arg -> used abs `Set.union` used arg
-    Add a b -> used a `Set.union` used b
-    Num i -> Set.empty
-  predefined (Env e) = Set.fromList (map fst e) `Set.union` Set.unions (map (used . snd) e)
+    Var s -> Data.Set.singleton s
+    Abs h e -> Data.Set.insert h $ used e
+    App abs arg -> used abs `Data.Set.union` used arg
+    Add a b -> used a `Data.Set.union` used b
+    Num i -> Data.Set.empty
+  predefined (Env e) = Data.Set.fromList (map fst e) `Data.Set.union` Data.Set.unions (map (used . snd) e)
 
 eval :: E -> [(String, E)] -> E
 eval exp env = case exp of
@@ -49,7 +49,7 @@ initenv = []
 
 test env e1 e2 s = do
   Control.Monad.when (result /= e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
-  Control.Monad.when (Set.fromList s /= usedNames (Program e1 (Env env))) $ error $ "NameError in:\n" ++ show e1 ++  "\nfound\n" ++ show (usedNames (Program e1 (Env env))) ++ "\nexpecting\n" ++ show s
+  Control.Monad.when (Data.Set.fromList s /= usedNames (Program e1 (Env env))) $ error $ "NameError in:\n" ++ show e1 ++  "\nfound\n" ++ show (usedNames (Program e1 (Env env))) ++ "\nexpecting\n" ++ show s
   where result = eval e1 env
 
 main :: IO ()
