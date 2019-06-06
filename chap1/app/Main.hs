@@ -44,20 +44,26 @@ main = do
   assertExp initenv
             (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
             (Abs "y" (Var "y"))
+  -- (\x.x) (\y.y) z => z
+  assertExp initenv
+            (App (App (Abs "x" (Var "x"))
+                      (Abs "y" (Var "y")))
+                 (Var "z"))
+            (Var "z")
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
   -- inc 10
-  assertExp initenv
-            (App (Abs "inc" (App (Var "inc") (Num 10)))
-                 (Abs "x" (Add (Var "x") (Num 1))))
-            (Num 11)
-  -- cheating: adding names to env
-  assertExp (\s -> if s == "inc" then (Abs "x" (Add (Var "x") (Num 1)))
-                                 else initenv s)
-            (App (Var "inc") (Num 10))
-            (Num 11)
-  -- thrice f x = f (f (f x))
-  -- thrice inc 100
+--  assertExp initenv
+--            (App (Abs "inc" (App (Var "inc") (Num 10)))
+--                 (Abs "x" (Add (Var "x") (Num 1))))
+--            (Num 11)
+--  -- cheating: adding names to env
+--  assertExp (\s -> if s == "inc" then (Abs "x" (Add (Var "x") (Num 1)))
+--                                 else initenv s)
+--            (App (Var "inc") (Num 10))
+--            (Num 11)
+--  -- thrice f x = f (f (f x))
+--  -- thrice inc 100
 --  assertExp (\s -> case s of
 --                        "inc" -> (Abs "x" (Add (Var "x") (Num 1)))
 --                        "thrice" -> (Abs "f" (Abs "x" (App (Var "f")
