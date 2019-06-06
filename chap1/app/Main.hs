@@ -57,7 +57,7 @@ prep (Program exp (Env e)) =
 
 eval :: Program -> E
 eval p = eval' exp env
-  where (Program exp (Env env)) = p
+  where (Program exp (Env env)) = prep p
         eval' exp env = case exp of
           Var s -> find env s
           Abs h e -> Abs h $ eval' e $ (h, Var h):env
@@ -91,7 +91,7 @@ main = do
   test initenv
        (Abs "x" (Var "x"))
        (Abs "a" (Var "a"))
-       (Abs "x" (Var "x"))
+       (Abs "a" (Var "a"))
        ["x"]
   -- (\x.x) 2 => 2
   test initenv
@@ -109,7 +109,7 @@ main = do
   test initenv
        (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
        (App (Abs "a" (Var "a")) (Abs "b" (Var "b")))
-       (Abs "y" (Var "y"))
+       (Abs "b" (Var "b"))
        ["x", "y"]
   -- (\x.x) (\y.y) z => z
   test initenv
@@ -135,7 +135,7 @@ main = do
             (Abs "z" (Var "a")))
        (App (Abs "b" (Abs "c" (App (Var "b") (Var "c"))))
             (Abs "d" (Var "a")))
-       (Abs "y" (Var "a"))
+       (Abs "c" (Var "a"))
        ["x", "y", "z", "a"]
   test initenv
        (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
@@ -251,11 +251,11 @@ main = do
             (Abs "c" (Abs "d" (App (Var "c")
                                          (App (Var "c")
                                               (Var "d"))))))
-       (Abs "x" (Abs "y" (App (Var "x")
-                              (App (Var "x")
-                                   (App (Var "x")
-                                        (App (Var "x")
-                                             (Var "y")))))))
+       (Abs "b" (Abs "d" (App (Var "b")
+                              (App (Var "b")
+                                   (App (Var "b")
+                                        (App (Var "b")
+                                             (Var "d")))))))
        ["x", "y", "f", "g"]
   -- (\xy.xxy) (\x.xy) (\x.xz) => \z.z
   test initenv
@@ -273,8 +273,23 @@ main = do
                                (Var "y"))))
             (Abs "d" (App (Var "d")
                           (Var "z"))))
-       (Abs "z" (Var "z"))
+       (App (App (Var "y") (Var "y")) (Abs "d" (App (Var "d") (Var "z"))))
        ["x", "y", "z"]
+  test initenv
+       (App (App (Abs "x" (Abs "y" (Abs "z" (App (App (Var "x")
+                                                      (Var "z"))
+                                                 (App (Var "y")
+                                                      (Var "z"))))))
+                 (Abs "m" (Abs "n" (Var "m"))))
+            (Abs "p" (Var "p")))
+       (App (App (Abs "a" (Abs "b" (Abs "c" (App (App (Var "a")
+                                                      (Var "c"))
+                                                 (App (Var "b")
+                                                      (Var "c"))))))
+                 (Abs "d" (Abs "e" (Var "d"))))
+            (Abs "f" (Var "f")))
+       (Abs "c" (Var "c"))
+       ["x", "y", "z", "m", "n", "p"]
   -- twice twice
 --  test [("twice", Abs "f" (Abs "x" (App (Var "f")
 --                                        (App (Var "f")
