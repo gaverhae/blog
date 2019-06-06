@@ -22,40 +22,41 @@ eval exp env = case exp of
 
 initenv = Var
 
-assert x = if x then return () else error "bad"
-
-assertExp env e1 e2 = assert $ eval e1 env == e2
+test env e1 e2 =
+  if result == e2
+     then return ()
+     else error $ show result ++ "!=" ++ show e2
+  where result = eval e1 env
 
 main :: IO ()
 main = do
-  assert $ 1 == 1
   -- \x.x => \x.x
-  assertExp initenv
-            (Abs "x" (Var "x"))
-            (Abs "x" (Var "x"))
+  test initenv
+       (Abs "x" (Var "x"))
+       (Abs "x" (Var "x"))
   -- (\x.x) 2 => 2
-  assertExp initenv
-            (App (Abs "x" (Var "x")) (Num 2))
-            (Num 2)
+  test initenv
+       (App (Abs "x" (Var "x")) (Num 2))
+       (Num 2)
   -- (\x.x + 1) 10 => 11
-  assertExp initenv
-            (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
-            (Num 11)
+  test initenv
+       (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
+       (Num 11)
   -- (\x.x) (\y.y) => (\y.y)
-  assertExp initenv
-            (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
-            (Abs "y" (Var "y"))
+  test initenv
+       (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
+       (Abs "y" (Var "y"))
   -- (\x.x) (\y.y) z => z
-  assertExp initenv
-            (App (App (Abs "x" (Var "x"))
-                      (Abs "y" (Var "y")))
-                 (Var "z"))
-            (Var "z")
+  test initenv
+       (App (App (Abs "x" (Var "x"))
+                 (Abs "y" (Var "y")))
+            (Var "z"))
+       (Var "z")
   -- (\x.xy) z => xz
-  assertExp initenv
-            (App (Abs "x" (App (Var "x") (Var "y")))
-                 (Var "z"))
-            (App (Var "z") (Var "y"))
+  test initenv
+       (App (Abs "x" (App (Var "x") (Var "y")))
+            (Var "z"))
+       (App (Var "z") (Var "y"))
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
   -- inc 10
