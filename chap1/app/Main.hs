@@ -23,32 +23,44 @@ initenv var = error $ "Could not find " ++ var
 
 assert x = if x then return () else error "bad"
 
-assertExp e1 e2 = assert $ eval e1 initenv == e2
+assertExp env e1 e2 = assert $ eval e1 env == e2
 
 main :: IO ()
 main = do
   assert $ 1 == 1
   -- \x.x => \x.x
-  assertExp (Abs "x" (Var "x"))
+  assertExp initenv
+            (Abs "x" (Var "x"))
             (Abs "x" (Var "x"))
   -- (\x.x) 2 => 2
-  assertExp (App (Abs "x" (Var "x")) (Num 2))
+  assertExp initenv
+            (App (Abs "x" (Var "x")) (Num 2))
             (Num 2)
   -- (\x.x + 1) 10 => 11
-  assertExp (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
+  assertExp initenv
+            (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
             (Num 11)
   -- (\x.x) (\y.y) => (\y.y)
-  assertExp (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
+  assertExp initenv
+            (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
             (Abs "y" (Var "y"))
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
   -- inc 10
-  assertExp (App (Abs "inc" (App (Var "inc") (Num 10)))
+  assertExp initenv
+            (App (Abs "inc" (App (Var "inc") (Num 10)))
                  (Abs "x" (Add (Var "x") (Num 1))))
             (Num 11)
+  -- cheating: adding names to env
+  assertExp (\s -> if s == "inc" then (Abs "x" (Add (Var "x") (Num 1)))
+                                 else initenv s)
+            (App (Var "inc") (Num 10))
+            (Num 11)
+
   -- thrice f x = f (f (f x))
   -- thrice inc 100
---  assertExp (App (Abs "thrice" (App (Abs "inc" (App (App (Var "thrice")
+--  assertExp initenv
+--            (App (Abs "thrice" (App (Abs "inc" (App (App (Var "thrice")
 --                                                         (Var "inc"))
 --                                                    (Num 100)))
 --                                    (Abs "x" (Add (Var "x") (Num 1)))))
