@@ -10,12 +10,12 @@ data E = Var String
 eval :: E -> (String -> E) -> E
 eval exp env = case exp of
   Var s -> env s
-  Abs h e -> eval e (\s -> if s == h then Var h else env s)
+  Abs h e -> eval e (\s -> if s == h then Var s else env s)
   App abs arg -> case result of
     Abs n e -> eval e (\s -> if s == n then arg else env s)
     Var s -> App (Var s) (eval arg env)
     _ -> error $ "Trying to apply " ++ show result
-    where result = (eval abs env)
+    where result = eval abs env
   Add a b -> case (eval a env, eval b env) of
     (Num x, Num y) -> Num (x + y)
     _ -> error $ "Trying to add non-numbers: (" ++ show a ++ ", " ++ show b ++ ")"
@@ -26,7 +26,7 @@ initenv = Var
 test env e1 e2 =
   if result == e2
      then return ()
-     else error $ "(" ++ show result ++ ") != (" ++ show e2 ++ ")"
+     else error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
   where result = eval e1 env
 
 main :: IO ()
