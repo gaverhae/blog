@@ -115,12 +115,23 @@ main = do
             (Num 100))
        (Num 103)
   -- thrice inc 100
---  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
---        ("thrice", Abs "f" (Abs "x" (App (Var "f")
---                                         (App (Var "f")
---                                              (App (Var "f")
---                                                   (Var "x"))))))]
---       (App (App (Var "thrice") (Var "inc"))
---            (Num 100))
---       (Num 103)
+  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
+        ("thrice", Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (App (Var "f")
+                                                   (Var "x"))))))]
+       (App (App (Var "thrice") (Var "inc"))
+            (Num 100))
+       (Num 103)
+  -- thrice (thrice inc) 100
+  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
+        ("thrice", Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (App (Var "f")
+                                                   (Var "x"))))))]
+       (App (App (Var "thrice")
+                 (App (Var "thrice")
+                      (Var "inc")))
+            (Num 100))
+       (Num 109)
   putStrLn "All good"
