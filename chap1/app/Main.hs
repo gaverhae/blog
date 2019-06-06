@@ -10,7 +10,7 @@ data E = Var String
 eval :: E -> (String -> E) -> E
 eval exp env = case exp of
   Var s -> env s
-  Abs s e -> exp
+  Abs h e -> eval e (\s -> if s == h then Var h else env s)
   App abs arg -> case result of
     Abs n e -> eval e (\s -> if s == n then arg else env s)
     Var s -> App (Var s) (eval arg env)
@@ -32,33 +32,37 @@ test env e1 e2 =
 main :: IO ()
 main = do
   -- \x.x => \x.x
-  test initenv
-       (Abs "x" (Var "x"))
-       (Abs "x" (Var "x"))
-  -- (\x.x) 2 => 2
-  test initenv
-       (App (Abs "x" (Var "x")) (Num 2))
-       (Num 2)
-  -- (\x.x + 1) 10 => 11
-  test initenv
-       (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
-       (Num 11)
-  -- (\x.x) (\y.y) => (\y.y)
-  test initenv
-       (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
-       (Abs "y" (Var "y"))
-  -- (\x.x) (\y.y) z => z
-  test initenv
-       (App (App (Abs "x" (Var "x"))
-                 (Abs "y" (Var "y")))
-            (Var "z"))
-       (Var "z")
-  -- (\x.xy) z => xz
-  test initenv
-       (App (Abs "x" (App (Var "x") (Var "y")))
-            (Var "z"))
-       (App (Var "z") (Var "y"))
-  -- (\xy.xy) (\z.a) 1 => a
+--  test initenv
+--       (Abs "x" (Var "x"))
+--       (Abs "x" (Var "x"))
+--  -- (\x.x) 2 => 2
+--  test initenv
+--       (App (Abs "x" (Var "x")) (Num 2))
+--       (Num 2)
+--  -- (\x.x + 1) 10 => 11
+--  test initenv
+--       (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
+--       (Num 11)
+--  -- (\x.x) (\y.y) => (\y.y)
+--  test initenv
+--       (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
+--       (Abs "y" (Var "y"))
+--  -- (\x.x) (\y.y) z => z
+--  test initenv
+--       (App (App (Abs "x" (Var "x"))
+--                 (Abs "y" (Var "y")))
+--            (Var "z"))
+--       (Var "z")
+--  -- (\x.xy) z => xz
+--  test initenv
+--       (App (Abs "x" (App (Var "x") (Var "y")))
+--            (Var "z"))
+--       (App (Var "z") (Var "y"))
+--  -- (\xy.xy) (\z.a) => (\y.(\z.a)y)
+--  test initenv
+--       (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
+--            (Abs "z" (Var "a")))
+--       (Abs "y" (App (Abs "z" (Var "a")) (Var "y")))
 --  test initenv
 --       (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
 --                 (Abs "z" (Var "a")))
