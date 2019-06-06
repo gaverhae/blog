@@ -55,19 +55,21 @@ prep (Program exp (Env e)) =
                              (dt2, rs') = disambiguate t2 rs
           Num i -> (Num i, n:ns)
 
-eval :: E -> [(String, E)] -> E
-eval exp env = case exp of
-  Var s -> find env s
-  Abs h e -> Abs h $ eval e $ (h, Var h):env
-  App abs arg -> case (eval abs env, eval arg env) of
-    (Abs h e, arg') -> eval e $ (h, arg'):env
-    (Var s, arg') -> App (Var s) arg'
-    (a, b) -> App a b
-  Add a b -> case (a', b') of
-    (Num x, Num y) -> Num (x + y)
-    _ -> Add a' b'
-    where (a', b') = (eval a env, eval b env)
-  Num i -> Num i
+eval :: Program -> E
+eval p = eval' exp env
+  where (Program exp (Env env)) = p
+        eval' exp env = case exp of
+          Var s -> find env s
+          Abs h e -> Abs h $ eval' e $ (h, Var h):env
+          App abs arg -> case (eval' abs env, eval' arg env) of
+            (Abs h e, arg') -> eval' e $ (h, arg'):env
+            (Var s, arg') -> App (Var s) arg'
+            (a, b) -> App a b
+          Add a b -> case (a', b') of
+            (Num x, Num y) -> Num (x + y)
+            _ -> Add a' b'
+            where (a', b') = (eval' a env, eval' b env)
+          Num i -> Num i
 
 find env s =
   case env of
@@ -79,9 +81,9 @@ initenv = []
 test env e1 er e2 s = do
   Control.Monad.when (result /= e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
   Control.Monad.when (Data.Set.fromList s /= usedNames (Program e1 (Env env))) $ error $ "NameError in:\n" ++ show e1 ++  "\nfound\n" ++ show (usedNames (Program e1 (Env env))) ++ "\nexpecting\n" ++ show s
-  let (Program er' _) = (prep (Program e1 (Env env)))
+  let (Program er' _) = prep (Program e1 (Env env))
   Control.Monad.when (er' /= er) $ error $ "RenameError:\n(" ++ show e1 ++ ")\nyielded:\n(" ++ show er' ++ ")\ninstead of:\n(" ++ show er ++ ")"
-  where result = eval e1 env
+  where result = eval (Program e1 (Env env))
 
 main :: IO ()
 main = do
@@ -264,7 +266,15 @@ main = do
                                (Var "y"))))
             (Abs "x" (App (Var "x")
                           (Var "z"))))
+       (App (App (Abs "a" (Abs "b" (App (App (Var "a")
+                                             (Var "a"))
+                                        (Var "b"))))
+                 (Abs "c" (App (Var "c")
+                               (Var "y"))))
+            (Abs "d" (App (Var "d")
+                          (Var "z"))))
        (Abs "z" (Var "z"))
+       ["x", "y", "z"]
   -- twice twice
 --  test [("twice", Abs "f" (Abs "x" (App (Var "f")
 --                                        (App (Var "f")
