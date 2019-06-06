@@ -97,6 +97,20 @@ main = do
                      (App (Var "inc")
                           (App (Var "inc")
                                (Var "x")))))
+  -- (\x. inc x) 100
+  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
+       (App (Abs "x" (App (Var "inc")
+                          (Var "x")))
+            (Num 100))
+       (Num 101)
+  --
+--  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
+--       (App (Abs "x" (App (Var "inc")
+--                          (App (Var "inc")
+--                               (App (Var "inc")
+--                                    (Var "x")))))
+--            (Num 100))
+--       (Num 103)
   --
 --  test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
 --       (App (Abs "x" (App (Var "inc")
