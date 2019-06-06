@@ -11,10 +11,11 @@ eval :: E -> (String -> E) -> E
 eval exp env = case exp of
   Var s -> env s
   Abs s e -> exp
-  App abs arg -> case eval abs env of
+  App abs arg -> case result of
     Abs n e -> eval e (\s -> if s == n then arg else env s)
     Var s -> App (Var s) (eval arg env)
-    _ -> error $ "Trying to apply " ++ show (eval abs env)
+    _ -> error $ "Trying to apply " ++ show result
+    where result = (eval abs env)
   Add a b -> case (eval a env, eval b env) of
     (Num x, Num y) -> Num (x + y)
     _ -> error $ "Trying to add non-numbers: (" ++ show a ++ ", " ++ show b ++ ")"
@@ -25,7 +26,7 @@ initenv = Var
 test env e1 e2 =
   if result == e2
      then return ()
-     else error $ show result ++ "!=" ++ show e2
+     else error $ "(" ++ show result ++ ") != (" ++ show e2 ++ ")"
   where result = eval e1 env
 
 main :: IO ()
@@ -57,6 +58,12 @@ main = do
        (App (Abs "x" (App (Var "x") (Var "y")))
             (Var "z"))
        (App (Var "z") (Var "y"))
+  -- (\xy.xy) (\z.a) 1 => a
+--  test initenv
+--       (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
+--                 (Abs "z" (Var "a")))
+--            (Num 1))
+--       (Var "a")
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
   -- inc 10
