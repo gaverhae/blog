@@ -10,7 +10,7 @@ data E = Var String
 eval :: E -> [(String, E)] -> E
 eval exp env = case exp of
   Var s -> find env s
-  Abs h e -> Abs h $ eval e $ (h, Var h):env
+  Abs h e -> Abs h e
   App abs arg -> case result of
     Abs h e -> eval e $ (h, arg):env
     Var s -> App (Var s) (eval arg env)
@@ -18,7 +18,7 @@ eval exp env = case exp of
     where result = eval abs env
   Add a b -> case (eval a env, eval b env) of
     (Num x, Num y) -> Num (x + y)
-    _ -> error $ "Trying to add non-numbers: (" ++ show a ++ ", " ++ show b ++ "), env: " ++ show env
+    _ -> error $ "Trying to add non-numbers: (" ++ show a ++ ", " ++ show b ++ ")"
   Num i -> Num i
 
 find env s =
@@ -45,24 +45,24 @@ main = do
        (App (Abs "x" (Var "x")) (Num 2))
        (Num 2)
   -- (\x.x + 1) 10 => 11
---  test initenv
---       (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
---       (Num 11)
---   -- (\x.x) (\y.y) => (\y.y)
---   test initenv
---        (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
---        (Abs "y" (Var "y"))
---   -- (\x.x) (\y.y) z => z
---   test initenv
---        (App (App (Abs "x" (Var "x"))
---                  (Abs "y" (Var "y")))
---             (Var "z"))
---        (Var "z")
---   -- (\x.xy) z => xz
---   test initenv
---        (App (Abs "x" (App (Var "x") (Var "y")))
---             (Var "z"))
---        (App (Var "z") (Var "y"))
+  test initenv
+       (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
+       (Num 11)
+  -- (\x.x) (\y.y) => (\y.y)
+  test initenv
+       (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
+       (Abs "y" (Var "y"))
+  -- (\x.x) (\y.y) z => z
+  test initenv
+       (App (App (Abs "x" (Var "x"))
+                 (Abs "y" (Var "y")))
+            (Var "z"))
+       (Var "z")
+  -- (\x.xy) z => xz
+  test initenv
+       (App (Abs "x" (App (Var "x") (Var "y")))
+            (Var "z"))
+       (App (Var "z") (Var "y"))
 --   -- (\xy.xy) (\z.a) => (\y.(\z.a)y)
 --   test initenv
 --        (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
