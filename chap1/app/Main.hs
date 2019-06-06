@@ -16,9 +16,10 @@ eval exp env = case exp of
     Var s -> App (Var s) (eval arg env)
     _ -> App result (eval arg env)
     where result = eval abs env
-  Add a b -> case (eval a env, eval b env) of
+  Add a b -> case (a', b') of
     (Num x, Num y) -> Num (x + y)
-    _ -> Add a b
+    _ -> Add a' b'
+    where (a', b') = (eval a env, eval b env)
   Num i -> Num i
 
 find env s =
