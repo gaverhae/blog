@@ -11,8 +11,7 @@ data E = Var String
        | Num Int
        deriving (Eq, Show)
 
-data Program = Program E Env
-newtype Env = Env [(String, E)]
+data Program = Program E [(String, E)]
 
 names = tail $ (Data.List.inits . repeat) ['a'..'z'] >>= sequence
 
@@ -26,18 +25,21 @@ usedNames (Program exp env) =
     App abs arg -> used abs `Data.Set.union` used arg
     Add a b -> used a `Data.Set.union` used b
     Num i -> Data.Set.empty
-  predefined (Env e) = Data.Set.fromList (map fst e) `Data.Set.union` Data.Set.unions (map (used . snd) e)
+  predefined e = Data.Set.fromList (map fst e) `Data.Set.union` Data.Set.unions (map (used . snd) e)
 
-prep :: Program -> Program
-prep (Program exp (Env e)) =
-  Program (fst (disambiguate ewe avn)) (Env [])
-  where ewe = embedEnv exp e
-              where embedEnv exp e = case e of
-                      (n, v):bs -> embedEnv (App (Abs n exp) v) bs
-                      [] -> exp
-        un = usedNames (Program exp (Env e))
-        avn = filter (`Data.Set.notMember` un) names
-        r exp oldName newName =
+disambiguate :: E -> [String] -> (E, [String])
+disambiguate exp (n:ns) = case exp of
+  Var s -> (Var s, n:ns)
+  Abs h b -> (Abs n (r db h n), rs)
+             where (db, rs) = disambiguate b ns
+  App abs arg -> (App dabs darg, rs')
+                 where (dabs, rs) = disambiguate abs (n:ns)
+                       (darg, rs') = disambiguate arg rs
+  Add t1 t2 -> (Add dt1 dt2, rs')
+               where (dt1, rs) = disambiguate t1 (n:ns)
+                     (dt2, rs') = disambiguate t2 rs
+  Num i -> (Num i, n:ns)
+  where r exp oldName newName =
           let rec e = r e oldName newName
           in case exp of
             Var s -> if s == oldName then Var newName else Var s
@@ -45,44 +47,37 @@ prep (Program exp (Env e)) =
             App abs arg -> App (rec abs) (rec arg)
             Add t1 t2 -> Add (rec t1) (rec t2)
             Num i -> Num i
-        disambiguate exp (n:ns) = case exp of
-          Var s -> (Var s, n:ns)
-          Abs h b -> (Abs n (r db h n), rs)
-                     where (db, rs) = disambiguate b ns
-          App abs arg -> (App dabs darg, rs')
-                         where (dabs, rs) = disambiguate abs (n:ns)
-                               (darg, rs') = disambiguate arg rs
-          Add t1 t2 -> (Add dt1 dt2, rs')
-                       where (dt1, rs) = disambiguate t1 (n:ns)
-                             (dt2, rs') = disambiguate t2 rs
-          Num i -> (Num i, n:ns)
 
 eval :: Program -> E
-eval p = eval' exp env
-  where (Program exp (Env env)) = prep p
-        eval' exp env = case exp of
-          Var s -> find env s
-          Abs h e -> Abs h $ eval' e $ (h, Var h):env
-          App abs arg -> case (eval' abs env, eval' arg env) of
-            (Abs h e, arg') -> eval' e $ (h, arg'):env
-            (Var s, arg') -> App (Var s) arg'
-            (a, b) -> App a b
-          Add a b -> case (a', b') of
-            (Num x, Num y) -> Num (x + y)
-            _ -> Add a' b'
-            where (a', b') = (eval' a env, eval' b env)
-          Num i -> Num i
+eval (Program exp env) = fst $ eval' exp env avn
+  where avn = filter (`Data.Set.notMember` un) names
+        un = usedNames (Program exp env)
+        eval' exp env avn = case exp of
+          Var s -> (find env s, avn)
+          Abs h b -> (Abs h rb, rem)
+                     where (rb, rem) = eval' b ((h, Var h):env) avn
+          App abs arg -> case (rabs, rarg) of
+            (Abs h b, arg') -> eval' b ((h, rarg):env) rem''
+            (a, b) -> (App a b, rem'')
+            where (dabs, rem) = disambiguate abs avn
+                  (rabs, rem') = eval' dabs env rem
+                  (rarg, rem'') = eval' arg env rem'
+          Add t1 t2 -> case (rt1, rt2) of
+            (Num x, Num y) -> (Num (x + y), rem')
+            _ -> (Add rt1 rt2, rem')
+            where (rt1, rem) = eval' t1 env avn
+                  (rt2, rem') = eval' t2 env rem
+          Num i -> (Num i, avn)
 
-find env s =
-  case env of
-       [] -> Var s
-       (n, e):tl -> if n == s then e else find tl s
+find env s = case env of
+  [] -> Var s
+  (n, e):tl -> if n == s then e else find tl s
 
 initenv = []
 
 test env e1 e2 = do
   Control.Monad.when (result /= e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
-  where result = eval (Program e1 (Env env))
+  where result = eval (Program e1 env)
 
 main :: IO ()
 main = do
@@ -90,7 +85,7 @@ main = do
   -- \x.x => \x.x
   test initenv
        (Abs "x" (Var "x"))
-       (Abs "a" (Var "a"))
+       (Abs "x" (Var "x"))
 
   -- (\x.x) 2 => 2
   test initenv
@@ -105,7 +100,13 @@ main = do
   -- (\x.x) (\y.y) => (\y.y)
   test initenv
        (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
-       (Abs "b" (Var "b"))
+       (Abs "y" (Var "y"))
+
+  -- (\xy. (\x.xx)y) -> (\xy.yy)
+  test initenv
+       (Abs "x" (Abs "y" (App (Abs "x" (App (Var "x") (Var "x")))
+                              (Var "y"))))
+       (Abs "x" (Abs "y" (App (Var "y") (Var "y"))))
 
   -- (\x.x) (\y.y) z => z
   test initenv
@@ -114,7 +115,7 @@ main = do
             (Var "z"))
        (Var "z")
 
-  -- (\x.xy) z => xz
+  -- (\x.xy) z => zy
   test initenv
        (App (Abs "x" (App (Var "x") (Var "y")))
             (Var "z"))
@@ -126,7 +127,7 @@ main = do
             (Abs "z" (Var "a")))
        (Abs "c" (Var "a"))
 
-  -- (\xy.xy) (\z.a) 1
+  -- (\xy.xy) (\z.a) 1 => a
   test initenv
        (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
                  (Abs "z" (Var "a")))
@@ -142,7 +143,7 @@ main = do
                                (Var "y"))))
             (Abs "x" (App (Var "x")
                           (Var "z"))))
-       (App (App (Var "y") (Var "y")) (Abs "d" (App (Var "d") (Var "z"))))
+       (App (App (Var "y") (Var "y")) (Abs "x" (App (Var "x") (Var "z"))))
 
   -- (\xyz.xz(yz)) (\mn.m) (\p.p)
   test initenv
@@ -152,7 +153,7 @@ main = do
                                                       (Var "z"))))))
                  (Abs "m" (Abs "n" (Var "m"))))
             (Abs "p" (Var "p")))
-       (Abs "c" (Var "c"))
+       (Abs "h" (Var "h"))
 
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
@@ -175,7 +176,7 @@ main = do
                                               (App (Var "f")
                                                    (Var "x"))))))]
        (App (Var "thrice") (Var "inc"))
-       (Abs "e" (Add (Add (Add (Var "e") (Num 1)) (Num 1)) (Num 1)))
+       (Abs "x" (Add (Add (Add (Var "x") (Num 1)) (Num 1)) (Num 1)))
 
   -- (\x. inc x) 100 => 101
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
@@ -231,25 +232,25 @@ main = do
             (Abs "g" (Abs "y" (App (Var "g")
                                          (App (Var "g")
                                               (Var "y"))))))
-       (Abs "b" (Abs "d" (App (Var "b")
+       (Abs "b" (Abs "y" (App (Var "b")
                               (App (Var "b")
                                    (App (Var "b")
                                         (App (Var "b")
-                                             (Var "d")))))))
+                                             (Var "y")))))))
 
   -- twice twice
   test []
        (App (Abs "f" (Abs "x" (App (Var "f")
-                                         (App (Var "f")
-                                              (Var "x")))))
+                                   (App (Var "f")
+                                        (Var "x")))))
             (Abs "f" (Abs "x" (App (Var "f")
-                                         (App (Var "f")
-                                              (Var "x"))))))
-       (Abs "b" (Abs "d" (App (Var "b")
+                                   (App (Var "f")
+                                        (Var "x"))))))
+       (Abs "b" (Abs "x" (App (Var "b")
                               (App (Var "b")
                                    (App (Var "b")
                                         (App (Var "b")
-                                             (Var "d")))))))
+                                             (Var "x")))))))
 
   -- twice twice
 --  test []
@@ -263,7 +264,7 @@ main = do
 --                                   (App (Var "b")
 --                                        (App (Var "b")
 --                                             (Var "d")))))))
-
+--
   -- twice twice
 --  test [("twice", Abs "f" (Abs "x" (App (Var "f")
 --                                        (App (Var "f")
