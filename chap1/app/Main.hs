@@ -311,6 +311,27 @@ main = do
                                         (App (Var "b")
                                              (Var "d")))))))
        ["x", "y", "f", "g"]
+
+  -- twice twice
+  test []
+       (App (Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (Var "x")))))
+            (Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (Var "x"))))))
+       (App (Abs "a" (Abs "b" (App (Var "a")
+                                         (App (Var "a")
+                                              (Var "b")))))
+            (Abs "c" (Abs "d" (App (Var "c")
+                                         (App (Var "c")
+                                              (Var "d"))))))
+       (Abs "b" (Abs "d" (App (Var "b")
+                              (App (Var "b")
+                                   (App (Var "b")
+                                        (App (Var "b")
+                                             (Var "d")))))))
+       ["x", "f"]
   -- twice twice
 --  test [("twice", Abs "f" (Abs "x" (App (Var "f")
 --                                        (App (Var "f")
