@@ -73,10 +73,18 @@ find env s = case env of
   [] -> Var s
   (n, e):tl -> if n == s then e else find tl s
 
+alpha :: E -> E -> Bool
+alpha e1 e2 =
+  de1 == de2
+  where un = usedNames (Program e1 []) `Data.Set.union` usedNames (Program e2 [])
+        avn = filter (`Data.Set.notMember` un) names
+        (de1, _) = disambiguate e1 avn
+        (de2, _) = disambiguate e2 avn
+
 initenv = []
 
-test env e1 e2 = do
-  Control.Monad.when (result /= e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
+test env e1 e2 =
+  Control.Monad.unless (result `alpha` e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
   where result = eval (Program e1 env)
 
 main :: IO ()
@@ -85,7 +93,7 @@ main = do
   -- \x.x => \x.x
   test initenv
        (Abs "x" (Var "x"))
-       (Abs "x" (Var "x"))
+       (Abs "y" (Var "y"))
 
   -- (\x.x) 2 => 2
   test initenv
