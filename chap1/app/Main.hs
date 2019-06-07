@@ -87,30 +87,35 @@ test env e1 er e2 s = do
 
 main :: IO ()
 main = do
+
   -- \x.x => \x.x
   test initenv
        (Abs "x" (Var "x"))
        (Abs "a" (Var "a"))
        (Abs "a" (Var "a"))
        ["x"]
+
   -- (\x.x) 2 => 2
   test initenv
        (App (Abs "x" (Var "x")) (Num 2))
        (App (Abs "a" (Var "a")) (Num 2))
        (Num 2)
        ["x"]
+
   -- (\x.x + 1) 10 => 11
   test initenv
        (App (Abs "x" (Add (Var "x") (Num 1))) (Num 10))
        (App (Abs "a" (Add (Var "a") (Num 1))) (Num 10))
        (Num 11)
        ["x"]
+
   -- (\x.x) (\y.y) => (\y.y)
   test initenv
        (App (Abs "x" (Var "x")) (Abs "y" (Var "y")))
        (App (Abs "a" (Var "a")) (Abs "b" (Var "b")))
        (Abs "b" (Var "b"))
        ["x", "y"]
+
   -- (\x.x) (\y.y) z => z
   test initenv
        (App (App (Abs "x" (Var "x"))
@@ -121,6 +126,7 @@ main = do
             (Var "z"))
        (Var "z")
        ["x", "y", "z"]
+
   -- (\x.xy) z => xz
   test initenv
        (App (Abs "x" (App (Var "x") (Var "y")))
@@ -129,6 +135,7 @@ main = do
             (Var "z"))
        (App (Var "z") (Var "y"))
        ["x", "y", "z"]
+
   -- (\xy.xy) (\z.a) => (\y.a)
   test initenv
        (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
@@ -137,6 +144,8 @@ main = do
             (Abs "d" (Var "a")))
        (Abs "c" (Var "a"))
        ["x", "y", "z", "a"]
+
+  -- (\xy.xy) (\z.a) 1
   test initenv
        (App (App (Abs "x" (Abs "y" (App (Var "x") (Var "y"))))
                  (Abs "z" (Var "a")))
@@ -146,6 +155,43 @@ main = do
             (Num 1))
        (Var "a")
        ["x", "y", "z", "a"]
+
+  -- (\xy.xxy) (\x.xy) (\x.xz) => y y (\x.xz)
+  test initenv
+       (App (App (Abs "x" (Abs "y" (App (App (Var "x")
+                                             (Var "x"))
+                                        (Var "y"))))
+                 (Abs "x" (App (Var "x")
+                               (Var "y"))))
+            (Abs "x" (App (Var "x")
+                          (Var "z"))))
+       (App (App (Abs "a" (Abs "b" (App (App (Var "a")
+                                             (Var "a"))
+                                        (Var "b"))))
+                 (Abs "c" (App (Var "c")
+                               (Var "y"))))
+            (Abs "d" (App (Var "d")
+                          (Var "z"))))
+       (App (App (Var "y") (Var "y")) (Abs "d" (App (Var "d") (Var "z"))))
+       ["x", "y", "z"]
+
+  -- (\xyz.xz(yz)) (\mn.m) (\p.p)
+  test initenv
+       (App (App (Abs "x" (Abs "y" (Abs "z" (App (App (Var "x")
+                                                      (Var "z"))
+                                                 (App (Var "y")
+                                                      (Var "z"))))))
+                 (Abs "m" (Abs "n" (Var "m"))))
+            (Abs "p" (Var "p")))
+       (App (App (Abs "a" (Abs "b" (Abs "c" (App (App (Var "a")
+                                                      (Var "c"))
+                                                 (App (Var "b")
+                                                      (Var "c"))))))
+                 (Abs "d" (Abs "e" (Var "d"))))
+            (Abs "f" (Var "f")))
+       (Abs "c" (Var "c"))
+       ["x", "y", "z", "m", "n", "p"]
+
   -- faking names with extra nesting
   -- inc = \x.(x + 1)
   -- inc 10
@@ -156,12 +202,14 @@ main = do
             (Abs "b" (Add (Var "b") (Num 1))))
        (Num 11)
        ["inc", "x"]
+
   -- cheating: adding names to env
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
        (App (Var "inc") (Num 10))
        (App (Var "inc") (Num 10))
        (Num 11)
        ["inc", "x"]
+
   -- thrice f x = f (f (f x))
   -- thrice inc
   test [("inc", Abs "x" (Add (Var "x") (Num 1))),
@@ -173,6 +221,7 @@ main = do
        (App (Var "thrice") (Var "inc"))
        (Abs "x" (Add (Add (Add (Var "x") (Num 1)) (Num 1)) (Num 1)))
        ["inc", "x", "thrice", "f"]
+
   -- (\x. inc x) 100 => 101
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
        (App (Abs "x" (App (Var "inc")
@@ -183,6 +232,7 @@ main = do
             (Num 100))
        (Num 101)
        ["inc", "x"]
+
   -- (\x. inc (inc x)) 100 => 102
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
        (App (Abs "x" (App (Var "inc")
@@ -195,6 +245,7 @@ main = do
             (Num 100))
        (Num 102)
        ["inc", "x"]
+
   -- (\x. inc (inc (inc x))) 100 => 103
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
        (App (Abs "x" (App (Var "inc")
@@ -209,6 +260,7 @@ main = do
             (Num 100))
        (Num 103)
        ["inc", "x"]
+
   -- thrice inc 100
   test [("inc", Abs "x" (Add (Var "x") (Num 1))),
         ("thrice", Abs "f" (Abs "x" (App (Var "f")
@@ -221,6 +273,7 @@ main = do
             (Num 100))
        (Num 103)
        ["inc", "x", "thrice", "f"]
+
   -- thrice (thrice inc) 100
   test [("inc", Abs "x" (Add (Var "x") (Num 1))),
         ("thrice", Abs "f" (Abs "x" (App (Var "f")
@@ -237,6 +290,7 @@ main = do
             (Num 100))
        (Num 109)
        ["inc", "x", "thrice", "f"]
+
   -- twice twice
   test []
        (App (Abs "f" (Abs "x" (App (Var "f")
@@ -257,43 +311,12 @@ main = do
                                         (App (Var "b")
                                              (Var "d")))))))
        ["x", "y", "f", "g"]
-  -- (\xy.xxy) (\x.xy) (\x.xz) => \z.z
-  test initenv
-       (App (App (Abs "x" (Abs "y" (App (App (Var "x")
-                                             (Var "x"))
-                                        (Var "y"))))
-                 (Abs "x" (App (Var "x")
-                               (Var "y"))))
-            (Abs "x" (App (Var "x")
-                          (Var "z"))))
-       (App (App (Abs "a" (Abs "b" (App (App (Var "a")
-                                             (Var "a"))
-                                        (Var "b"))))
-                 (Abs "c" (App (Var "c")
-                               (Var "y"))))
-            (Abs "d" (App (Var "d")
-                          (Var "z"))))
-       (App (App (Var "y") (Var "y")) (Abs "d" (App (Var "d") (Var "z"))))
-       ["x", "y", "z"]
-  test initenv
-       (App (App (Abs "x" (Abs "y" (Abs "z" (App (App (Var "x")
-                                                      (Var "z"))
-                                                 (App (Var "y")
-                                                      (Var "z"))))))
-                 (Abs "m" (Abs "n" (Var "m"))))
-            (Abs "p" (Var "p")))
-       (App (App (Abs "a" (Abs "b" (Abs "c" (App (App (Var "a")
-                                                      (Var "c"))
-                                                 (App (Var "b")
-                                                      (Var "c"))))))
-                 (Abs "d" (Abs "e" (Var "d"))))
-            (Abs "f" (Var "f")))
-       (Abs "c" (Var "c"))
-       ["x", "y", "z", "m", "n", "p"]
   -- twice twice
 --  test [("twice", Abs "f" (Abs "x" (App (Var "f")
 --                                        (App (Var "f")
 --                                             (Var "x")))))]
+--       (App (Var "twice")
+--            (Var "twice"))
 --       (App (Var "twice")
 --            (Var "twice"))
 --       (Abs "x" (Abs "y" (App (Var "x")
@@ -301,6 +324,7 @@ main = do
 --                                   (App (Var "x")
 --                                        (App (Var "x")
 --                                             (Var "y")))))))
+--       ["twice", "f", "x"]
   -- thrice thrice inc 100
 --  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
 --        ("thrice", Abs "f" (Abs "x" (App (Var "f")
