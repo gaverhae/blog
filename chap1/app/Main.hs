@@ -56,11 +56,11 @@ eval (Program exp env) = fst $ eval' exp env avn
           Var s -> (find env s, avn)
           Abs h b -> (Abs h rb, rem)
                      where (rb, rem) = eval' b ((h, Var h):env) avn
-          App abs arg -> case (rabs, rarg) of
+          App abs arg -> case (dabs, rarg) of
             (Abs h b, arg') -> eval' b ((h, rarg):env) rem''
             (a, b) -> (App a b, rem'')
-            where (dabs, rem) = disambiguate abs avn
-                  (rabs, rem') = eval' dabs env rem
+            where (rabs, rem) = eval' abs env avn
+                  (dabs, rem') = disambiguate rabs rem
                   (rarg, rem'') = eval' arg env rem'
           Add t1 t2 -> case (rt1, rt2) of
             (Num x, Num y) -> (Num (x + y), rem')
@@ -176,7 +176,7 @@ main = do
                                               (App (Var "f")
                                                    (Var "x"))))))]
        (App (Var "thrice") (Var "inc"))
-       (Abs "x" (Add (Add (Add (Var "x") (Num 1)) (Num 1)) (Num 1)))
+       (Abs "b" (Add (Add (Add (Var "b") (Num 1)) (Num 1)) (Num 1)))
 
   -- (\x. inc x) 100 => 101
   test [("inc", Abs "x" (Add (Var "x") (Num 1)))]
@@ -232,11 +232,11 @@ main = do
             (Abs "g" (Abs "y" (App (Var "g")
                                          (App (Var "g")
                                               (Var "y"))))))
-       (Abs "b" (Abs "y" (App (Var "b")
+       (Abs "b" (Abs "d" (App (Var "b")
                               (App (Var "b")
                                    (App (Var "b")
                                         (App (Var "b")
-                                             (Var "y")))))))
+                                             (Var "d")))))))
 
   -- twice twice
   test []
@@ -246,46 +246,46 @@ main = do
             (Abs "f" (Abs "x" (App (Var "f")
                                    (App (Var "f")
                                         (Var "x"))))))
-       (Abs "b" (Abs "x" (App (Var "b")
+       (Abs "b" (Abs "d" (App (Var "b")
                               (App (Var "b")
                                    (App (Var "b")
                                         (App (Var "b")
-                                             (Var "x")))))))
+                                             (Var "d")))))))
 
   -- twice twice
---  test []
---       (App (Abs "twice" (App (Var "twice")
---                              (Var "twice")))
---            (Abs "f" (Abs "x" (App (Var "f")
---                                   (App (Var "f")
---                                        (Var "x"))))))
---       (Abs "b" (Abs "d" (App (Var "b")
---                              (App (Var "b")
---                                   (App (Var "b")
---                                        (App (Var "b")
---                                             (Var "d")))))))
---
+  test []
+       (App (Abs "twice" (App (Var "twice")
+                              (Var "twice")))
+            (Abs "f" (Abs "x" (App (Var "f")
+                                   (App (Var "f")
+                                        (Var "x"))))))
+       (Abs "c" (Abs "e" (App (Var "c")
+                              (App (Var "c")
+                                   (App (Var "c")
+                                        (App (Var "c")
+                                             (Var "e")))))))
+
   -- twice twice
---  test [("twice", Abs "f" (Abs "x" (App (Var "f")
---                                        (App (Var "f")
---                                             (Var "x")))))]
---       (App (Var "twice")
---            (Var "twice"))
---       (Abs "x" (Abs "y" (App (Var "x")
---                              (App (Var "x")
---                                   (App (Var "x")
---                                        (App (Var "x")
---                                             (Var "y")))))))
---
+  test [("twice", Abs "f" (Abs "x" (App (Var "f")
+                                        (App (Var "f")
+                                             (Var "x")))))]
+       (App (Var "twice")
+            (Var "twice"))
+       (Abs "b" (Abs "d" (App (Var "b")
+                              (App (Var "b")
+                                   (App (Var "b")
+                                        (App (Var "b")
+                                             (Var "d")))))))
+
   -- thrice thrice inc 100
---  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
---        ("thrice", Abs "f" (Abs "x" (App (Var "f")
---                                         (App (Var "f")
---                                              (App (Var "f")
---                                                   (Var "x"))))))]
---       (App (App (App (Var "thrice")
---                      (Var "thrice"))
---                 (Var "inc"))
---            (Num 100))
---       (Num 127)
+  test [("inc", Abs "x" (Add (Var "x") (Num 1))),
+        ("thrice", Abs "f" (Abs "x" (App (Var "f")
+                                         (App (Var "f")
+                                              (App (Var "f")
+                                                   (Var "x"))))))]
+       (App (App (App (Var "thrice")
+                      (Var "thrice"))
+                 (Var "inc"))
+            (Num 100))
+       (Num 127)
   putStrLn "All good"
