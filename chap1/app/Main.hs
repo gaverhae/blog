@@ -18,27 +18,27 @@ names = tail $ (Data.List.inits . repeat) ['a'..'z'] >>= sequence
 usedNames :: Program -> Data.Set.Set String
 usedNames (Program exp env) =
   used exp `Data.Set.union` predefined env
-  where
-  used exp = case exp of
-    Var s -> Data.Set.singleton s
-    Abs h e -> Data.Set.insert h $ used e
-    App abs arg -> used abs `Data.Set.union` used arg
-    Add a b -> used a `Data.Set.union` used b
-    Num i -> Data.Set.empty
-  predefined e = Data.Set.fromList (map fst e) `Data.Set.union` Data.Set.unions (map (used . snd) e)
+  where used exp = case exp of
+          Var s -> Data.Set.singleton s
+          Abs h e -> Data.Set.insert h $ used e
+          App abs arg -> used abs `Data.Set.union` used arg
+          Add a b -> used a `Data.Set.union` used b
+          Num i -> Data.Set.empty
+        predefined e = Data.Set.fromList (map fst e) `Data.Set.union` Data.Set.unions (map (used . snd) e)
 
 disambiguate :: E -> [String] -> (E, [String])
-disambiguate exp (n:ns) = case exp of
-  Var s -> (Var s, n:ns)
-  Abs h b -> (Abs n (r db h n), rs)
-             where (db, rs) = disambiguate b ns
-  App abs arg -> (App dabs darg, rs')
-                 where (dabs, rs) = disambiguate abs (n:ns)
-                       (darg, rs') = disambiguate arg rs
-  Add t1 t2 -> (Add dt1 dt2, rs')
-               where (dt1, rs) = disambiguate t1 (n:ns)
-                     (dt2, rs') = disambiguate t2 rs
-  Num i -> (Num i, n:ns)
+disambiguate exp (n:ns) =
+  case exp of
+    Var s -> (Var s, n:ns)
+    Abs h b -> (Abs n (r db h n), rs)
+      where (db, rs) = disambiguate b ns
+    App abs arg -> (App dabs darg, rs')
+      where (dabs, rs) = disambiguate abs (n:ns)
+            (darg, rs') = disambiguate arg rs
+    Add t1 t2 -> (Add dt1 dt2, rs')
+                 where (dt1, rs) = disambiguate t1 (n:ns)
+                       (dt2, rs') = disambiguate t2 rs
+    Num i -> (Num i, n:ns)
   where r exp oldName newName =
           let rec e = r e oldName newName
           in case exp of
@@ -48,30 +48,34 @@ disambiguate exp (n:ns) = case exp of
             Add t1 t2 -> Add (rec t1) (rec t2)
             Num i -> Num i
 
-eval :: Program -> E
-eval (Program exp env) = fst $ eval' exp env avn
-  where avn = filter (`Data.Set.notMember` un) names
-        un = usedNames (Program exp env)
-        eval' exp env avn = case exp of
-          Var s -> (find env s, avn)
-          Abs h b -> (Abs h rb, rem)
-                     where (rb, rem) = eval' b ((h, Var h):env) avn
-          App abs arg -> case (dabs, rarg) of
-            (Abs h b, arg') -> eval' b ((h, rarg):env) rem''
-            (a, b) -> (App a b, rem'')
-            where (rabs, rem) = eval' abs env avn
-                  (dabs, rem') = disambiguate rabs rem
-                  (rarg, rem'') = eval' arg env rem'
-          Add t1 t2 -> case (rt1, rt2) of
-            (Num x, Num y) -> (Num (x + y), rem')
-            _ -> (Add rt1 rt2, rem')
-            where (rt1, rem) = eval' t1 env avn
-                  (rt2, rem') = eval' t2 env rem
-          Num i -> (Num i, avn)
-
 find env s = case env of
   [] -> Var s
   (n, e):tl -> if n == s then e else find tl s
+
+-- Brute force renaming, no monad
+
+evalBruteForce :: E -> [(String, E)] -> E
+evalBruteForce exp env =
+  fst $ eval exp env avn
+  where
+    avn = filter (`Data.Set.notMember` un) names
+    un = usedNames (Program exp env)
+    eval exp env avn = case exp of
+      Var s -> (find env s, avn)
+      Abs h b -> (Abs h rb, rem)
+        where (rb, rem) = eval b ((h, Var h):env) avn
+      App abs arg -> case (dabs, rarg) of
+        (Abs h b, arg') -> eval b ((h, rarg):env) rem''
+        (a, b) -> (App a b, rem'')
+        where (rabs, rem) = eval abs env avn
+              (dabs, rem') = disambiguate rabs rem
+              (rarg, rem'') = eval arg env rem'
+      Add t1 t2 -> case (rt1, rt2) of
+        (Num x, Num y) -> (Num (x + y), rem')
+        _ -> (Add rt1 rt2, rem')
+        where (rt1, rem) = eval t1 env avn
+              (rt2, rem') = eval t2 env rem
+      Num i -> (Num i, avn)
 
 alpha :: E -> E -> Bool
 alpha e1 e2 =
@@ -84,8 +88,10 @@ alpha e1 e2 =
 initenv = []
 
 test env e1 e2 =
-  Control.Monad.unless (result `alpha` e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
-  where result = eval (Program e1 env)
+  failOn evalBruteForce
+  where failOn f =
+          let result = (f e1 env) in
+            Control.Monad.unless (result `alpha` e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
 
 main :: IO ()
 main = do
