@@ -3,6 +3,7 @@ module Main where
 import qualified Data.List
 import qualified Data.Set
 import qualified Control.Monad
+import qualified Control.Monad.State as State
 
 data E = Var String
        | Abs String E
@@ -77,6 +78,64 @@ evalBruteForce exp env =
               (rt2, rem') = eval t2 env rem
       Num i -> (Num i, avn)
 
+-- Implement rename with a State monad
+
+evalMonad :: E  -> [(String, E)] -> E
+evalMonad exp env =
+  State.evalState (evalM exp env) avn
+  where avn = filter (`Data.Set.notMember` un) names
+        un = usedNames (Program exp env)
+
+evalM :: E -> [(String, E)] -> State.State [String] E
+evalM exp env = case exp of
+  Var s -> return $ find env s
+  Abs h b -> do
+    rb <- evalM b ((h, Var h):env)
+    return $ Abs h rb
+  App abs arg -> do
+    rabs <- evalM abs env
+    dabs <- disambiguateM rabs
+    rarg <- evalM arg env
+    case (dabs, rarg) of
+      (Abs h b, arg') -> evalM b ((h, rarg):env)
+      (a, b) -> return $ App a b
+  Add t1 t2 -> do
+    rt1 <- evalM t1 env
+    rt2 <- evalM t2 env
+    return $ case (rt1, rt2) of
+      (Num x, Num y) -> Num (x + y)
+      _ -> Add rt1 rt2
+  Num i -> return $ Num i
+
+disambiguateM :: E -> State.State [String] E
+disambiguateM exp = case exp of
+  Var s -> return $ Var s
+  Abs oldName oldBody -> do
+    state <- State.get
+    case state of
+      [] -> error "Cannot happen, but necessary to make compiler happy"
+      newName:freeNames -> do
+        State.put freeNames
+        newBody <- disambiguateM oldBody
+        return $ Abs newName (renameIn newBody oldName newName)
+  App abs arg -> do
+    dabs <- disambiguateM abs
+    darg <- disambiguateM arg
+    return $ App dabs darg
+  Add t1 t2 -> do
+    dt1 <- disambiguateM t1
+    dt2 <- disambiguateM t2
+    return $ Add dt1 dt2
+  Num i -> return $ Num i
+  where renameIn exp oldName newName =
+          let rec e = renameIn e oldName newName
+          in case exp of
+            Var s -> if s == oldName then Var newName else Var s
+            Abs h b -> Abs h (rec b)
+            App abs arg -> App (rec abs) (rec arg)
+            Add t1 t2 -> Add (rec t1) (rec t2)
+            Num i -> Num i
+
 alpha :: E -> E -> Bool
 alpha e1 e2 =
   de1 == de2
@@ -87,10 +146,11 @@ alpha e1 e2 =
 
 initenv = []
 
-test env e1 e2 =
+test env e1 e2 = do
   failOn evalBruteForce
+  failOn evalMonad
   where failOn f =
-          let result = (f e1 env) in
+          let result = f e1 env in
             Control.Monad.unless (result `alpha` e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
 
 main :: IO ()
