@@ -229,12 +229,12 @@ alpha e1 e2 =
 initenv = []
 
 test env e1 e2 = do
-  failOn evalBruteForce
-  failOn evalMonad
-  failOn evalDeBruijn
-  where failOn f =
+  failOn evalBruteForce "evalBruteForce"
+  failOn evalMonad "evalMonad"
+  failOn evalDeBruijn "evalDeBruijn"
+  where failOn f n =
           let result = f e1 env in
-            Control.Monad.unless (result `alpha` e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
+            Control.Monad.unless (result `alpha` e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\n with " ++ n ++ "to:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
 
 main :: IO ()
 main = do
