@@ -136,6 +136,88 @@ disambiguateM exp = case exp of
             Add t1 t2 -> Add (rec t1) (rec t2)
             Num i -> Num i
 
+-- De Bruijn indices
+
+data DBE = DBFree String
+         | DBVar Int
+         | DBAbs String DBE
+         | DBApp DBE DBE
+         | DBAdd DBE DBE
+         | DBNum Int
+         deriving (Eq, Show)
+
+evalDeBruijn :: E -> [(String, E)] -> E
+evalDeBruijn exp env = (toE 0 . eval . toDB . flattenEnv env) exp
+  where flattenEnv env exp = case env of
+          [] -> exp
+          (name, value):xs -> flattenEnv xs $ App (Abs name exp) value
+        toDB exp = case exp of
+          Var s -> DBFree s
+          Abs h b -> DBAbs h (subst h (toDB b) 1)
+          App abs arg -> DBApp (toDB abs) (toDB arg)
+          Add t1 t2 -> DBAdd (toDB t1) (toDB t2)
+          Num i -> DBNum i
+          where subst name dexp depth = case dexp of
+                  DBFree s | s == name -> DBVar depth
+                  DBFree s -> DBFree s
+                  DBVar i -> DBVar i
+                  DBAbs h b -> DBAbs h (subst name b (depth + 1))
+                  DBApp abs arg -> DBApp (subst name abs depth)
+                                         (subst name arg depth)
+                  DBAdd t1 t2 -> DBAdd (subst name t1 depth)
+                                       (subst name t2 depth)
+                  DBNum i -> DBNum i
+        eval dexp = case dexp of
+          DBFree s -> DBFree s
+          DBVar i -> DBVar i
+          DBAbs h b -> DBAbs h (eval b)
+          DBApp abs arg -> case (eval abs, eval arg) of
+            (DBAbs h b, arg) -> eval $ subst arg b 1
+            (abs, arg) -> DBApp abs arg
+          DBAdd t1 t2 -> case (eval t1, eval t2) of
+            (DBNum a, DBNum b) -> DBNum (a + b)
+            (t1, t2) -> DBAdd t1 t2
+          DBNum i -> DBNum i
+          where subst rep dexp depth = case dexp of
+                  DBFree s -> DBFree s
+                  DBVar i | i > depth -> DBVar (i - 1)
+                  DBVar i | i < depth -> DBVar i
+                  DBVar i | i == depth -> offsetFree rep depth 0
+                    where offsetFree dexp offset depth = case dexp of
+                            DBFree s -> DBFree s
+                            DBVar i | i > depth -> DBVar $ i + offset -1
+                            DBVar i -> DBVar i
+                            DBAbs h b -> DBAbs h (offsetFree b offset (depth + 1))
+                            DBApp abs arg -> DBApp (offsetFree abs offset depth)
+                                                   (offsetFree arg offset depth)
+                            DBAdd t1 t2 -> DBAdd (offsetFree t1 offset depth)
+                                                 (offsetFree t2 offset depth)
+                            DBNum i -> DBNum i
+                  DBAbs h b -> DBAbs h (subst rep b (depth + 1))
+                  DBApp abs arg -> DBApp (subst rep abs depth)
+                                         (subst rep arg depth)
+                  DBAdd t1 t2 -> DBAdd (subst rep t1 depth)
+                                       (subst rep t2 depth)
+                  DBNum i -> DBNum i
+        toE depth dexp = case dexp of
+          DBFree s -> Var s
+          DBVar i -> Var $ show i
+          DBAbs h b -> let u = (h ++ "_" ++ show depth) in
+                           Abs u (toE (depth + 1) (subst u b 1))
+          DBApp abs arg -> App (toE depth abs) (toE depth arg)
+          DBAdd t1 t2 -> Add (toE depth t1) (toE depth t2)
+          DBNum i -> Num i
+          where subst name dexp depth = case dexp of
+                  DBFree s -> DBFree s
+                  DBVar i | i == depth -> DBFree name
+                  DBVar i -> DBVar i
+                  DBAbs h b -> DBAbs h (subst name b (depth + 1))
+                  DBApp abs arg -> DBApp (subst name abs depth)
+                                         (subst name arg depth)
+                  DBAdd t1 t2 -> DBAdd (subst name t1 depth)
+                                       (subst name t2 depth)
+                  DBNum i -> DBNum i
+
 alpha :: E -> E -> Bool
 alpha e1 e2 =
   de1 == de2
@@ -149,6 +231,7 @@ initenv = []
 test env e1 e2 = do
   failOn evalBruteForce
   failOn evalMonad
+  failOn evalDeBruijn
   where failOn f =
           let result = f e1 env in
             Control.Monad.unless (result `alpha` e2) $ error $ "Error evaluating: \n(" ++ show e1 ++ ")\nto:\n(" ++ show result ++ ")\nwhile expecting:\n(" ++ show e2 ++ ")"
