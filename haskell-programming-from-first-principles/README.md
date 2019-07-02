@@ -1,4 +1,4 @@
-# Reading notes for Haskell Programming from First Principles
+# Haskell Programming from First Principles
 
 My notes (mostly code) on reading [Haskell Programming from First
 Principles](http://haskellbook.com). This is mostly a backup for myself; if you
