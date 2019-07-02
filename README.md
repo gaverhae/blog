@@ -1,5 +1,6 @@
-# Reading notes for Haskell Programming from First Principles
+# Reading notes
 
-My notes (mostly code) on reading [Haskell Programming from First
-Principles](http://haskellbook.com). This is mostly a backup for myself; if you
-have stumbled on this page, there is probably nothing of interest here.
+This repo is where I keep my notes on books I read; mostly programming
+exercises from programming books. It is unlikely that there will be anything of
+interest for you here, but you're welcome to look either way. (Note: I
+recommend doing the exercises yourself rather than look at my solutions.)
