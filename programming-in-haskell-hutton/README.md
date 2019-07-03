@@ -198,3 +198,119 @@ like Integer) or some sort of automated theorem prover that can test arbitrary
 expressions for equivalence. Both approaches would result in very long calls to
 (==), and neither could be guaranteeed correct for all types in the current
 state of mathematical knowledge.
+
+# Chapter 4
+
+> 1. Using library functions, define a function
+> ```haskell
+> halve :: [a] -> ([a], [a])
+> ```
+> that splits an even-lengthed list into two halves. For example:
+> ```haskell
+> > halve [1, 2, 3, 4, 5, 6]
+> ([1, 2, 3], [4, 5, 6])
+> ```
+
+```haskell
+halve [] = []
+halve xs | length xs == 2 * l = (take l xs, drop l xs)
+         | otherwise = error "unspecified"
+  where l = length xs `div` 2
+```
+
+> 2. Consider a function
+> ```haskell
+> safetail :: [a] -> [a]
+> ```
+> that behaves as the library function `tail`, except that `safetail` maps the
+> empty list to itself, whereas `tail` produces an error in this case. Define
+> `safetail` using:
+>   (a) a conditional expression;
+>   (b) guarded equations;
+>   (c) pattern matching.
+>   Hint: make use of the library function `null`.
+
+```haskell
+safetail xs = if null xs then xs else tail xs
+```
+
+```haskell
+safetail xs | null xs = xs
+            | otherwise = tail xs
+```
+
+```haskell
+safetail [] = []
+safetail (x:xs) = xs
+```
+
+> 3. In a similar way to `&&`, show how the logical disjunction operator `||`
+>    can be defined in four different ways using pattern matching.
+
+```haskell
+(||) :: Bool -> Bool -> Bool
+True || True = True
+True || False = True
+False || True = True
+False || False = False
+```
+
+```haskell
+(||) :: Bool -> Bool -> Bool
+False || False = False
+_ || _ = True
+```
+
+```haskell
+(||) :: Bool -> Bool -> Bool
+False || b = b
+True || _ = True
+```
+
+```haskell
+(||) :: Bool -> Bool -> Bool
+a || b | a != b = True
+       | otherwise = a
+```
+
+> 4. Redefine the following version of the conjunction operator using
+>    conditional expressions rather than pattern matching:
+> ```haskell
+>   True && True = True
+>   _ && _ = False
+> ```
+
+```haskell
+(&&) :: Bool -> Bool -> Bool
+a && b = if a == True then
+           if b == True then
+             True
+           else False
+         else False
+```
+
+> 5. Do the same for the following version, and note the difference in the number
+>   of conditional expressions required:
+> ```haskell
+>   True && b = b
+>   False && _ = False
+> ```
+
+```haskell
+(&&) :: Bool -> Bool -> Bool
+a && b = if a == True then b
+         else False
+```
+
+2 vs 1 conditionals.
+
+> 6. Show how the curried function definition
+> ```haskell
+>   mult x y z = x * y * z
+> ```
+>   can be understood in terms of lambda expressions.
+
+```haskell
+mult :: Num a => a -> a -> a -> a
+mult = \x -> \y -> \z -> x * y * z
+```
