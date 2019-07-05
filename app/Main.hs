@@ -1,6 +1,8 @@
 module Main where
 
+import qualified Data.List as List
 import qualified Data.Map.Strict as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
 data Character = Soldier
@@ -82,9 +84,26 @@ canStore = Map.fromList [(Table, Set.fromList [Knife, Bow, Shield]),
 
 main :: IO ()
 main = do
-  print $ items
+  let usedBy :: (Item -> Set.Set Character)
+        = let m = items
+                  |> Set.toList
+                  |> map (\item -> (item, canUse
+                                          |> Map.toList
+                                          |> filter (\(_c, is) -> Set.member item is)
+                                          |> map fst
+                                          |> Set.fromList))
+                  |> Map.fromList
+          in \i -> Maybe.fromMaybe (Set.fromList []) (Map.lookup i m)
+  let itemSets :: [Set.Set Item]
+        = items
           |> Set.powerSet
-          |> Set.take 5
+          |> Set.toList
+          |> map (\is -> (is, is |> Set.map usedBy |> Set.unions))
+          |> filter (\(_is, cs) -> cs == characters)
+          |> map fst
+          |> List.sortOn Set.size
 
-  print "by"
-  print "hello"
+  putStrLn $ itemSets
+             |> take 10
+             |> map show
+             |> unlines
