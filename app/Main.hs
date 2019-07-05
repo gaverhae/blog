@@ -106,6 +106,13 @@ main = do
           in \is -> is
                     |> Set.map (\i -> Maybe.fromMaybe (Set.fromList []) (Map.lookup i m))
                     |> Set.unions
+  let optimalMannequin :: (Set.Set Item -> Bool)
+      optimalMannequin is
+        = not (Set.member Mannequin $ reqfur is)
+        || let check ls = 1 == Set.size (Set.intersection is $ Set.fromList ls)
+           in (check [HeavyArmor, MediumArmor, LightArmor]
+            && check [HeavyBracers, LightBracers, HeavyShoes, LightShoes]
+            && check [HeavyHelmet, MediumHelmet, LightHelmet])
 
   let itemSets :: [Set.Set Item]
         = items
@@ -115,6 +122,7 @@ main = do
           |> filter (\(_is, cs) -> cs == characters)
           |> map fst
           |> List.sortOn (\is -> (Set.size is, Set.size (reqfur is)))
+          |> filter optimalMannequin
 
   putStrLn $ itemSets
              |> take 10
