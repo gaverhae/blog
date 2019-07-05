@@ -84,7 +84,7 @@ canStore = Map.fromList [(Table, Set.fromList [Knife, Bow, Shield]),
 
 main :: IO ()
 main = do
-  let usedBy :: (Item -> Set.Set Character)
+  let usedBy :: Item -> Set.Set Character
         = let m = items
                   |> Set.toList
                   |> map (\item -> (item, canUse
@@ -94,6 +94,19 @@ main = do
                                           |> Set.fromList))
                   |> Map.fromList
           in \i -> Maybe.fromMaybe (Set.fromList []) (Map.lookup i m)
+  let reqfur :: Set.Set Item -> Set.Set Furniture
+        = let m = items
+                  |> Set.toList
+                  |> map (\item -> (item, canStore
+                                          |> Map.toList
+                                          |> filter (\(_c, is) -> Set.member item is)
+                                          |> map fst
+                                          |> Set.fromList))
+                  |> Map.fromList
+          in \is -> is
+                    |> Set.map (\i -> Maybe.fromMaybe (Set.fromList []) (Map.lookup i m))
+                    |> Set.unions
+
   let itemSets :: [Set.Set Item]
         = items
           |> Set.powerSet
@@ -101,9 +114,10 @@ main = do
           |> map (\is -> (is, is |> Set.map usedBy |> Set.unions))
           |> filter (\(_is, cs) -> cs == characters)
           |> map fst
-          |> List.sortOn Set.size
+          |> List.sortOn (\is -> (Set.size is, Set.size (reqfur is)))
 
   putStrLn $ itemSets
              |> take 10
+             |> map (\is -> (Set.toList is, Set.toList $ reqfur is))
              |> map show
              |> unlines
