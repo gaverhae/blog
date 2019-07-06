@@ -130,7 +130,7 @@ main = do
       itemSets = items
                  |> Set.powerSet
                  |> Set.toList
-                 -- |> filter optimalMannequin
+                 |> filter optimalMannequin
                  |> filter (\is -> characters == (is |> Set.map usedBy |> Set.unions))
                  |> List.sortOn (\is -> (Set.size is, Set.size (reqfur is)))
   let pr :: [Set.Set Item] -> IO ()
@@ -141,18 +141,13 @@ main = do
                |> unlines
                |> putStrLn
 
---  putStrLn "No character constraint:"
---  pr itemSets
---
---  putStrLn "At least one character class:"
---  pr $ itemSets
---       |> filter (\is -> 1 <= Set.size (canEquip is))
---
---  putStrLn "At least one character class, excluding Monk:"
---  pr $ itemSets
---       |> filter (\is -> 1 <= Set.size (canEquip is |> Set.delete Monk))
-  putStrLn $ show $ characters == (items |> Set.map usedBy |> Set.unions)
-  putStrLn $ show $ characters
-  putStrLn $ show $ (items |> Set.map usedBy |> Set.unions)
-  putStrLn $ show $ characters `Set.difference` (items |> Set.map usedBy |> Set.unions)
-  putStrLn $ show $ (items |> Set.map usedBy |> Set.unions) `Set.difference` characters
+  putStrLn "No character constraint:"
+  pr itemSets
+
+  putStrLn "At least one character class:"
+  pr $ itemSets
+       |> filter (\is -> 1 <= Set.size (canEquip is))
+
+  putStrLn "At least one character class, excluding Monk:"
+  pr $ itemSets
+       |> filter (\is -> 1 <= Set.size (canEquip is |> Set.delete Monk))
