@@ -120,18 +120,26 @@ main = do
           |> filter (\(_c, cis) -> cis `Set.isSubsetOf` is)
           |> map fst
           |> Set.fromList
+  let pr iss = iss
+               |> take 10
+               |> map (\is -> (Set.toList is, Set.toList $ reqfur is, Set.toList $ canEquip is))
+               |> map show
+               |> unlines
+               |> putStrLn
+  let itemSets = items
+                 |> Set.powerSet
+                 |> Set.toList
+                 |> filter optimalMannequin
+                 |> filter (\is -> characters == (is |> Set.map usedBy |> Set.unions))
+                 |> List.sortOn (\is -> (Set.size is, Set.size (reqfur is)))
 
-  let itemSets :: [Set.Set Item]
-        = items
-          |> Set.powerSet
-          |> Set.toList
-          |> filter (\is -> characters == (is |> Set.map usedBy |> Set.unions))
-          |> filter (\is -> 1 <= Set.size (canEquip is))
-          |> List.sortOn (\is -> (Set.size is, Set.size (reqfur is)))
-          |> filter optimalMannequin
+  putStrLn "No character constraint:"
+  pr $ itemSets
 
-  putStrLn $ itemSets
-             |> take 10
-             |> map (\is -> (Set.toList is, Set.toList $ reqfur is, Set.toList $ canEquip is))
-             |> map show
-             |> unlines
+  putStrLn "At least one character class:"
+  pr $ itemSets
+       |> filter (\is -> 1 <= Set.size (canEquip is))
+
+  putStrLn "At least one character class, excluding Monk:"
+  pr $ itemSets
+       |> filter (\is -> 1 <= Set.size (canEquip is |> Set.delete Monk))
