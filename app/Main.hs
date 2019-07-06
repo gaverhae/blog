@@ -113,19 +113,25 @@ main = do
            in (check [HeavyArmor, MediumArmor, LightArmor]
             && check [HeavyBracers, LightBracers, HeavyShoes, LightShoes]
             && check [HeavyHelmet, MediumHelmet, LightHelmet])
+  let canEquip :: (Set.Set Item -> Set.Set Character)
+      canEquip is
+        = canUse
+          |> Map.toList
+          |> filter (\(_c, cis) -> cis `Set.isSubsetOf` is)
+          |> map fst
+          |> Set.fromList
 
   let itemSets :: [Set.Set Item]
         = items
           |> Set.powerSet
           |> Set.toList
-          |> map (\is -> (is, is |> Set.map usedBy |> Set.unions))
-          |> filter (\(_is, cs) -> cs == characters)
-          |> map fst
+          |> filter (\is -> characters == (is |> Set.map usedBy |> Set.unions))
+          |> filter (\is -> 1 <= Set.size (canEquip is))
           |> List.sortOn (\is -> (Set.size is, Set.size (reqfur is)))
           |> filter optimalMannequin
 
   putStrLn $ itemSets
              |> take 10
-             |> map (\is -> (Set.toList is, Set.toList $ reqfur is))
+             |> map (\is -> (Set.toList is, Set.toList $ reqfur is, Set.toList $ canEquip is))
              |> map show
              |> unlines
