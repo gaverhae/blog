@@ -9,14 +9,17 @@ data Character = Soldier
                | Barbarian
                | Knight
                | Ranger
+               | Samurai
                | Thief
                | Monk
                | Musketeer
                | Wanderer
+               | Ninja
                | Mage
                | Cleric
                | Druid
                | Sorcerer
+               | Spellblade
                deriving (Show, Ord, Eq, Enum)
 
 data Item = Sword
@@ -62,16 +65,19 @@ furnitures = Set.fromList [Table .. Shelves]
 canUse :: Map.Map Character (Set.Set Item)
 canUse = Map.fromList [(Soldier, Set.fromList [Sword, Mace, Knife, HeavyArmor, HeavyBracers, HeavyShoes, Potion, Shield]),
                        (Barbarian, Set.fromList [Sword, Axe, Spear, Mace, HeavyHelmet, HeavyBracers, HeavyShoes, Potion, Herb]),
-                       (Knight, Set.fromList [Spear, Axe, HeavyArmor, HeavyBracers, HeavyShoes, Shield]),
+                       (Knight, Set.fromList [Spear, Axe, HeavyArmor, HeavyBracers, HeavyHelmet, HeavyShoes, Shield]),
                        (Ranger, Set.fromList [Bow, HeavyArmor, HeavyBracers, HeavyHelmet, Potion, Ring]),
+                       (Samurai, Set.fromList [Sword, Bow, Spear, HeavyArmor, HeavyBracers, HeavyHelmet, HeavyShoes, Potion]),
                        (Thief, Set.fromList [Knife, Bow, MediumArmor, MediumHelmet, LightBracers, Amulet, Ring]),
                        (Monk, Set.fromList [LightArmor, Amulet, Ring]),
                        (Musketeer, Set.fromList [Sword, MediumArmor, LightBracers, HeavyShoes, Potion, Amulet]),
                        (Wanderer, Set.fromList [Knife, Axe, MediumArmor, MediumHelmet, LightShoes, Herb, Amulet]),
+                       (Ninja, Set.fromList [Knife, Sword, Bow, MediumArmor, MediumHelmet, LightBracers, LightShoes, Ring]),
                        (Mage, Set.fromList [Staff, LightArmor, LightHelmet, LightShoes, Scroll, Ring]),
                        (Cleric, Set.fromList [Mace, Spear, LightArmor, LightHelmet, LightShoes, Scroll, Shield]),
                        (Druid, Set.fromList [Staff, Bow, LightArmor, Herb, Amulet, Scroll]),
-                       (Sorcerer, Set.fromList [Staff, Knife, LightArmor, LightBracers, LightShoes, Scroll])]
+                       (Sorcerer, Set.fromList [Staff, Knife, LightArmor, LightBracers, LightShoes, Scroll]),
+                       (Spellblade, Set.fromList [Sword, Axe, Staff, Bow, HeavyArmor, MediumArmor, LightArmor, LightHelmet, HeavyHelmet])]
 
 canStore :: Map.Map Furniture (Set.Set Item)
 canStore = Map.fromList [(Table, Set.fromList [Knife, Bow, Shield]),
@@ -134,7 +140,7 @@ main = do
                  |> List.sortOn (\is -> (Set.size is, Set.size (reqfur is)))
 
   putStrLn "No character constraint:"
-  pr $ itemSets
+  pr itemSets
 
   putStrLn "At least one character class:"
   pr $ itemSets
