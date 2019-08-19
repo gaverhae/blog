@@ -54,7 +54,7 @@ data Furniture = Table
                deriving (Show, Ord, Eq, Enum)
 
 items :: Set.Set Item
-items = Set.fromList [Sword .. Amulet]
+items = Set.fromList [Sword .. ]
 
 characters :: Set.Set Character
 characters = Set.fromList [Soldier .. Spellblade]
