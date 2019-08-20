@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, UndecidableInstances, DuplicateRecordFields, FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances, UndecidableInstances, DuplicateRecordFields, FlexibleContexts, LambdaCase #-}
 
 module Main where
 
@@ -33,9 +33,9 @@ abbreviation x y =
               (a:as, b:bs) | a == b -> h as bs
                            | Char.isUpper a -> return False
                            | Char.toUpper a /= b -> h as (b:bs)
-                           | otherwise -> do
-                               withUpper <- h as bs
-                               if withUpper then return True else h as (b:bs)
+                           | otherwise -> h as bs >>= \case
+                               True -> return True
+                               False -> h as (b:bs)
 
 ab_wrap :: String -> String -> String
 ab_wrap a b = if abbreviation a b then "YES" else "NO"
