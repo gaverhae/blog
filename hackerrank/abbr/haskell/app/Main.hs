@@ -32,8 +32,9 @@ abbreviation x y =
               (x, []) -> return $ all Char.isLower x
               (a:as, b:bs) | a == b -> h as bs
                            | Char.isUpper a -> return False
+                           | Char.toUpper a /= b -> h as (b:bs)
                            | otherwise -> do
-                               withUpper <- h ((Char.toUpper a):as) (b:bs)
+                               withUpper <- h as bs
                                if withUpper then return True else h as (b:bs)
 
 ab_wrap :: String -> String -> String
