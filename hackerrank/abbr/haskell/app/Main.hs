@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, UndecidableInstances, DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances, UndecidableInstances, DuplicateRecordFields, FlexibleContexts #-}
 
 module Main where
 
@@ -20,8 +20,7 @@ import qualified Control.Monad.State.Lazy as State
 abbreviation :: String -> String -> Bool
 abbreviation x y =
   State.evalState (h x y) $ Set.empty
-  where h :: String -> String -> State.State (Set.Set (String, String)) Bool
-        h x y = do
+  where h x y = do
           s <- State.get
           if Set.member (x, y) s
           then return False
