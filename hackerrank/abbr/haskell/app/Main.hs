@@ -14,26 +14,28 @@ import System.IO
 import System.IO.Unsafe
 import qualified Data.Char as Char
 import qualified Data.Set as Set
+import qualified Control.Monad.State.Lazy as State
 
 -- Complete the abbreviation function below.
 abbreviation :: String -> String -> Bool
 abbreviation x y =
-  snd $ h mem x y
-    where
-      mem = Set.empty :: Set (String, String)
-      h mem' x y =
-        if Set.member (x,y) mem'
-        then (mem', False)
-        else let mem'' = Set.insert (x,y) mem'
-             in case (x, y) of
-               ([], []) -> (mem'', True)
-               ([], y) -> (mem'', False)
-               (x, []) -> (mem'', all Char.isLower x)
-               (a:as, b:bs) | a == b -> h mem'' as bs
-                            | Char.isUpper a -> (mem'', False)
-                            | otherwise -> case h mem'' ((Char.toUpper a):as) (b:bs) of
-                                             (mem''', True) -> (mem''', True)
-                                             (mem''', False) -> h mem''' as (b:bs)
+  State.evalState (h x y) $ Set.empty
+  where h :: String -> String -> State.State (Set.Set (String, String)) Bool
+        h x y = do
+          s <- State.get
+          if Set.member (x, y) s
+          then return False
+          else do
+            State.modify (Set.insert (x, y))
+            case (x, y) of
+              ([], []) -> return True
+              ([], y) -> return False
+              (x, []) -> return $ all Char.isLower x
+              (a:as, b:bs) | a == b -> h as bs
+                           | Char.isUpper a -> return False
+                           | otherwise -> do
+                               withUpper <- h ((Char.toUpper a):as) (b:bs)
+                               if withUpper then return True else h as (b:bs)
 
 ab_wrap :: String -> String -> String
 ab_wrap a b = if abbreviation a b then "YES" else "NO"
