@@ -26,6 +26,9 @@ dependencies:
 - split
 - mtl
 
+ghc-options:
+- -O2
+
 library:
   source-dirs: src
 
