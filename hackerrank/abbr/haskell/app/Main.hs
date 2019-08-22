@@ -26,7 +26,7 @@ abbreviation x y =
         to_counts s = s |> List.map (\x -> (Char.toUpper x, 1))
                         |> Map.fromListWith (+)
 
-        hw :: String -> String -> State.State (Set.Set (String, String)) Bool
+        hw :: String -> String -> State.State (Set.Set (Int, Int)) Bool
         hw x y = let cx = to_counts x
                      cy = to_counts y
                  in
@@ -43,13 +43,13 @@ abbreviation x y =
         remove :: Char -> Map.Map Char Int -> Map.Map Char Int
         remove a cx = Map.adjust (\x -> x - 1) a cx
 
-        h :: String -> String -> Map.Map Char Int -> Map.Map Char Int -> Int -> Int -> Int -> State.State (Set.Set (String, String)) Bool
+        h :: String -> String -> Map.Map Char Int -> Map.Map Char Int -> Int -> Int -> Int -> State.State (Set.Set (Int, Int)) Bool
         h x y cx cy dx dy ux = do
           s <- State.get
-          if Set.member (x, y) s
+          if Set.member (dx, dy) s
           then return False
           else do
-            State.modify (Set.insert (x, y))
+            State.modify (Set.insert (dx, dy))
             if dy > dx || ux > dy
             then return False
             else if dy == dx && x == y
