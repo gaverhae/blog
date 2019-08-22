@@ -2,20 +2,35 @@
   (:require [clojure.java.io :as io])
   (:gen-class))
 
-
 (defn abbr [^String to-modify ^String to-match]
-  (let [h (fn [^String i ^String j rec]
-            (cond
-              (= i j) true
-              (empty? i) (empty? j)
-              (empty? j) (= i (.toLowerCase i))
-              (= (first i) (first j)) (rec (subs i 1) (subs j 1) rec)
-              (Character/isUpperCase (first i)) false
-              (not= (Character/toUpperCase (first i)) (first j)) (rec (subs i 1) j rec)
-              :else (or (rec (subs i 1) (subs j 1) rec)
-                        (rec (subs i 1) j rec))))
-        mh (memoize h)]
-    (mh to-modify to-match mh)))
+  (let [nmod (count to-modify)
+        nmat (count to-match)
+        up (fn [^Character c] (Character/toUpperCase c))
+        is-up? (fn [^Character c] (Character/isUpperCase c))]
+    (loop [seen-before? #{}
+           [[imod imat] & r :as todo] [[0 0]]]
+      (cond
+        (empty? todo) false
+        (seen-before? [imod imat]) (recur seen-before? r)
+        :else
+        (let [seen-now (conj seen-before? [imod imat])]
+          (cond
+            (and (== imod nmod) (== imat nmat)) true
+            (== imat nmat) (if (= (subs to-modify imod)
+                                  (.toLowerCase (subs to-modify imod)))
+                             true
+                             (recur seen-now r))
+            (== imod nmod) (recur seen-now r)
+            :else
+            (let [cmod (.charAt to-modify imod)
+                  cmat (.charAt to-match imat)]
+              (cond
+                (= cmod cmat) (recur seen-now (conj r [(inc imod) (inc imat)]))
+                (is-up? cmod) (recur seen-now r)
+                (not= (up cmod) cmat) (recur seen-now (conj r [(inc imod) imat]))
+                :else (recur seen-now
+                             (conj r [(inc imod) (inc imat)]
+                                     [(inc imod) imat]))))))))))
 
 (defn -main
   [& _args]
