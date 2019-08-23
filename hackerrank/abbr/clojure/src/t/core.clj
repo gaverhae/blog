@@ -53,3 +53,27 @@
 
 ; uncomment when pasting to Hackerrank
 ; (-main)
+
+(comment
+  (def in
+    (with-open [f (io/reader "../test_data/input/13")]
+      (->> f
+           line-seq
+           (drop 1)
+           (partition 2 2)
+           vec)))
+  (def exp
+    (with-open [f (io/reader "../test_data/output/13")]
+      (->> f
+           line-seq
+           (map {"YES" true "NO" false})
+           vec)))
+  (defmacro timed [expr]
+    `(let [start# (System/nanoTime)
+           _# ~expr]
+       (format "%9.6f" (/ (- (System/nanoTime) start#) 1000000.0))))
+
+
+  (mapv (fn [_] (timed (doseq [[mod mat] in] (abbr mod mat))))
+        (range 100))
+)
