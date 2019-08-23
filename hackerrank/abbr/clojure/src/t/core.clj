@@ -2,11 +2,17 @@
   (:require [clojure.java.io :as io])
   (:gen-class))
 
+(defmacro make-todo [i j]
+  `(let [arr# (int-array 2)]
+     (aset arr# 0 (int ~i))
+     (aset arr# 1 (int ~j))
+     arr#))
+
 ;; This is done as a macro to avoid boxing to Integer or converting to long.
 (defmacro add [todo imod imat]
   `(if (.get ~'seen (unchecked-add-int ~imod (unchecked-multiply-int ~imat ~'nmod)))
      ~todo
-     (conj ~todo [~imod ~imat])))
+     (conj ~todo (make-todo-arr ~imod ~imat))))
 
 (defn abbr [^String to-modify ^String to-match]
   (let [nmod (int (count to-modify))
@@ -14,11 +20,11 @@
         up (fn [^Character c] (Character/toUpperCase c))
         is-up? (fn [^Character c] (Character/isUpperCase c))
         seen (java.util.BitSet. (unchecked-multiply-int nmod nmat))]
-    (loop [todo [[0 0]]]
+    (loop [todo [(make-todo-arr 0 0)]]
       (if (empty? todo) false
-        (let [cur (peek todo)
-              imod (int (cur 0))
-              imat (int (cur 1))]
+        (let [cur ^ints (peek todo)
+              imod (int (aget cur 0))
+              imat (int (aget cur 1))]
           (.flip seen (unchecked-add-int imod (unchecked-multiply-int imat nmod)))
           (cond
             (and (== imod nmod) (== imat nmat)) true
