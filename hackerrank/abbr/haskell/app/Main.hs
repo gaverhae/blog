@@ -20,11 +20,8 @@ import qualified Control.Monad.State.Lazy as State
 -- Complete the abbreviation function below.
 abbreviation :: String -> String -> Bool
 abbreviation x y =
-  State.evalState (hw x y) Set.empty
-  where hw :: String -> String -> State.State (Set.Set (Int, Int)) Bool
-        hw x y = h x y (length x) (length y)
-
-        h :: String -> String -> Int -> Int -> State.State (Set.Set (Int, Int)) Bool
+  State.evalState (h x y (length x) (length y)) Set.empty
+  where h :: String -> String -> Int -> Int -> State.State (Set.Set (Int, Int)) Bool
         h x y dx dy = do
           s <- State.get
           if Set.member (dx, dy) s
