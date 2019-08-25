@@ -22,31 +22,29 @@ abbreviation :: String -> String -> Bool
 abbreviation x y =
   State.evalState (hw x y) Set.empty
   where hw :: String -> String -> State.State (Set.Set (Int, Int)) Bool
-        hw x y = h x y (length x) (length y) (length $ List.filter Char.isUpper x)
+        hw x y = h x y (length x) (length y)
 
-        h :: String -> String -> Int -> Int -> Int -> State.State (Set.Set (Int, Int)) Bool
-        h x y dx dy ux = do
+        h :: String -> String -> Int -> Int -> State.State (Set.Set (Int, Int)) Bool
+        h x y dx dy = do
           s <- State.get
           if Set.member (dx, dy) s
           then return False
           else do
             State.modify (Set.insert (dx, dy))
-            if dy > dx || ux > dy
+            if dy > dx
             then return False
             else if dy == dx && x == y
             then return True
-            else if ux == dy
-            then return $ y == List.filter Char.isUpper x
             else case (x, y, dx, dy) of
                 (_, _, 0, 0) -> return True
                 (_, _, 0, _) -> return False
                 (_, _, _, 0) -> return $ all Char.isLower x
-                (a:as, b:bs, dx, dy) | a == b -> h as bs (dx - 1) (dy - 1) (ux - 1)
+                (a:as, b:bs, dx, dy) | a == b -> h as bs (dx - 1) (dy - 1)
                                      | Char.isUpper a -> return False
-                                     | Char.toUpper a /= b -> h as (b:bs) (dx - 1) dy ux
-                                     | otherwise -> h as bs (dx - 1) (dy - 1) ux >>= \case
+                                     | Char.toUpper a /= b -> h as (b:bs) (dx - 1) dy
+                                     | otherwise -> h as bs (dx - 1) (dy - 1) >>= \case
                                                       True -> return True
-                                                      False -> h as (b:bs) (dx - 1) dy ux
+                                                      False -> h as (b:bs) (dx - 1) dy
 
 ab_wrap :: String -> String -> String
 ab_wrap a b = if abbreviation a b then "YES" else "NO"
