@@ -1,11 +1,13 @@
 module Main where
 
 import Lib
+import Data.Bits ((.&.))
 import Data.Word (Word8)
+import Text.Printf (printf)
 import qualified Data.List as List
 import qualified Data.Vector as Boxed
 import qualified Data.Vector.Unboxed as Vector
-import Text.Printf (printf)
+import qualified Control.Monad.State.Lazy as State
 
 data ChipState = ChipState {
   memory :: Vector.Vector Word8,
@@ -46,19 +48,51 @@ set_register :: ChipState -> Int -> Word8 -> ChipState
 set_register cs register value =
   cs { registers = ((registers cs) Vector.// [(register, value)]) }
 
+get_register :: ChipState -> Int -> Word8
+get_register cs r = (registers cs) Vector.! r
+
 set_address :: ChipState -> Int -> ChipState
 set_address cs addr = cs { address = addr }
 
 inc_pc :: ChipState -> ChipState
 inc_pc cs = cs { program_counter = program_counter cs + 2 }
 
-step :: ChipState -> ChipState
+byte :: Int -> Int -> Word8
+byte a b =
+  if a < 0 || a >= 16 || b < 0 || b >= 16
+  then error "should not happen"
+  else fromIntegral $ a * 16 + b
+
+trunc_word :: Int -> Word8
+trunc_word i = fromIntegral $ (abs i) `mod` 256
+
+-- parameters taken from
+-- Saucier, R. (2000). Computer Generation of Statistical Distributions (1st ed.). Aberdeen, MD. Army Research Lab.
+-- via https://aaronschlegel.me/linear-congruential-generator-r.html
+next_rand :: Int -> Int
+next_rand prev = (1103515245 * prev + 12345) `mod` (2 ^ 32)
+
+step :: ChipState -> State.State Int ChipState
 step cs = case next_instruction cs of
-  (0x0, 0x0, 0xE, 0x0) -> inc_pc $ clear_screen cs
+  (0x0, 0x0, 0xE, 0x0) -> return $ inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
-  (0x6,   r,  n1,  n2) -> inc_pc $ set_register cs r $ fromIntegral (n1 * 16 + n2)
-  (0xa,  n1,  n2,  n3) -> inc_pc $ set_address cs $ fromIntegral (n1 * 256 + n2 * 16 + n3)
+  (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ (byte n1 n2)
+  (0xa,  n1,  n2,  n3) -> return $ inc_pc $ set_address cs $ fromIntegral (n1 * 256 + n2 * 16 + n3)
+  (0xc,   r,  n1,  n2) -> do
+    State.modify next_rand
+    rnd <- State.get
+    return $ inc_pc $ set_register cs r $ (trunc_word rnd) .&. (get_register cs r)
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
+
+step_n :: ChipState -> Int -> ChipState
+step_n cs 0 = cs
+step_n cs n =
+  State.evalState (h cs n) 0
+  where h :: ChipState -> Int -> State.State Int ChipState
+        h cs 0 = return cs
+        h cs n = do
+          next_cs <- step cs
+          h next_cs (n - 1)
 
 print_screen :: ChipState -> String
 print_screen cs =
@@ -80,10 +114,6 @@ maze = [0x60, 0x00, 0x61, 0x00, 0xa2, 0x22, 0xc2, 0x01, 0x32, 0x01, 0xa2, 0x1e, 
         0x30, 0x40, 0x12, 0x04, 0x60, 0x00, 0x71, 0x04, 0x31, 0x20, 0x12, 0x04, 0x12, 0x1c, 0x80, 0x40,
         0x20, 0x10, 0x20, 0x40, 0x80, 0x10]
 
-step_n :: ChipState -> Int -> ChipState
-step_n cs 0 = cs
-step_n cs n = step_n (step cs) (n - 1)
-
 print_state :: ChipState -> IO ()
 print_state cs = do
   putStrLn $ print_memory $ cs
@@ -92,5 +122,5 @@ print_state cs = do
 
 main :: IO ()
 main = do
-  let state = step_n (Main.init maze) 3
+  let state = step_n (Main.init maze) 4
   print_state state
