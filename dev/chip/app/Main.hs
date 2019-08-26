@@ -34,10 +34,9 @@ decode i =
 
 next_instruction :: ChipState -> (Int, Int, Int, Int)
 next_instruction cs =
-  let (a, b) = address cs
-      int_address = (fromIntegral a) * 256 + (fromIntegral b)
-      (x, y) = decode $ (memory cs) Vector.! int_address
-      (z, t) = decode $ (memory cs) Vector.! (int_address + 1)
+  let pc = program_counter cs
+      (x, y) = decode $ (memory cs) Vector.! pc
+      (z, t) = decode $ (memory cs) Vector.! (pc + 1)
   in (x, y, z, t)
 
 clear_screen :: ChipState -> ChipState
@@ -77,6 +76,8 @@ main = do
   _ <- getLine
   putStrLn $ print_screen $ Main.init maze
   _ <- getLine
+  putStrLn $ show $ next_instruction $ Main.init []
+  putStrLn $ show $ next_instruction $ Main.init maze
 --  putStrLn $ print_memory $ step $ Main.init maze
 --  _ <- getLine
 --  putStrLn $ print_screen $ step $ Main.init maze
