@@ -46,11 +46,14 @@ set_register :: ChipState -> Int -> Word8 -> ChipState
 set_register cs register value =
   cs { registers = ((registers cs) Vector.// [(register, value)]) }
 
+inc_pc :: ChipState -> ChipState
+inc_pc cs = cs { program_counter = program_counter cs + 2 }
+
 step :: ChipState -> ChipState
 step cs = case next_instruction cs of
-  (0x0, 0x0, 0xE, 0x0) -> clear_screen cs
+  (0x0, 0x0, 0xE, 0x0) -> inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
-  (0x6,   r,   a,   b) -> set_register cs r $ fromIntegral (a * 16 + b)
+  (0x6,   r,   a,   b) -> inc_pc $ set_register cs r $ fromIntegral (a * 16 + b)
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 print_screen :: ChipState -> String
