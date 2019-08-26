@@ -46,6 +46,9 @@ set_register :: ChipState -> Int -> Word8 -> ChipState
 set_register cs register value =
   cs { registers = ((registers cs) Vector.// [(register, value)]) }
 
+set_address :: ChipState -> Int -> ChipState
+set_address cs addr = cs { address = addr }
+
 inc_pc :: ChipState -> ChipState
 inc_pc cs = cs { program_counter = program_counter cs + 2 }
 
@@ -53,7 +56,8 @@ step :: ChipState -> ChipState
 step cs = case next_instruction cs of
   (0x0, 0x0, 0xE, 0x0) -> inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
-  (0x6,   r,   a,   b) -> inc_pc $ set_register cs r $ fromIntegral (a * 16 + b)
+  (0x6,   r,  n1,  n2) -> inc_pc $ set_register cs r $ fromIntegral (n1 * 16 + n2)
+  (0xa,  n1,  n2,  n3) -> inc_pc $ set_address cs $ fromIntegral (n1 * 256 + n2 * 16 + n3)
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 print_screen :: ChipState -> String
@@ -88,5 +92,5 @@ print_state cs = do
 
 main :: IO ()
 main = do
-  let state = step_n (Main.init maze) 2
+  let state = step_n (Main.init maze) 3
   print_state state
