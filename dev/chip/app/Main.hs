@@ -42,10 +42,15 @@ next_instruction cs =
 clear_screen :: ChipState -> ChipState
 clear_screen cs = cs { screen = blank_screen }
 
+set_register :: ChipState -> Int -> Word8 -> ChipState
+set_register cs register value =
+  cs { registers = ((registers cs) Vector.// [(register, value)]) }
+
 step :: ChipState -> ChipState
 step cs = case next_instruction cs of
-  (0, 0, 0xE, 0) -> clear_screen cs
-  (0, _, _, _) -> error "jump to native not implemented"
+  (0x0, 0x0, 0xE, 0x0) -> clear_screen cs
+  (0x0,   _,   _,   _) -> error "jump to native not implemented"
+  (0x6,   r,   a,   b) -> set_register cs r $ fromIntegral (a * 16 + b)
   (a, b, c, d) -> error $ "unknown bytecode: " <> Printf.printf "0x%x%x%x%x" a b c d
 
 print_screen :: ChipState -> String
@@ -70,14 +75,5 @@ maze = [0x60, 0x00, 0x61, 0x00, 0xa2, 0x22, 0xc2, 0x01, 0x32, 0x01, 0xa2, 0x1e, 
 
 main :: IO ()
 main = do
-  putStrLn $ print_memory $ Main.init []
-  _ <- getLine
-  putStrLn $ print_memory $ Main.init maze
-  _ <- getLine
-  putStrLn $ print_screen $ Main.init maze
-  _ <- getLine
-  putStrLn $ show $ next_instruction $ Main.init []
-  putStrLn $ show $ next_instruction $ Main.init maze
---  putStrLn $ print_memory $ step $ Main.init maze
---  _ <- getLine
---  putStrLn $ print_screen $ step $ Main.init maze
+  putStrLn $ print_memory $ step $ Main.init maze
+  putStrLn $ print_screen $ step $ Main.init maze
