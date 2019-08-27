@@ -2,6 +2,7 @@ module Main where
 
 import Lib
 import Data.Bits ((.&.))
+import qualified Data.Bits as Bits
 import Data.Word (Word8)
 import Text.Printf (printf)
 import qualified Data.List as List
@@ -64,13 +65,13 @@ byte a b =
   else fromIntegral $ a * 16 + b
 
 trunc_word :: Int -> Word8
-trunc_word i = fromIntegral $ (abs i) `mod` 256
+trunc_word i = fromIntegral $ (abs i) `rem` 256
 
 -- parameters taken from
 -- Saucier, R. (2000). Computer Generation of Statistical Distributions (1st ed.). Aberdeen, MD. Army Research Lab.
 -- via https://aaronschlegel.me/linear-congruential-generator-r.html
 next_rand :: Int -> Int
-next_rand prev = (1103515245 * prev + 12345) `mod` (2 ^ 32)
+next_rand prev = (1103515245 * prev + 12345) `rem` (2 ^ 32)
 
 step :: ChipState -> State.State Int ChipState
 step cs = case next_instruction cs of
@@ -83,6 +84,27 @@ step cs = case next_instruction cs of
     State.modify next_rand
     rnd <- State.get
     return $ inc_pc $ set_register cs r $ (trunc_word rnd) .&. (get_register cs r)
+  (0xd,  r1,  r2,   n) -> do
+    let x_start = get_register cs r1
+        y_start = get_register cs r2
+        height = n
+        current_screen = screen cs
+        byte_to_bits b = [Bits.testBit b i | i <- [0..7]]
+        bits = concat [byte_to_bits b | b <- [(address cs)..(address cs + n - 1)]]
+        positions a xs = h a xs 0
+          where h a [] n = []
+                h a (x:xs) n | a == x = n : h a xs (n + 1)
+                             | otherwise = h a xs (n + 1)
+        indices_to_flip = map (\p -> (fromIntegral $ (p `rem` 8) + x_start,
+                                      fromIntegral $ (p `quot` 8) + y_start))
+                              $ positions True bits
+        flip :: Boxed.Vector (Vector.Vector Bool) -> (Int, Int) -> Boxed.Vector (Vector.Vector Bool)
+        flip s (i, j) = new_screen
+          where row = (s Boxed.! j)
+                new_screen = s Boxed.// [(j, row Vector.// [(i, not $ row Vector.! i)])]
+        collision = False
+    return cs{ screen = foldl flip (screen cs) indices_to_flip
+             , registers = (registers cs) Vector.// [(15, if collision then 1 else 0)]}
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 step_n :: ChipState -> Int -> ChipState
@@ -123,5 +145,5 @@ print_state cs = do
 
 main :: IO ()
 main = do
-  let state = step_n (Main.init maze) 5
+  let state = step_n (Main.init maze) 7
   print_state state
