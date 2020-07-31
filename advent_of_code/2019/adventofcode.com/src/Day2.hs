@@ -35,5 +35,9 @@ solution :: [Int] -> (Int, Int)
 solution input =
   let init_mem = listArray (0, length input) input
       p_1202 = Program 0 (init_mem // [(1, 12), (2, 2)])
-      (Program ic mem) = run p_1202
-  in (mem ! 0, 0)
+      (Program _ mem) = run p_1202
+      (noun, verb) = head $ [(n, v) | n <- [0..99],
+                                      v <- [0..99],
+                                      (Program _ m) <- [run $ Program 0 (init_mem // [(1, n), (2, v)])],
+                                      m ! 0 == 19690720]
+  in (mem ! 0, 100 * noun + verb)
