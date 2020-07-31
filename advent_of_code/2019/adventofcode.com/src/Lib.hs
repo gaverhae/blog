@@ -39,6 +39,10 @@ data Effect = Input { store_at :: Int }
                                 y :: (ParameterMode, Int),
                                 f :: (Int -> Int -> Int)
                               }
+            | JumpIf { p :: (Int -> Bool),
+                       val :: (ParameterMode, Int),
+                       to :: (ParameterMode, Int)
+                     }
             | NormalExit
 
 parse_opcode :: Int -> (Int, [ParameterMode])
@@ -47,7 +51,6 @@ parse_opcode i =
   |> show
   |> reverse
   |> (++ repeat '0')
-  |> take 5
   |> splitAt 2
   |> (\(op, flags) -> (op |> reverse |> read,
                        map (\case { '0' -> Position; '1' -> Immediate }) flags))
@@ -64,18 +67,36 @@ set (Memory arr) idx val = Memory (arr Array.// [(idx, val)])
 read_instruction :: MachineState -> Effect
 read_instruction MachineState{ip, mem} =
   case parse_opcode (get mem ip) of
-    (1, f1:f2:_) -> ComputeAndStore { store_at = (get mem (ip + 3)),
+    (1, f1:f2:_) -> ComputeAndStore { store_at = get mem (ip + 3),
                                       x = (f1, get mem (ip + 1)),
                                       y = (f2, get mem (ip + 2)),
                                       f = (+)
                                     }
-    (2, f1:f2:_) -> ComputeAndStore { store_at = (get mem (ip + 3)),
+    (2, f1:f2:_) -> ComputeAndStore { store_at = get mem (ip + 3),
                                       x = (f1, get mem (ip + 1)),
                                       y = (f2, get mem (ip + 2)),
                                       f = (*)
                                     }
-    (3, flags) -> Input { store_at = (get mem (ip + 1)) }
+    (3, flags) -> Input { store_at = get mem (ip + 1) }
     (4, flag:_) -> Output { read_from = (flag, (get mem (ip + 1))) }
+    (5, f1:f2:_) -> JumpIf { p = (/= 0),
+                             val = (f1, get mem (ip + 1)),
+                             to = (f2, get mem (ip + 2))
+                           }
+    (6, f1:f2:_) -> JumpIf { p = (== 0),
+                             val = (f1, get mem (ip + 1)),
+                             to = (f2, get mem (ip + 2))
+                           }
+    (7, f1:f2:_) -> ComputeAndStore { store_at = get mem (ip + 3),
+                                      x = (f1, get mem (ip + 1)),
+                                      y = (f2, get mem (ip + 2)),
+                                      f = (\a b -> if a < b then 1 else 0)
+                                    }
+    (8, f1:f2:_) -> ComputeAndStore { store_at = get mem (ip + 3),
+                                      x = (f1, get mem (ip + 1)),
+                                      y = (f2, get mem (ip + 2)),
+                                      f = (\a b -> if a == b then 1 else 0)
+                                    }
     (99, _) -> NormalExit
     _ -> undefined
 
@@ -98,6 +119,13 @@ apply MachineState{last_effect, past_outputs, mem, ip, future_inputs} e = case e
   ComputeAndStore{store_at, x, y, f} ->
     Right MachineState { ip = ip + 4,
                          mem = set mem store_at $ f (read_param x) (read_param y),
+                         future_inputs = future_inputs,
+                         past_outputs = past_outputs,
+                         last_effect = Just e
+                       }
+  JumpIf{p, val, to} ->
+    Right MachineState { ip = if p (read_param val) then read_param to else ip + 3,
+                         mem = mem,
                          future_inputs = future_inputs,
                          past_outputs = past_outputs,
                          last_effect = Just e
