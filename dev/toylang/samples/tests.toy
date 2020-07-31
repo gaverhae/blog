@@ -1,0 +1,58 @@
+(test 2 (+ 1 1))
+(test 3 (rem 8 5))
+(test 2 (first [2 3 4]))
+(test "yes" (cond true "yes"))
+(test "no" (cond false "yes" true "no"))
+(test "first" (cond true "first" true "second"))
+(test "eval" (cond (= 1 1) "eval" true ":'("))
+(test true (<= -1 5))
+(test false (<= 5 -1))
+(test 3 (- 8 5))
+(test false (< 5 5))
+(test true (< 4 5))
+(test true (= 1 1))
+(test false (= 2 1))
+(test 0 (count []))
+(test 2 (count [1 3]))
+(test 1 (get [1 2] 0))
+(test true (= [] []))
+(test true (= [1 2] [1 2]))
+(test [1 2 3] (conj [1 2] 3))
+(test 1 (first [1 2]))
+(test [2] (rest [1 2]))
+(test 5 ((fn [n] (+ 1 n)) 4))
+(test 3 (let [f (fn [n] (+ 1 n))] (f 2)))
+(test 4 (let [my-count (fn [v] (cond (= [] v) 0 true (+ 1 (my-count (rest v)))))] (my-count [1 2 3 4])))
+(test true (= "hello" "hello"))
+(test "hello there" (str "hello there"))
+(test "any count args" (str "any" "count" "args"))
+(test 15 (+ 1 2 3 4 5))
+
+(def my-count
+  (fn [v]
+    (cond
+      (= v []) 0
+      true (+ 1 (my-count (rest v))))))
+(test 3 (my-count [1 2 3]))
+
+(test-io ["expected output"]
+         ["provided input"]
+         true
+         (io "expected input"
+             (fn [response]
+               (= response "provided input"))))
+(test-io ["expected output"]
+         ["unexpected input"]
+         false
+         (io "expected input"
+             (fn [response]
+               (= response "provided input"))))
+
+(test-io ["please type the first item" "please type the second item"]
+         ["input 1" "input 2"]
+         "input 1 ++ input 2"
+         (io "please type the first item"
+             (fn [input1]
+               (io "please type the second item"
+                   (fn [input 2]
+                     (str input1 " ++ " input2))))))
