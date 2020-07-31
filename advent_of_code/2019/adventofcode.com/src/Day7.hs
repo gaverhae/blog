@@ -21,17 +21,18 @@ chain :: [Int] -> [Int] -> Int
 chain code phase_sequence =
   foldl run_machine 0 phase_sequence
   where run_machine previous_output phase_setting =
-          case Lib.execIntcode [phase_setting, previous_output] code of
-            [n] -> n
+          case Lib.execIntcode (Lib.Inputs [phase_setting, previous_output]) (Lib.Code code) of
+            (Lib.Outputs [n]) -> n
             _ -> undefined
 
+feedback_loop :: [Int] -> [Int] -> Int
 feedback_loop code [pa, pb, pc, pd, pe] =
-  let run inputs = Lib.execIntcode inputs code
-      a_out = run (pa:0:e_out)
-      b_out = run (pb:a_out)
-      c_out = run (pc:b_out)
-      d_out = run (pd:c_out)
-      e_out = run (pe:d_out)
+  let run inputs = Lib.execIntcode (Lib.Inputs inputs) (Lib.Code code)
+      (Lib.Outputs a_out) = run (pa:0:e_out)
+      (Lib.Outputs b_out) = run (pb:a_out)
+      (Lib.Outputs c_out) = run (pc:b_out)
+      (Lib.Outputs d_out) = run (pd:c_out)
+      (Lib.Outputs e_out) = run (pe:d_out)
   in last e_out
 feedback_loop _ _ = undefined
 
