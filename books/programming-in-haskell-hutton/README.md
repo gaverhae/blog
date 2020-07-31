@@ -1,8 +1,8 @@
 # Programming in Haskell
 
-My notes on reading [Programming in
-Haskell](https://www.amazon.co.uk/Programming-Haskell-Graham-Hutton/dp/0521692695).
+My notes on reading [Programming in Haskell][0].
 
+[0]: https://www.amazon.co.uk/Programming-Haskell-Graham-Hutton/dp/0521692695
 
 # Chapter 1
 
@@ -172,7 +172,7 @@ double x = x * 2
 ```
 
 ```haskell
-palindrome :: [a] -> Bool
+palindrome :: Eq a => [a] -> Bool
 palindrome xs = reverse xs == xs
 ```
 
