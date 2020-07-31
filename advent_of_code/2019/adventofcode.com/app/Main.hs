@@ -26,4 +26,4 @@ main = do
   day7_input <- readFile "inputs/day7"
   putStrLn $ "Day7: " <> show (Day7.solution $ Day7.parse day7_input)
   day8_input <- readFile "inputs/day8"
-  putStrLn $ "Day8: " <> show (Day8.solution $ Day8.parse day8_input)
+  putStrLn $ "Day8: " <> (Day8.solution $ Day8.parse day8_input)
