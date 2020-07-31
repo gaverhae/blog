@@ -4,7 +4,6 @@
 module Lib
 (
   execIntcode
-, ExitStatus(Success, Fail)
 , (|>)
 , comma_separated_ints
 ) where
@@ -24,11 +23,8 @@ data MachineState = MachineState {
                       ip :: Int,
                       mem :: Memory,
                       future_inputs :: [Int],
-                      past_outputs :: [Int],
-                      last_effect :: Maybe Effect
+                      past_outputs :: [Int]
                     }
-
-data ExitStatus = Success Int | Fail [Int]
 
 data ParameterMode = Immediate | Position
 
@@ -43,7 +39,7 @@ data Effect = Input { store_at :: Int }
                        val :: (ParameterMode, Int),
                        to :: (ParameterMode, Int)
                      }
-            | NormalExit
+            | Exit
 
 parse_opcode :: Int -> (Int, [ParameterMode])
 parse_opcode i = 
@@ -97,62 +93,52 @@ read_instruction MachineState{ip, mem} =
                                       y = (f2, get mem (ip + 2)),
                                       f = (\a b -> if a == b then 1 else 0)
                                     }
-    (99, _) -> NormalExit
+    (99, _) -> Exit
     _ -> undefined
 
-apply :: MachineState -> Effect -> Either ExitStatus MachineState
-apply MachineState{last_effect, past_outputs, mem, ip, future_inputs} e = case e of
+apply :: MachineState -> Effect -> Either [Int] MachineState
+apply MachineState{past_outputs, mem, ip, future_inputs} e = case e of
   Input{store_at} ->
     Right MachineState { ip = ip + 2,
                          mem = set mem store_at $ head future_inputs,
                          future_inputs = tail future_inputs,
-                         past_outputs = past_outputs,
-                         last_effect = Just e
+                         past_outputs = past_outputs
                        }
   Output{read_from} ->
     Right MachineState { ip = ip + 2,
                          mem = mem,
                          future_inputs = future_inputs,
-                         past_outputs = (read_param read_from) : past_outputs,
-                         last_effect = Just e
+                         past_outputs = (read_param read_from) : past_outputs
                        }
   ComputeAndStore{store_at, x, y, f} ->
     Right MachineState { ip = ip + 4,
                          mem = set mem store_at $ f (read_param x) (read_param y),
                          future_inputs = future_inputs,
-                         past_outputs = past_outputs,
-                         last_effect = Just e
+                         past_outputs = past_outputs
                        }
   JumpIf{p, val, to} ->
     Right MachineState { ip = if p (read_param val) then read_param to else ip + 3,
                          mem = mem,
                          future_inputs = future_inputs,
-                         past_outputs = past_outputs,
-                         last_effect = Just e
+                         past_outputs = past_outputs
                        }
-  NormalExit ->
-    case last_effect of
-      Just Output{} -> Left $ if past_outputs |> tail |> all (== 0)
-                              then Success $ head past_outputs
-                              else Fail past_outputs
-      _ -> Left $ Fail past_outputs
+  Exit -> Left past_outputs
   where read_param (p, i) = case p of
           Immediate -> i
           Position -> get mem i
 
 
-step :: MachineState -> Either ExitStatus MachineState
+step :: MachineState -> Either [Int] MachineState
 step ms = apply ms eff
   where eff = read_instruction ms
 
-execIntcode :: [Int] -> [Int] -> ExitStatus
+execIntcode :: [Int] -> [Int] -> [Int]
 execIntcode inputs code = run init_state
   where init_state = MachineState { ip = 0,
                                     future_inputs = inputs,
                                     past_outputs = [],
-                                    mem = init_mem code,
-                                    last_effect = Nothing
+                                    mem = init_mem code
                                   }
         run ms = case step ms of
           Right ms -> run ms
-          Left es -> es
+          Left outputs -> reverse outputs

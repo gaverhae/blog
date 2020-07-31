@@ -17,18 +17,33 @@ sequences n = helper [0..n]
         helper [a] = [[a]]
         helper ls = concatMap (\e -> map (e:) (helper (filter (/= e) ls))) ls
 
-chain :: [Int] -> Int -> [Int] -> Int
-chain code initial_input phase_sequence =
-  foldl run_machine initial_input phase_sequence
+chain :: [Int] -> [Int] -> Int
+chain code phase_sequence =
+  foldl run_machine 0 phase_sequence
   where run_machine previous_output phase_setting =
           case Lib.execIntcode [phase_setting, previous_output] code of
-            Lib.Success n -> n
-            Lib.Fail ls -> error $ show ls
+            [n] -> n
+            _ -> undefined
+
+feedback_loop code [pa, pb, pc, pd, pe] =
+  let run inputs = Lib.execIntcode inputs code
+      a_out = run (pa:0:e_out)
+      b_out = run (pb:a_out)
+      c_out = run (pc:b_out)
+      d_out = run (pd:c_out)
+      e_out = run (pe:d_out)
+  in last e_out
+feedback_loop _ _ = undefined
 
 solution :: [Int] -> (Int, Int)
 solution is =
   let max_out = sequences 4
-              |> map (chain is 0)
+              |> map (chain is)
               |> List.sort
               |> last
-  in (max_out, 0)
+      max_out_feedback = sequences 4
+                       |> map (map (+ 5))
+                       |> map (feedback_loop is)
+                       |> List.sort
+                       |> last
+  in (max_out, max_out_feedback)
