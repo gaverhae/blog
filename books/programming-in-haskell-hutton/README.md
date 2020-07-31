@@ -419,3 +419,172 @@ shift n c | isLower c = int2let ((let2int c + n) `mod` 26)
           | isUpper c = toUpper (shift n (toLower c))
           | otherwise = c
 ```
+# Chapter 6
+
+> 1. Define the exponentiation operator `^` for non-negative integers using the
+>    same pattern of recursion as the multiplication operator `*`, and show how
+>    `2 ^ 3` is evaluated using your definition.
+
+```haskell
+(^) :: Integral a => a -> a -> a
+m ^ 0 = 1
+m ^ (n + 1) = m * m ^ n -- ^ has higher precedence than *
+```
+
+```haskell
+2 ^ 3 = 2 * (2 ^ 2)
+      = 2 * (2 * (2 ^ 1))
+      = 2 * (2 * (2 * (2 ^ 0)))
+      = 2 * (2 * (2 * 1))
+      = 2 * (2 * 2)
+      = 2 * 4
+      = 8
+```
+
+> 2. Using the definitions given in this chapter, show how `length [1, 2, 3]`,
+>    `drop 3 [1, 2, 3, 4, 5]` and `init [1, 2, 3]` are evaluated.
+
+```haskell
+length [1, 2, 3] = 1 + length [2, 3]
+                 = 1 + (1 + length [3])
+                 = 1 + (1 + (1 + length []))
+                 = 1 + (1 + (1 + 0))
+                 = 1 + (1 + 1)
+                 = 1 + 2
+                 = 3
+```
+
+```haskell
+drop 3 [1, 2, 3, 4, 5] = drop 2 [2, 3, 4, 5]
+                       = drop 1 [3, 4, 5]
+                       = drop 0 [4, 5]
+                       = [4, 5]
+```
+
+```haskell
+init [1, 2, 3] = 1 : init [2, 3]
+               = 1 : (2 : init [3])
+               = 1 : (2 : [])
+               = 1 : [2]
+               = [1, 2]
+```
+
+> 3. Without looking at the definition from the standard prelude, define the
+>    following library functions using recursion:
+>    - Decide if all logical values in a list are `True`:
+>      ```haskell
+>      and :: [Bool] -> Bool
+>      ```
+>    - Concatenate a list of lists:
+>      ```haskell
+>      concat :: [[a]] -> [a]
+>      ```
+>    - Produce a list with `n` identical elements:
+>      ```haskell
+>      replicate :: Int -> a -> [a]
+>      ```
+>    - Select the nth element of a list:
+>      ```haskell
+>      (!!) :: [a] -> Int -> a
+>      ```
+>    - Decide if a value is an element of a list:
+>      ```haskell
+>      elem :: Eq a => a -> [a] -> Bool
+>      ```
+>    Note: most of these functions are in fact defined in the prelude using
+>    other library functions, rather than explicit recursion.
+
+```haskell
+and :: [Bool] -> Bool
+and [] = True
+and (False:_) = False
+and (True:xs) = and xs
+```
+
+```haskell
+concat :: [[a]] -> [a]
+concat [] = []
+concat ([]:xss) = concat xss
+concat ((x:xs):xss) = x : concat (xs:xss)
+```
+
+```haskell
+replicate :: Int -> a -> [a]
+replicate 0 _ = []
+replicate (n + 1) x = x : replicate n x
+```
+
+```haskell
+(!!) :: [a] -> Int -> a
+-- no [] case: [] !! n throws an error for any n
+(x:xs) !! 0 = x
+(x:xs) !! (n+1) = xs !! n
+```
+
+```haskell
+elem :: Eq a => a -> [a] -> Bool
+elem x [] = False
+elem x (y:ys) | x == y = True
+              | otherwise = elem x ys
+```
+
+> 4. Define a recursive function `merge :: Ord a => [a] -> [a] -> [a]` that
+>    merges two sorted lists to give a single sorted list. For example:
+>    ```haskell
+>    > merge [2, 5, 6] [1, 3, 4]
+>    [1, 2, 3? 4, 5, 6]
+>    ```
+>    Note: your definition should not use other functions on sorted lists such
+>    as `insert` of `isort`, but should be defined using explicit recursion.
+
+```haskell
+merge :: Ord a => [a] -> [a] -> [a]
+merge [] ys = ys
+merge xs [] = xs
+merge (x:xs) (y:ys) | x < y = x : merge xs (y:ys)
+                    | otherwise = y : merge (x:xs) ys
+```
+
+> 5. Using `merge`, define a recursive function `msort :: Ord a => [a] -> [a]`
+>    that implements _merge sort_, in which the empty list and singleton lists
+>    are already sorted, and any other list is sorted by merging together the
+>    two lists that result from sorting the two halves of the list separately.
+>
+>    Hint: first define a function `halve :: [a] -> [([a], [a])] that splits a
+>    list into two halves whose lengths differ by at most one.
+
+```haskell
+halves :: [a] -> ([a], [a])
+halves xs = (take n xs, drop n xs)
+  where n = length xs `div` 2
+
+msort :: Ord a => [a] -> [a]
+msort [] = []
+msort [x] = [x]
+msort xs = merge (msort h1) (msort h2)
+  where (h1, h2) = halves xs
+```
+
+> 6. sing the five-step process, define the library functions that calculate
+>    the `sum` of a list of numbers, `take` a given number of elements from the
+>    start of a list, and select the `last` element of a non-empty list.
+
+```haskell
+sum :: Num a => [a] -> a
+sum [] = 0
+sum (x:xs) = x + sum xs
+```
+
+```haskell
+take :: Int -> [a] -> [a]
+take 0 _ = []
+take _ [] = []
+take (n+1) (x:xs) = x : take n xs
+```
+
+```haskell
+last :: [a] -> a
+-- note: no [] case as definition says non-empty list
+last [x] = x
+last (x:xs) = last xs
+```
