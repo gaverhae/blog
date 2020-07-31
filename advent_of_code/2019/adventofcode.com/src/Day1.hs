@@ -1,7 +1,11 @@
 module Day1
 (
-  solution
+  parse
+, solution
 ) where
+
+parse :: String -> [Int]
+parse s = map read $ lines s
 
 fuel_for_weight :: Int -> Int
 fuel_for_weight w = (w `quot` 3) - 2
