@@ -5,6 +5,7 @@ module Day3
 ) where
 
 import Prelude hiding (Left,Right)
+import Lib ((|>))
 import qualified Data.List as List
 import qualified Data.List.Split as Split
 import qualified Data.Set as Set
@@ -42,9 +43,6 @@ path ms = walk Map.empty ms ((0, 0), 0)
 
 distance_to_o :: (Int, Int) -> Int
 distance_to_o (x, y) = (abs x) + (abs y)
-
-(|>) :: a -> (a -> b) -> b
-(|>) a f = f a
 
 solution :: ([Move], [Move]) -> (Int, Int)
 solution (l1, l2) = (closest_cross, fastest_cross)
