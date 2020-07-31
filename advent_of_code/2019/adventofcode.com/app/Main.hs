@@ -9,6 +9,7 @@ import qualified Day6
 import qualified Day7
 import qualified Day8
 import qualified Day9
+import qualified Day10
 
 ensure :: (Eq a, Show a) => a -> a -> IO ()
 ensure x y = do
@@ -43,3 +44,5 @@ main = do
          (Day8.solution $ Day8.parse day8_input)
   day9_input <- readFile "inputs/day9"
   ensure (3460311188, 42202) (Day9.solution $ Day9.parse day9_input)
+  day10_input <- readFile "inputs/day10"
+  putStrLn $ show $ (Day10.solution $ Day10.parse day10_input)
