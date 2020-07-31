@@ -1,48 +1,81 @@
 module Main where
 
-import qualified Day1
-import qualified Day2
-import qualified Day3
-import qualified Day4
-import qualified Day5
-import qualified Day6
-import qualified Day7
-import qualified Day8
-import qualified Day9
-import qualified Day10
+import Lib ((|>))
+import Data.Ratio ((%))
+import qualified Data.Ratio
+import qualified Data.List as List
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
-ensure :: (Eq a, Show a) => a -> a -> IO ()
-ensure x y = do
-  if x == y
-  then return ()
-  else error $ "expected " ++ show x ++ " but got " ++ show y
+asteroids :: [(Int, Int)]
+asteroids =
+  [(-7,-3),
+   (-2,-3),
+   (-1,-3),
+   (0,-3),
+   (1,-3),
+   (2,-3),
+   (6,-3),
+   (-8,-2),
+   (-7,-2),
+   (0,-2)]
+
+asteroids_angle :: [(Data.Ratio.Ratio Int, Int, Int)]
+asteroids_angle =
+  [(3 % 7,-7,-3),
+   (3 % 2,-2,-3),
+   (3 % 1,-1,-3),
+   ((-9223372036854775807) % 1,0,-3),
+   ((-3) % 1,1,-3),
+   ((-3) % 2,2,-3),
+   ((-1) % 2,6,-3),
+   (1 % 4,-8,-2),
+   (2 % 7,-7,-2),
+   ((-9223372036854775807) % 1,0,-2)]
+
+
+buggy :: String
+buggy =
+  asteroids
+  |> map (\(x, y) -> let angle = if x == 0
+                                 then (maxBound % (signum y))
+                                 else (y % x)
+                     in (angle, x, y))
+  |> foldl (\m (a, x ,y) -> Map.insertWith (++) (a) [(x, y)] m)
+           Map.empty
+  |> Map.toList
+  |> List.sort
+  |> map show
+  |> unlines
+
+correct :: String
+correct =
+  asteroids_angle
+  |> foldl (\m (a, x ,y) -> Map.insertWith (++) (a) [(x, y)] m)
+           Map.empty
+  |> Map.toList
+  |> List.sort
+  |> map show
+  |> unlines
 
 main :: IO ()
 main = do
-  day1_input <- readFile "inputs/day1"
-  ensure (3394032, 5088176) (Day1.solution $ Day1.parse day1_input)
-  day2_input <- readFile "inputs/day2"
-  ensure (3058646, 8976) (Day2.solution $ Day2.parse day2_input)
-  day3_input <- readFile "inputs/day3"
-  ensure (217, 3454) (Day3.solution $ Day3.parse day3_input)
-  day4_input <- readFile "inputs/day4"
-  ensure (1019, 660) (Day4.solution $ Day4.parse day4_input)
-  day5_input <- readFile "inputs/day5"
-  ensure (16348437, 6959377) (Day5.solution $ Day5.parse day5_input)
-  day6_input <- readFile "inputs/day6"
-  ensure (621125, 550) (Day6.solution $ Day6.parse day6_input)
-  day7_input <- readFile "inputs/day7"
-  ensure (92663, 14365052) (Day7.solution $ Day7.parse day7_input)
-  day8_input <- readFile "inputs/day8"
-  ensure (unlines ["1806",
-                   "  ##  ##  #### ###   ##  ",
-                   "   # #  # #    #  # #  # ",
-                   "   # #  # ###  #  # #  # ",
-                   "   # #### #    ###  #### ",
-                   "#  # #  # #    # #  #  # ",
-                   " ##  #  # #    #  # #  # "])
-         (Day8.solution $ Day8.parse day8_input)
-  day9_input <- readFile "inputs/day9"
-  ensure (3460311188, 42202) (Day9.solution $ Day9.parse day9_input)
-  day10_input <- readFile "inputs/day10"
-  ensure (314, 1513) (Day10.solution $ Day10.parse day10_input)
+  putStrLn buggy
+  putStrLn "--"
+  putStrLn correct
+  putStrLn "--"
+  putStrLn "-"
+
+{-
+-- prints:
+((-9223372036854775807) % 1,[(0,-3)])
+((-3) % 1,[(1,-3)])
+((-3) % 2,[(2,-3)])
+((-1) % 2,[(6,-3)])
+(1 % 4,[(-8,-2)])
+((-9223372036854775807) % 1,[(0,-2)])
+(2 % 7,[(-7,-2)])
+(3 % 7,[(-7,-3)])
+(3 % 2,[(-2,-3)])
+(3 % 1,[(-1,-3)])
+-}
