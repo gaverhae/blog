@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 01bb527760d6bb047c620deee0b266e0689338b01736cc25821131d156cecf3d
+-- hash: 54e69f07cc4ae8bd455c167523965a637bec04d1be90c9fd4d6f450bfff4d922
 
 name:           toylang
 version:        0.0.0.1
@@ -21,6 +21,7 @@ extra-source-files:
 library
   exposed-modules:
       Lib
+      Parser
   other-modules:
       Paths_toylang
   hs-source-dirs:
