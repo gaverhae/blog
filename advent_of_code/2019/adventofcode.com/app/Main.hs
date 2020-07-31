@@ -6,6 +6,7 @@ import qualified Day3 as Day3
 import qualified Day4 as Day4
 import qualified Day5 as Day5
 import qualified Day6 as Day6
+import qualified Day7 as Day7
 
 main :: IO ()
 main = do
@@ -21,3 +22,5 @@ main = do
   putStrLn $ "Day5: " <> show (Day5.solution $ Day5.parse day5_input)
   day6_input <- readFile "inputs/day6"
   putStrLn $ "Day6: " <> show (Day6.solution $ Day6.parse day6_input)
+  day7_input <- readFile "inputs/day7"
+  putStrLn $ "Day7: " <> show (Day7.solution $ Day7.parse day7_input)
