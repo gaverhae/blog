@@ -45,4 +45,4 @@ main = do
   day9_input <- readFile "inputs/day9"
   ensure (3460311188, 42202) (Day9.solution $ Day9.parse day9_input)
   day10_input <- readFile "inputs/day10"
-  putStrLn $ show $ (Day10.solution $ Day10.parse day10_input)
+  ensure (314, 1513) (Day10.solution $ Day10.parse day10_input)
