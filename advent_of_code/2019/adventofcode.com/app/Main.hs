@@ -42,4 +42,4 @@ main = do
                    " ##  #  # #    #  # #  # "])
          (Day8.solution $ Day8.parse day8_input)
   day9_input <- readFile "inputs/day9"
-  putStrLn $ "Day9: " <> show (Day9.solution $ Day9.parse day9_input)
+  ensure (3460311188, 42202) (Day9.solution $ Day9.parse day9_input)
