@@ -588,3 +588,156 @@ last :: [a] -> a
 last [x] = x
 last (x:xs) = last xs
 ```
+
+# Chapter 7
+
+> 1. Show how the list comprehension `[f x | x <- xs, p x]` can be re-expressed
+>    using the higher-order `functions` map and `filter`.
+
+```haskell
+map f (filter p xs)
+```
+
+> 2. Without looking at the definitions from the standard prelude, define the
+>    higher-order functions `all`, `any`, `takeWhile`, and `dropWhile`.
+
+```haskell
+all :: (a -> Bool) -> [a] -> Bool
+all _ [] = True
+all f (x:xs) | f x = all f xs
+             | otherwise = False
+{- or
+all f (x:xs) = f x && all f xs
+-}
+```
+
+```haskell
+any :: (a -> Bool) -> [a] -> Bool
+any _ [] = False
+any f (x:xs) = f x || any f xs
+{- or
+any f (x:xs) | f x = True
+             | otherwise = any f xs
+-}
+```
+
+```haskell
+takeWhile :: (a -> Bool) -> [a] -> [a]
+takeWhile _ [] = []
+takeWhile f (x:xs) | f x = x : takeWhile f xs
+                   | otherwise = []
+```
+
+```haskell
+dropWhile :: (a -> Bool) -> [a] -> [a]
+dropWhile _ [] = []
+dropWhile f (x:xs) | f x = dropWhile f xs
+                   | otherwise = xs
+```
+
+> 3. Redefine the functions `map f` and `filter p` using `foldr`.
+
+```haskell
+map :: (a -> b) -> [a] -> [b]
+map f = foldr (\elem acc -> f elem : acc) []
+```
+
+```haskell
+filter (a -> Bool) -> [a] -> [a]
+filter p = foldr (\elem acc -> [elem | f elem] ++ acc) []
+{- or, more efficient
+filter p = foldr (\elem acc -> if p elem then elem : acc else acc) []
+-}
+```
+
+> 4. Using `foldl`, define a function `dec2int :: [Int] -> Int` that converts a
+>    decimal number into an integer. For example:
+>    ```haskell
+>    > dec2int [2, 3, 4, 5]
+>    2345
+
+```haskell
+dec2int :: [Int] -> Int
+dec2int = foldl (\acc elem -> acc * 10 + elem) 0
+```
+
+> 5. Explain why the following definition is invalid:
+>    ```haskell
+>    sumsqreven = compose [sum, map (^2), filter even]
+
+The type of compose is `[a -> a] -> (a -> a)`, so all the functions in the list
+should return the same type as they accept. This works for `map (^2)` and
+`filter even`, which can both be `[Int] -> [Int]`, but not for `sum`, as its
+type is `[Num] -> Num`, and `[Num]` is not the same as `Num`.
+
+Note that it "wuold work" in terms of the computations carried out, and the
+type for `sumsqreven` would be correct, if we could define the type for
+`compose` similarly to that of `.`.
+
+> 6. Without looking at the standard prelude, define the higher-order library
+>    function `curry` that converts a function on pairs into a curried
+>    function, and, conversely, the function `uncurry` that converts a curried
+>    function with two arguments into a function on pairs.
+>
+>    Hint: first write down the types of the two functions.
+
+```haskell
+curry :: ((a, b) -> c) -> a -> b -> c
+curry f x y = f (x, y)
+```
+
+```haskell
+uncurry :: (a -> b -> c) -> (a, b) -> c
+uncurry f (x, y) = f x y
+```
+
+> 7. A higher-order function `unfold` that encapsulates a simple pattern of
+>    recursion for producing a list can be defined as follows:
+>    ```haskell
+>    unfold p h t x | p x = []
+>                   | otherwise = h x : unfold p h t (t x)
+>    ```
+>    That is, the function `unfold p h t` produces the empty list if the
+>    predicate `p` is true of the argument, and otherwise produces a non-empty
+>    list by applying the function `h` to give the head, and the function `t`
+>    to generate another argument that is recursively processed in the same way
+>    to produce the tail of the list. For example, the function `int2bin` can
+>    be rewritten more compactly using `unfold` as follows:
+>    ```haskell
+>    int2bin = unfold (== 0) (`mod` 2) (`div` 2)
+>    ```
+>    Redefine the functions `chop8`, `map f` and `iterate f` using `unfold`.
+
+```haskell
+chop8 :: [a] -> [[a]]
+chop8 = unfold null (take 8) (drop 8)
+```
+
+```haskell
+map :: (a -> b) -> [a] -> [b]
+map f = unfold null (f . head) tail
+```
+
+```haskell
+iterate :: (a -> a) -> a -> [a]
+iterate f = unfold (const False) id f
+```
+
+> 8. Modify the string transmitter program to detect simple transmission errors
+>    using parity bits. That is, each eight-bit binary number produced during
+>    encoding is extended with a parity bit, set to one if the number contains
+>    an odd number of ones, and zero otherwise. In turn, each resulting
+>    nine-bit binary number consumed during decoding is checked to ensure that
+>    its parity bit is correct, with the parity bit being discarded if this is
+>    the case, and a parity error reported otherwise.
+>
+>    Hint: the library function `error : String -> a` terminates evaluation and
+>    displays the given string as an error message.
+
+See [`Bits.hs`](src/Bits.hs).
+
+> 9. Test your new string transmitter program from the previous exercise using
+>    a faulty communication channel that forgets the first bit, which can be
+>    modelled using the `tail` function on lists of bits.
+
+Surprise: it fails.
