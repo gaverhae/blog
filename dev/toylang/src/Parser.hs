@@ -101,7 +101,7 @@ string = do
 
 int :: Parser Integer
 int = do
-  i <- many $ sat isDigit
+  i <- many1 $ sat isDigit
   return $ Prelude.read i
 
 read :: String -> ParseTree
