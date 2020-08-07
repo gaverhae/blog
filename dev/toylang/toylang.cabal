@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 54e69f07cc4ae8bd455c167523965a637bec04d1be90c9fd4d6f450bfff4d922
+-- hash: 06b794b31aac3318f620fba36934ca5b9b2c3347658a853eea07be86e44b5040
 
 name:           toylang
 version:        0.0.0.1
@@ -20,12 +20,13 @@ extra-source-files:
 
 library
   exposed-modules:
-      Lib
       Parser
+      Types
   other-modules:
       Paths_toylang
   hs-source-dirs:
       src
+  default-extensions: LambdaCase
   build-depends:
       base >=4.7 && <5
   default-language: Haskell2010
@@ -36,6 +37,7 @@ executable toylang-exe
       Paths_toylang
   hs-source-dirs:
       app
+  default-extensions: LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
@@ -49,6 +51,7 @@ test-suite toylang-test
       Paths_toylang
   hs-source-dirs:
       test
+  default-extensions: LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
