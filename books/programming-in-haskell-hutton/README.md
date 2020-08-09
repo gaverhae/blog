@@ -93,7 +93,7 @@ n = a `div` length xs
 ```
 
 > 4. Show how the library function `last` that selects the last element of a
-> non- empty list could be defined in terms of the library functions introduced
+> non-empty list could be defined in terms of the library functions introduced
 > in this chapter. Can you think of another possible definition?
 
 ```haskell
@@ -317,8 +317,8 @@ mult = \x -> \y -> \z -> x * y * z
 
 # Chapter 5
 
-> 1. Using a list comprehension, give an expression that calculates the sum 1^2
->   + 2^2 + 3^2 + ... + 100^2 of the first one hundred integer squares.
+> 1. Using a list comprehension, give an expression that calculates the sum
+>    `1^2 + 2^2 + 3^2 + ... + 100^2` of the first one hundred integer squares.
 
 ```haskell
 sum [ x^2 | x <- [1..100]]
@@ -670,7 +670,7 @@ should return the same type as they accept. This works for `map (^2)` and
 `filter even`, which can both be `[Int] -> [Int]`, but not for `sum`, as its
 type is `[Num] -> Num`, and `[Num]` is not the same as `Num`.
 
-Note that it "wuold work" in terms of the computations carried out, and the
+Note that it "would work" in terms of the computations carried out, and the
 type for `sumsqreven` would be correct, if we could define the type for
 `compose` similarly to that of `.`.
 
@@ -818,7 +818,7 @@ or
                        ')']]
        '+'
        [expr: [term: [factor: [nat: '4']]]]]
-``
+```
 
 > 5. Explain why the final simplification of the grammar for arithmetic
 >    expressions has a dramatic effect on the efficiency of the resulting
