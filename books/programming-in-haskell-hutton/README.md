@@ -510,13 +510,14 @@ concat ((x:xs):xss) = x : concat (xs:xss)
 
 ```haskell
 replicate :: Int -> a -> [a]
+replicate n _ | n < 0 = error "would loop"
 replicate 0 _ = []
-replicate (n + 1) x = x : replicate n x
+replicate n x = x : replicate (n - 1) x
 ```
 
 ```haskell
 (!!) :: [a] -> Int -> a
--- no [] case: [] !! n throws an error for any n
+[] !! _ = error "spec says this is not valid"
 (x:xs) !! 0 = x
 (x:xs) !! (n+1) = xs !! n
 ```
@@ -584,7 +585,7 @@ take (n+1) (x:xs) = x : take n xs
 
 ```haskell
 last :: [a] -> a
--- note: no [] case as definition says non-empty list
+last [] = error "spec says non-empty list"
 last [x] = x
 last (x:xs) = last xs
 ```
