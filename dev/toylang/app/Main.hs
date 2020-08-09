@@ -3,8 +3,10 @@ module Main where
 import qualified GHC.IO.Handle as IO
 import qualified GHC.IO.Handle.FD as IO
 
+import qualified Direct
 import qualified Parser
 import qualified ParseTree
+import qualified Value
 
 assert :: (Eq a, Show a) => a -> a -> IO ()
 assert actual expected =
@@ -55,9 +57,17 @@ testParser = do
                 (ParseTree.Int 3),
                 (ParseTree.Int 4)])])])])
 
+testDirect :: IO ()
+testDirect = do
+  assert (Direct.eval $ Parser.read "2") (Value.Int 2)
+  assert (Direct.eval $ Parser.read "\"hello\"") (Value.String "hello")
+  assert (Direct.eval $ Parser.read "true") (Value.Boolean True)
+  assert (Direct.eval $ Parser.read "false") (Value.Boolean False)
+  assert (Direct.eval $ Parser.read "[1 2 \"hello\" true]") (Value.Vector [(Value.Int 1), (Value.Int 2), (Value.String "hello"), (Value.Boolean True)])
 
 main :: IO ()
 main = do
   IO.hSetBuffering IO.stdout IO.NoBuffering
   testParser
+  testDirect
   IO.hPutStr IO.stdout "\nDone.\n"
