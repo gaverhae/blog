@@ -108,7 +108,7 @@ read :: String -> ParseTree
 read s = case parse form s of
   Nothing -> error "Parse failed"
   Just (p, []) -> p
-  Just (_, (x:xs)) -> error $ "parse had leftover: " <> (x:xs)
+  Just (p, (x:xs)) -> error $ "parse had leftover: \n" <> (x:xs) <> "\nafter parsing:\n" <> show p
   where form = alts [
           (do
             char '('

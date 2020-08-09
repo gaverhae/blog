@@ -3,14 +3,19 @@ module Main where
 import qualified Parser
 import qualified Types
 
-assert :: Bool -> IO ()
-assert True = return ()
-assert False = error ""
+assert :: Types.ParseTree -> Types.ParseTree -> IO ()
+assert actual expected =
+  if actual == expected
+  then
+      return ()
+  else
+      error $ "Expected:\n" <> show expected <> "\nbut got:\n" <> show actual
 
 main :: IO ()
 main = do
-  assert (Parser.read "2" == Types.Int 2)
-  assert (Parser.read "(test 4 (let [my-count (fn [v] (cond (= [] v) 0 true (+ 1 (my-count (rest v)))))] (my-count [1 2 3 4])))" ==
+  assert (Parser.read "2") (Types.Int 2)
+  assert (Parser.read "(2)") (Types.App [Types.Int 2])
+  assert (Parser.read "(test 4 (let [my-count (fn [v] (cond (= [] v) 0 true (+ 1 (my-count (rest v)))))] (my-count [1 2 3 4])))")
     (Types.App
       [(Types.Symbol "test"),
        (Types.Int 4),
@@ -42,4 +47,4 @@ main = do
                [(Types.Int 1),
                 (Types.Int 2),
                 (Types.Int 3),
-                (Types.Int 4)])])])]))
+                (Types.Int 4)])])])])
