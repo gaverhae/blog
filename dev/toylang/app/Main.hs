@@ -1,5 +1,8 @@
 module Main where
 
+import qualified GHC.IO.Handle as IO
+import qualified GHC.IO.Handle.FD as IO
+
 import qualified Parser
 import qualified ParseTree
 
@@ -7,10 +10,12 @@ assert :: (Eq a, Show a) => a -> a -> IO ()
 assert actual expected =
   if actual == expected
   then do
-      putStrLn $ "Successfully parsed " <> show actual
+      IO.hPutStr IO.stdout "."
+      IO.hFlush IO.stdout
       return ()
   else
-      error $ "Expected:\n" <> show expected <> "\nbut got:\n" <> show actual
+      error $ "\nExpected:\n" <> show expected <> "\nbut got:\n" <> show actual
+
 testParser :: IO ()
 testParser = do
   assert (Parser.read "2") (ParseTree.Int 2)
@@ -53,4 +58,6 @@ testParser = do
 
 main :: IO ()
 main = do
+  IO.hSetBuffering IO.stdout IO.NoBuffering
   testParser
+  IO.hPutStr IO.stdout "\nDone.\n"
