@@ -66,6 +66,7 @@ testDirect = do
   assert (Direct.eval $ Parser.read "[1 2 \"hello\" true]") (Value.Vector [(Value.Int 1), (Value.Int 2), (Value.String "hello"), (Value.Boolean True)])
   assert (Direct.eval $ Parser.read "+") (Value.primitivePlus)
   assert (Direct.eval $ Parser.read "(+ 1 2)") (Value.Int 3)
+  assert (Direct.eval $ Parser.read "(cond false 1 true 2)") (Value.Int 2)
 
 main :: IO ()
 main = do
