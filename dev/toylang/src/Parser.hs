@@ -77,10 +77,16 @@ literal (x:xs) = do
   literal xs
   return (x:xs)
 
+(&&&) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
+p1 &&& p2 = \x -> p1 x && p2 x
+
+isSymbolChar :: Char -> Bool
+isSymbolChar = (not . isSpace) &&& (not . (`elem` ['(', ')', '[', ']']))
+
 symbol :: Parser String
 symbol = do
-  h <- sat (not . isDigit)
-  t <- many $ sat (not . isSpace)
+  h <- sat $ (not . isDigit) &&& isSymbolChar
+  t <- many $ sat isSymbolChar
   return $ h:t
 
 string :: Parser String
