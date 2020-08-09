@@ -1,7 +1,8 @@
-module Types
+module ParseTree
      (
        ParseTree(..)
-     )where
+     )
+     where
 
 data ParseTree =
     App [ParseTree]

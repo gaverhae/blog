@@ -3,7 +3,7 @@ module Parser
     ) where
 
 import Data.Char (isSpace, isDigit)
-import Types (ParseTree(..))
+import qualified ParseTree
 
 newtype Parser a = Parser (String -> Maybe (a, String))
 
@@ -110,7 +110,7 @@ int = do
   i <- many1 $ sat isDigit
   return $ Prelude.read i
 
-read :: String -> ParseTree
+read :: String -> ParseTree.ParseTree
 read s = case parse form s of
   Nothing -> error "Parse failed"
   Just (p, []) -> p
@@ -120,24 +120,24 @@ read s = case parse form s of
             char '('
             forms <- token $ many form
             char ')'
-            return $ Types.App forms),
+            return $ ParseTree.App forms),
           (do
             char '['
             forms <- token $ many form
             char ']'
-            return $ Types.Vector forms),
+            return $ ParseTree.Vector forms),
           (do
             s <- token string
-            return $ Types.String s),
+            return $ ParseTree.String s),
           (do
             token $ literal "true"
-            return $ Types.Boolean True),
+            return $ ParseTree.Boolean True),
           (do
             token $ literal "false"
-            return $ Types.Boolean False),
+            return $ ParseTree.Boolean False),
           (do
             s <- token symbol
-            return $ Types.Symbol s),
+            return $ ParseTree.Symbol s),
           (do
             n <- token int
-            return $ Types.Int n)]
+            return $ ParseTree.Int n)]
