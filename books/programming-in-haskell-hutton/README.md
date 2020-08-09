@@ -146,7 +146,7 @@ init xs = reverse (tail (reverse xs))
 > pair x y = (x,y)
 > double x = x * 2
 > palindrome xs = reverse xs == xs
-> twice f x = f(fx)
+> twice f x = f (f x)
 > ```
 > Hint: take care to include the necessary class constraints if the functions
 > are defined using overloaded operators.
@@ -178,7 +178,7 @@ palindrome xs = reverse xs == xs
 
 ```haskell
 twice :: (a -> a) -> a -> a
-twice f x = f(fx)
+twice f x = f (f x)
 ```
 
 > 3. Check your answers to the preceding two questions using Hugs.
