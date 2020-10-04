@@ -109,17 +109,107 @@
        (map second)
        (reduce +)))
 
-;(defn run-client
-;  "Given a client strategy and a connection to a dealer, run a game."
-;  [stop? dealer]
-;  (let [token (start-game dealer)]
-;  (loop [r 0]
-;    (loop [h []]
+(defn strat-take-n
+  "Strategy that always takes n cards."
+  [n]
+  (fn [h] (= n (count h))))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn test-strategy-oracle
+  [stop? n]
+  (->> (repeatedly n half-deck)
+       (map #(unattended-round (stop? %) %))
+       (map second)
+       (reduce +)))
+
+(comment
+(time (dotimes [_ 10000] (half-deck)))
+(with-out-str (time (dotimes [_ 10000]
+        (best-play (half-deck)))))
+"\"Elapsed time: 12456.804358 msecs\"\n"
+(with-out-str (time (dotimes [_ 10000]
+        (best-play (half-deck)))))
+"\"Elapsed time: 459.123759 msecs\"\n"
+)
+
+(defn best-play
+  "Given a deck, returns the best place to stop drawing and the corresponding
+  score."
+  [deck]
+  (let [score-add (fn [scores card]
+                    (concat (map (fn [s] (+ s card)) scores)
+                            (when (= 1 (* card card))
+                              (map (fn [s] (+ s (* 11 card))) scores))))
+        points-from-scores (fn [scores]
+                             (->> scores
+                                  (map (fn [score] (if (<= 16 score 25)
+                                                     (- 25 score)
+                                                     10)))
+                                  (reduce min)))
+        busted? (fn [scores] (every? #(> % 25) scores))
+        best-of (fn [[n1 s1] [n2 s2]]
+                  (if (< s2 s1) [n2 s2] [n1 s1]))]
+    (loop [s (score-add [0] (first deck))
+           best-so-far [1 (points-from-scores s)]
+           n 2
+           d (rest deck)]
+      (if (or (busted? s) (empty? d)) (first best-so-far)
+        (let [new-s (score-add s (first d))]
+          (recur new-s
+                 (best-of best-so-far [n (points-from-scores new-s)])
+                 (inc n)
+                 (rest d)))))))
+
+(defn previous-best-play
+  [deck]
+  (let [all-hands (rest (reductions conj [] deck))
+        first-bust (or (some->> all-hands
+                                (filter (fn [hand] (every? #(> % 25) (scores hand))))
+                                first
+                                count)
+                       (inc (count all-hands)))]
+    (->> all-hands
+         (take (dec first-bust))
+         (sort-by best-points)
+         first
+         count)))
+
+(comment
+
+  (loop [d (half-deck)
+         n 1000]
+    (cond (zero? n)
+          :ok
+
+          (= (previous-best-play d) (best-play d))
+          (recur (half-deck) (dec n))
+
+          :else [d (previous-best-play d) (best-play d)
+                 (->> d (reductions conj []) (map best-points))]))
+:ok
+
+  )
+
+(defn monte-carlo-ish
+  "Plays n random games where the deck starts with the current hand and keeps
+  going if the average best play is in the future."
+  [n]
+  (let [f (frequencies (half-deck))]
+    (fn [hand]
+      (let [remaining-deck (->> (reduce (fn [acc el]
+                                          (if (= 1 (acc el))
+                                            (dissoc acc el)
+                                            (update acc el dec)))
+                                        f
+                                        hand)
+                                (mapcat (fn [[i n]] (repeat n i))))
+            average-best-play (/ (->> (range 0 n)
+                                      (map (fn [_]
+                                             (best-play (concat hand (shuffle remaining-deck)))))
+                                      (reduce +))
+                                 n)]
+        (> (count hand) average-best-play)))))
+
+
 
 (comment
 
@@ -185,7 +275,20 @@
 [9 67645]
 [10 100000])
 
-;; Well, that's enough for a Saturday.
+(test-strategy-oracle
+  (fn [deck]
+    (strat-take-n (best-play deck)))
+  10000)
+45761
+(test-strategy-oracle
+  (fn [deck]
+    (strat-take-n (previous-best-play deck)))
+  10000)
+44900
 
+(test-strategy (monte-carlo-ish 100) 100)
+902
+100
+96
 
   )
