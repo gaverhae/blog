@@ -33,6 +33,10 @@
   [hand]
   (reduce min (points hand)))
 
+(defn busted?
+  [hand]
+  (every? #(> % 25) (scores hand)))
+
 (defn unattended-round
   "Given a strategy and a deck, runs through a complete round unattended, and
   returns the final hand & points. A strategy is a function which, given a
@@ -41,7 +45,7 @@
   (loop [d (rest deck)
          h [(first deck)]]
     (cond (empty? d) [h (best-points h)]
-          (every? #(> % 25) (scores h)) [h 10]
+          (busted? h) [h 10]
           (stop? h) [h (best-points h)]
           :else (recur (rest d) (conj h (first d))))))
 
@@ -66,7 +70,8 @@
         (let [game-state (get @state game-id)
               {:keys [taken, deck]} (-> game-state :rounds last)]
           (if (and (< (:rounds-played game-state) 5)
-                   (or (zero? taken) (some #(<= % 25) (scores (take taken deck))))
+                   (or (zero? taken)
+                       (not (busted? (take taken deck))))
                    (< taken (count deck)))
             (do (swap! state update-in [game-id :rounds (:rounds-played game-state) :taken] inc)
                 [:ok (get deck taken)])
@@ -163,7 +168,7 @@
   [deck]
   (let [all-hands (rest (reductions conj [] deck))
         first-bust (or (some->> all-hands
-                                (filter (fn [hand] (every? #(> % 25) (scores hand))))
+                                (filter busted?)
                                 first
                                 count)
                        (inc (count all-hands)))]
