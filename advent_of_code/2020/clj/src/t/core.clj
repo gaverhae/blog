@@ -1,5 +1,5 @@
 (ns t.core
-  (:require clojure.string))
+  (:require [clojure.string :as string]))
 
 (defn sum-2020
   [ints]
@@ -13,7 +13,7 @@
 (defn day-1-part-1
   []
   (let [data (->> (slurp "data/day-1-part-1")
-                  (clojure.string/split-lines)
+                  (string/split-lines)
                   (map #(Long/parseLong %))
                   vec)
         [x y] (sum-2020 data)]
@@ -22,7 +22,7 @@
 (defn day-1-part-2
   []
   (let [data (->> (slurp "data/day-1-part-1")
-                  (clojure.string/split-lines)
+                  (string/split-lines)
                   (map #(Long/parseLong %))
                   vec)]
     (first (for [x (range (count data))
@@ -37,8 +37,8 @@
 (defn parse-day-2
   [f]
   (->> f
-       (clojure.string/split-lines)
-       (map #(clojure.string/split % #" |: |-"))
+       (string/split-lines)
+       (map #(string/split % #" |: |-"))
        (map (fn [[min max c pw]]
               [(Long/parseLong min)
                (Long/parseLong max)
@@ -69,6 +69,29 @@
        parse-day-2
        count-good-passwords))
 
+(defn day-3-parse
+  [s]
+  (->> s
+       (string/split-lines)
+       (map #(map {\. 0 \# 1} %))
+       (map cycle)))
+
+(defn slope
+  [[right down] geo]
+  (loop [n 0
+         pos geo]
+    (if (empty? pos)
+      n
+      (recur (+ n (ffirst pos))
+             (drop down (map #(drop right %) pos))))))
+
+(defn day-3-part-2
+  [data]
+  (let [terrain (day-3-parse data)]
+    (->> [[1 1] [3 1] [5 1] [7 1] [1 2]]
+         (map #(slope % terrain))
+         (reduce *))))
+
 (comment
 
   (day-1-part-1)
@@ -83,8 +106,16 @@
 (->> (slurp "data/day2")
      parse-day-2
      count-good-passwords-2)
-348
+670
 
+(->> (slurp "data/day3")
+     (day-3-parse)
+     (slope [3 1]))
+214
+
+(->> (slurp "data/day3")
+     (day-3-part-2))
+8336352024
   )
 
 (defn foo

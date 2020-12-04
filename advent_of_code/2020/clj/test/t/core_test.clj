@@ -26,3 +26,12 @@
                                     [1 3 \b "cdefg"]
                                     [2 9 \c "ccccccccc"]]))))
 
+(def day-3-sample
+  "..##.......\n#...#...#..\n.#....#..#.\n..#.#...#.#\n.#...##..#.\n..#.##.....\n.#.#.#....#\n.#........#\n#.##...#...\n#...##....#\n.#..#...#.#")
+
+(deftest day-3
+  (is (= [0 0 1 1 0 0 0 0 0 0 0 0 0 1 1] (->> (t/day-3-parse day-3-sample)
+                                              first
+                                              (take 15))))
+  (is (= 7 (t/slope [3 1] (t/day-3-parse day-3-sample))))
+  (is (= 336 (t/day-3-part-2 day-3-sample))))
