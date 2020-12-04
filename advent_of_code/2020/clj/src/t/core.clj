@@ -1,5 +1,6 @@
 (ns t.core
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [clojure.set :as set]))
 
 (defn sum-2020
   [ints]
@@ -92,6 +93,44 @@
          (map #(slope % terrain))
          (reduce *))))
 
+(defn parse4
+  [s]
+  (->> (string/split-lines s)
+       (map (fn [line] (->> (string/split line #" ")
+                            (map (fn [word] (string/split word #":"))))))
+       (partition-by #(= % [[""]]))
+       (remove #(= % [[[""]]]))
+       (map #(reduce concat %))
+       (map #(reduce (fn [acc [k v]] (assoc acc (keyword k) v)) {} %))))
+
+(defn d41
+  [maps]
+  (->> maps
+       (filter #(set/subset? #{:byr :iyr :eyr :hgt :hcl :ecl :pid} (set (keys %))))
+       count))
+
+(defn d42
+  [maps]
+  (->> maps
+       (filter #(set/subset? #{:byr :iyr :eyr :hgt :hcl :ecl :pid} (set (keys %))))
+       (filter (fn [p]
+                 (and (re-matches #"\d\d\d\d" (:byr p))
+                      (<= 1920 (Long/parseLong (:byr p)) 2002)
+                      (re-matches #"\d\d\d\d" (:iyr p))
+                      (<= 2010 (Long/parseLong (:iyr p)) 2020)
+                      (re-matches #"\d\d\d\d" (:eyr p))
+                      (<= 2020 (Long/parseLong (:eyr p)) 2030)
+                      (let [[_ n units] (re-matches #"(\d+)(in|cm)" (:hgt p))]
+                        (case units
+                          "cm" (<= 150 (Long/parseLong n) 193)
+                          "in" (<= 59 (Long/parseLong n) 76)
+                          false))
+                      (re-matches #"#[0-9a-f]{6}" (:hcl p))
+                      (#{"amb" "blu" "brn" "gry" "grn" "hzl" "oth"} (:ecl p))
+                      (re-matches #"\d{9}" (:pid p)))))
+       count))
+
+
 (comment
 
   (day-1-part-1)
@@ -116,6 +155,17 @@
 (->> (slurp "data/day3")
      (day-3-part-2))
 8336352024
+
+(->> (slurp "data/day4")
+     parse4
+     d41)
+210
+
+(->> (slurp "data/day4")
+     parse4
+     d42)
+132
+
   )
 
 (defn foo
