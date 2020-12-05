@@ -58,3 +58,13 @@ iyr:2011 ecl:brn hgt:59in")
           {:hcl "#cfa07d", :eyr "2025", :pid "166559648", :iyr "2011", :ecl "brn", :hgt "59in"}]
          (t/parse4 sample4)))
   (is (= 2 (t/d41 (t/parse4 sample4)))))
+
+(def sample5
+"FBFBBFFRLR
+BFFFBBFRRR
+FFFBBBFRRR
+BBFFBBFRLL")
+
+(deftest d5
+  (is (= [[44 5] [70 7] [14 7] [102 4]]
+         (t/parse5 sample5))))
