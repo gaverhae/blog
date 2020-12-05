@@ -2,7 +2,8 @@
   (:require [clojure.test :refer :all]
             [clojure.string :as string]
             [t.core :as t]
-            [t.day1 :as day1]))
+            [t.day1 :as day1]
+            [t.day2 :as day2]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -15,19 +16,12 @@
   (is (= [712075] (day1/part1 (day1/parse (data 1)))))
   (is (= [145245270] (day1/part2 (day1/parse (data 1))))))
 
-(deftest day-2
-  (is (= [[1 3 \a "abcde"]
-          [1 3 \b "cdefg"]
-          [2 9 \c "ccccccccc"]]
-         (t/parse-day-2 "1-3 a: abcde\n1-3 b: cdefg\n2-9 c: ccccccccc")))
-  (is (= 2
-         (t/count-good-passwords [[1 3 \a "abcde"]
-                                  [1 3 \b "cdefg"]
-                                  [2 9 \c "ccccccccc"]])))
-  (is (= 1
-         (t/count-good-passwords-2 [[1 3 \a "abcde"]
-                                    [1 3 \b "cdefg"]
-                                    [2 9 \c "ccccccccc"]]))))
+(deftest day2
+  (is (= [[1 3 \a "abcde"] [1 3 \b "cdefg"] [2 9 \c "ccccccccc"]]
+         (day2/parse (sample 2))))
+  (is (= 2 (day2/part1 (day2/parse (sample 2)))))
+  (is (= 666 (day2/part1 (day2/parse (data 2)))))
+  (is (= 670 (day2/part2 (day2/parse (data 2))))))
 
 (def day-3-sample
   "..##.......\n#...#...#..\n.#....#..#.\n..#.#...#.#\n.#...##..#.\n..#.##.....\n.#.#.#....#\n.#........#\n#.##...#...\n#...##....#\n.#..#...#.#")
