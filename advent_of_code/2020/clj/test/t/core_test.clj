@@ -1,16 +1,19 @@
 (ns t.core-test
   (:require [clojure.test :refer :all]
-            [t.core :as t]))
+            [clojure.string :as string]
+            [t.core :as t]
+            [t.day1 :as day1]))
 
-(deftest day-1-part-1
-  (is (= [1721 299]
-         (t/sum-2020 [1721
-                      979
-                      366
-                      299
-                      675
-                      1456])))
-  (is (= 712075 (t/day-1-part-1))))
+(let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
+  (defn sample [i] (read "sample" i))
+  (defn data [i] (read "day" i)))
+
+(deftest day1
+  (is (= [1721 979 366 299 675 1456]
+         (day1/parse (sample 1))))
+  (is (= [(* 1721 299)] (day1/part1 (day1/parse (sample 1)))))
+  (is (= [712075] (day1/part1 (day1/parse (data 1)))))
+  (is (= [145245270] (day1/part2 (day1/parse (data 1))))))
 
 (deftest day-2
   (is (= [[1 3 \a "abcde"]
