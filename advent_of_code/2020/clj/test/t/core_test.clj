@@ -3,7 +3,8 @@
             [clojure.string :as string]
             [t.core :as t]
             [t.day1 :as day1]
-            [t.day2 :as day2]))
+            [t.day2 :as day2]
+            [t.day3 :as day3]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -23,15 +24,13 @@
   (is (= 666 (day2/part1 (day2/parse (data 2)))))
   (is (= 670 (day2/part2 (day2/parse (data 2))))))
 
-(def day-3-sample
-  "..##.......\n#...#...#..\n.#....#..#.\n..#.#...#.#\n.#...##..#.\n..#.##.....\n.#.#.#....#\n.#........#\n#.##...#...\n#...##....#\n.#..#...#.#")
-
-(deftest day-3
-  (is (= [0 0 1 1 0 0 0 0 0 0 0 0 0 1 1] (->> (t/day-3-parse day-3-sample)
-                                              first
-                                              (take 15))))
-  (is (= 7 (t/slope [3 1] (t/day-3-parse day-3-sample))))
-  (is (= 336 (t/day-3-part-2 day-3-sample))))
+(deftest day3
+  (is (= [0 0 1 1 0 0 0 0 0 0 0 0 0 1 1]
+         (->> (day3/parse (sample 3))
+              first (take 15))))
+  (is (= 7 (day3/part1 (day3/parse (sample 3)))))
+  (is (= 214 (day3/part1 (day3/parse (data 3)))))
+  (is (= 8336352024 (day3/part2 (day3/parse (data 3))))))
 
 (def sample4
 "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
