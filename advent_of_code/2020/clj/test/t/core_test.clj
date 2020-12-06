@@ -6,7 +6,8 @@
             [t.day2 :as day2]
             [t.day3 :as day3]
             [t.day4 :as day4]
-            [t.day5 :as day5]))
+            [t.day5 :as day5]
+            [t.day6 :as day6]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -44,9 +45,16 @@
   (is (= 210 (day4/part1 (day4/parse (data 4)))))
   (is (= 131 (day4/part2 (day4/parse (data 4))))))
 
-(deftest d5
+(deftest day5
   (is (= [357 567 119 820]
          (day5/parse (sample 5))))
   (is (= 820 (day5/part1 (day5/parse (sample 5)))))
   (is (= 826 (day5/part1 (day5/parse (data 5)))))
   (is (= 678 (day5/part2 (day5/parse (data 5))))))
+
+(deftest day6
+  (is (= [[#{\a \b \c}] [#{\a} #{\b} #{\c}] [#{\a \b} #{\a \c}] [#{\a} #{\a} #{\a} #{\a}] [#{\b}]]
+         (day6/parse (sample 6))))
+  (is (= 11 (day6/part1 (day6/parse (sample 6)))))
+  (is (= 6443 (day6/part1 (day6/parse (data 6)))))
+  (is (= 3232 (day6/part2 (day6/parse (data 6))))))
