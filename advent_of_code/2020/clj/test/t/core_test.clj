@@ -7,7 +7,8 @@
             [t.day3 :as day3]
             [t.day4 :as day4]
             [t.day5 :as day5]
-            [t.day6 :as day6]))
+            [t.day6 :as day6]
+            [t.day7 :as day7]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -58,3 +59,20 @@
   (is (= 11 (day6/part1 (day6/parse (sample 6)))))
   (is (= 6443 (day6/part1 (day6/parse (data 6)))))
   (is (= 3232 (day6/part2 (day6/parse (data 6))))))
+
+(deftest day7
+  (is (= {"light red" {"bright white" 1, "muted yellow" 2}
+          "dark orange" {"bright white" 3, "muted yellow" 4}
+          "bright white" {"shiny gold" 1}
+          "muted yellow" {"shiny gold" 2, "faded blue" 9}
+          "shiny gold" {"dark olive" 1, "vibrant plum" 2}
+
+          "dark olive" {"faded blue" 3, "dotted black" 4}
+          "vibrant plum" {"faded blue" 5, "dotted black" 6}
+          "faded blue" {}
+          "dotted black" {}}
+          (day7/parse (sample 7))))
+  (is (= 4 (day7/part1 (day7/parse (sample 7)))))
+  (is (= 128 (day7/part1 (day7/parse (data 7)))))
+  (is (= 20189 (day7/part2 (day7/parse (data 7))))))
+
