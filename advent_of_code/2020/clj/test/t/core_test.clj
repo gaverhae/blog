@@ -88,6 +88,8 @@
           [:jmp -4]
           [:acc +6]]
          (day8/parse (sample 8))))
-  (is (= 5 (day8/part1 (day8/parse (sample 8)))))
-  (is (= 1709 (day8/part1 (day8/parse (data 8))))))
+  (is (= [:loop 5] (day8/part1 (day8/parse (sample 8)))))
+  (is (= [:loop 1709] (day8/part1 (day8/parse (data 8)))))
+  (is (= [[:end 8]] (day8/part2 (day8/parse (sample 8)))))
+  (is (= [[:end 1976]] (day8/part2 (day8/parse (data 8))))))
 

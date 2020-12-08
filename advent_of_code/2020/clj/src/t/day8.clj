@@ -7,15 +7,35 @@
             [(keyword instr) (Long/parseLong arg)]))
         lines))
 
-(defn part1
+(defn run
   [input]
   (loop [pos 0
          acc 0
          visited #{}]
-    (if (contains? visited pos)
-      acc
+    (cond
+      (contains? visited pos) [:loop acc]
+      (= pos (count input)) [:end acc]
+      (> pos (count input)) [:error acc]
+      :else
       (let [[instr arg] (get input pos)]
-        (case instr
-          :nop (recur (inc pos) acc (conj visited pos))
-          :acc (recur (inc pos) (+ acc arg) (conj visited pos))
-          :jmp (recur (+ pos arg) acc (conj visited pos)))))))
+         (case instr
+           :nop (recur (inc pos) acc (conj visited pos))
+           :acc (recur (inc pos) (+ acc arg) (conj visited pos))
+           :jmp (recur (+ pos arg) acc (conj visited pos))
+           [:error acc])))))
+
+(defn part1
+  [input]
+  (run input))
+
+(defn part2
+  [input]
+  (->> input
+       (keep-indexed (fn [idx [instr arg]]
+                       (when (#{:nop :jmp} instr) idx)))
+       (map (fn [pos-to-change]
+              (run (update input
+                           pos-to-change
+                           (fn [[instr arg]]
+                             [({:jmp :nop, :nop :jmp} instr) arg])))))
+       (filter (fn [[state acc]] (= state :end)))))
