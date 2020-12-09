@@ -20,9 +20,9 @@
   [preamble input]
   (let [target (part1 preamble input)]
     (loop [start 0
-           size 2]
-      (let [span (take size (drop start input))
-            sum (reduce + span)]
-        (cond (< sum target) (recur start (inc size))
-              (= sum target) (+ (apply max span) (apply min span))
-              (> sum target) (recur (inc start) 2))))))
+           size 2
+           sum (+ (input 0) (input 1))]
+      (cond (< sum target) (recur start (inc size) (+ sum (input (+ start size))))
+            (= sum target) (let [span (subvec input start (+ start size -1))]
+                             (+ (apply max span) (apply min span)))
+            (> sum target) (recur (inc start) (dec size) (- sum (input start)))))))
