@@ -17,25 +17,6 @@
        vals
        (apply *)))
 
-(def arrangements
-  (memoize
-    (fn [n]
-      (->> (loop [i n
-                  prev [[]]]
-             (if (zero? i)
-               prev
-               (recur (dec i)
-                      (mapcat #(-> [(cons 0 %) (cons 1 %)]) prev))))
-           (remove (fn [bin]
-                     (some->> bin
-                              (partition-by #{0})
-                              (filter (comp #{0} first))
-                              not-empty
-                              (map count)
-                              (apply max)
-                              (< 2))))
-           count))))
-
 (defn part2
   [input]
   (->> input
@@ -43,5 +24,8 @@
        (filter (comp #{1} first))
        (map count)
        (map dec)
-       (map arrangements)
+       (map [1 2 4 7]) ;; #(-> (iterate (fn [[x y z]] [y z (+ x y z)])
+                       ;;               [1 2 4])
+                       ;;      (nth %)
+                       ;;      first)
        (reduce *)))
