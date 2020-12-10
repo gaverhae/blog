@@ -104,10 +104,9 @@
   (is (= 245848639 (day9/part2 25 (day9/parse (data 9))))))
 
 (deftest day10
-  (is (= [28 33 18 42 31 14 46 20 48 47 24 23 49 45 19 38 39 11 1 32 25 35
-          8 17 7 9 4 2 34 10 3]
+  (is (= [1 1 1 1 3 1 1 1 1 3 3 1 1 1 3 1 1 3 3 1 1 1 1 3 1 3 3 1 1 1 1 3]
          (day10/parse (sample 10))))
   (is (= 220 (day10/part1 (day10/parse (sample 10)))))
   (is (= 1700 (day10/part1 (day10/parse (data 10)))))
   (is (= 19208 (day10/part2 (day10/parse (sample 10)))))
-  (is (= nil (day10/part2 (day10/parse (data 10))))))
+  (is (= 12401793332096 (day10/part2 (day10/parse (data 10))))))
