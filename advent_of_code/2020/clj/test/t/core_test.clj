@@ -11,7 +11,8 @@
             [t.day7 :as day7]
             [t.day8 :as day8]
             [t.day9 :as day9]
-            [t.day10 :as day10]))
+            [t.day10 :as day10]
+            [t.day11 :as day11]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -114,3 +115,20 @@
   (is (= 1700 (day10/part1 (day10/parse (data 10)))))
   (is (= 19208 (day10/part2 (day10/parse (sample 10)))))
   (is (= 12401793332096 (day10/part2 (day10/parse (data 10))))))
+
+(deftest day11
+  (is (= [[:free :floor :free :free :floor :free :free :floor :free :free]
+          [:free :free :free :free :free :free :free :floor :free :free]
+          [:free :floor :free :floor :free :floor :floor :free :floor :floor]
+          [:free :free :free :free :floor :free :free :floor :free :free]
+          [:free :floor :free :free :floor :free :free :floor :free :free]
+          [:free :floor :free :free :free :free :free :floor :free :free]
+          [:floor :floor :free :floor :free :floor :floor :floor :floor :floor]
+          [:free :free :free :free :free :free :free :free :free :free]
+          [:free :floor :free :free :free :free :free :free :floor :free]
+          [:free :floor :free :free :free :free :free :floor :free :free]]
+         (day11/parse (sample 11))))
+  (is (= 37 (day11/part1 (day11/parse (sample 11)))))
+  (is (= 2249 (day11/part1 (day11/parse (data 11)))))
+  (is (= 26 (day11/part2 (day11/parse (sample 11)))))
+  (is (= 2023 (day11/part2 (day11/parse (data 11))))))
