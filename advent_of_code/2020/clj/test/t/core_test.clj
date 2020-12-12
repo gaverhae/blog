@@ -1,5 +1,5 @@
 (ns t.core-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer :all]; :exclude [is]]
             [clojure.string :as string]
             [t.core :as t]
             [t.day1 :as day1]
@@ -16,6 +16,11 @@
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
   (defn data [i] (read "day" i)))
+
+
+#_(defmacro is
+  [form]
+  `(do (prn (quote ~form)) (time (clojure.test/is ~form)) (println)))
 
 (deftest day1
   (is (= [1721 979 366 299 675 1456]
@@ -69,7 +74,6 @@
           "bright white" {"shiny gold" 1}
           "muted yellow" {"shiny gold" 2, "faded blue" 9}
           "shiny gold" {"dark olive" 1, "vibrant plum" 2}
-
           "dark olive" {"faded blue" 3, "dotted black" 4}
           "vibrant plum" {"faded blue" 5, "dotted black" 6}
           "faded blue" {}
