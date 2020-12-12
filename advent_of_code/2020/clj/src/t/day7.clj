@@ -15,11 +15,17 @@
 
 (defn part1
   [input]
-  (->> input
-       (filter (fn rec [[k vs]]
-                 (or (contains? vs "shiny gold")
-                     (some (fn [v] (rec [v (input v)])) (keys vs)))))
-       count))
+  (let [inverted (reduce (fn [acc [outer inners]]
+                           (reduce (fn [acc inner]
+                                     (update acc inner (fnil conj #{}) outer))
+                                   acc
+                                   (keys inners)))
+                         {}
+                         input)]
+    (count (loop [prev #{}
+                  cur (get inverted "shiny gold")]
+             (if (= prev cur) cur
+               (recur cur (set (concat cur (mapcat inverted cur)))))))))
 
 (defn part2
   [input]
