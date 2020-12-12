@@ -37,11 +37,7 @@
                  #_(prn [[x y] [dx dy]])
                  (case cmd
                    :move [[x y] (mapv + [dx dy] arg)]
-                   :turn [[x y] (loop [n arg
-                                       [dx dy] [dx dy]]
-                                  (if (zero? n)
-                                    [dx dy]
-                                    (recur (dec n) [(- dy) dx])))]
+                   :turn [[x y] ([[dx dy] [(- dy) dx] [(- dx) (- dy)] [dy (- dx)]] arg)]
                    :forward [[(+ x (* arg dx)) (+ y (* arg dy))] [dx dy]]))
                [[0 0] [10 1]])
        first
