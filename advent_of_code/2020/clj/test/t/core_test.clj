@@ -14,7 +14,8 @@
             [t.day10 :as day10]
             [t.day11 :as day11]
             [t.day12 :as day12]
-            [t.day13 :as day13]))
+            [t.day13 :as day13]
+            [t.day14 :as day14]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -155,3 +156,11 @@
   (is (= 2305 (day13/part1 (day13/parse (data 13)))))
   (is (= 1068781 (day13/part2 (day13/parse (sample 13)))))
   (is (= 552612234243498 (day13/part2 (day13/parse (data 13))))))
+
+(deftest day14
+  (is (= [[:mask {1 0, 6 1}] [:mem 8 11] [:mem 7 101] [:mem 8 0]]
+         (day14/parse (sample 14))))
+  (is (= 165 (day14/part1 (day14/parse (sample 14)))))
+  (is (= nil (day14/part1 (day14/parse (data 14)))))
+  #_(is (= nil (day14/part2 (day14/parse (sample 14)))))
+  #_(is (= nil (day14/part2 (day14/parse (data 14))))))
