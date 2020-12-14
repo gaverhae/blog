@@ -158,9 +158,15 @@
   (is (= 552612234243498 (day13/part2 (day13/parse (data 13))))))
 
 (deftest day14
-  (is (= [[:mask {1 0, 6 1}] [:mem 8 11] [:mem 7 101] [:mem 8 0]]
+  (is (= [[:mask (->> (assoc (vec (take 36 (repeat :float)))
+                             1 0
+                             6 1)
+                      (map-indexed vector)
+                      (into {}))]
+          [:mem 8 11]
+          [:mem 7 101]
+          [:mem 8 0]]
          (day14/parse (sample 14))))
   (is (= 165 (day14/part1 (day14/parse (sample 14)))))
-  (is (= nil (day14/part1 (day14/parse (data 14)))))
-  #_(is (= nil (day14/part2 (day14/parse (sample 14)))))
-  #_(is (= nil (day14/part2 (day14/parse (data 14))))))
+  (is (= 9628746976360 (day14/part1 (day14/parse (data 14)))))
+  (is (= 4574598714592 (day14/part2 (day14/parse (data 14))))))
