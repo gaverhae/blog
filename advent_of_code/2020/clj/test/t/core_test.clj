@@ -121,17 +121,19 @@
   (is (= 12401793332096 (day10/part2 (day10/parse (data 10))))))
 
 (deftest day11
-  (is (= [[:free :floor :free :free :floor :free :free :floor :free :free]
-          [:free :free :free :free :free :free :free :floor :free :free]
-          [:free :floor :free :floor :free :floor :floor :free :floor :floor]
-          [:free :free :free :free :floor :free :free :floor :free :free]
-          [:free :floor :free :free :floor :free :free :floor :free :free]
-          [:free :floor :free :free :free :free :free :floor :free :free]
-          [:floor :floor :free :floor :free :floor :floor :floor :floor :floor]
-          [:free :free :free :free :free :free :free :free :free :free]
-          [:free :floor :free :free :free :free :free :free :floor :free]
-          [:free :floor :free :free :free :free :free :floor :free :free]]
-         (day11/parse (sample 11))))
+  (is (= [10 10
+          [1 0 1 1 0 1 1 0 1 1
+           1 1 1 1 1 1 1 0 1 1
+           1 0 1 0 1 0 0 1 0 0
+           1 1 1 1 0 1 1 0 1 1
+           1 0 1 1 0 1 1 0 1 1
+           1 0 1 1 1 1 1 0 1 1
+           0 0 1 0 1 0 0 0 0 0
+           1 1 1 1 1 1 1 1 1 1
+           1 0 1 1 1 1 1 1 0 1
+           1 0 1 1 1 1 1 0 1 1]]
+         (update (day11/parse (sample 11))
+                 2 vec)))
   (is (= 37 (day11/part1 (day11/parse (sample 11)))))
   (is (= 2249 (day11/part1 (day11/parse (data 11)))))
   (is (= 26 (day11/part2 (day11/parse (sample 11)))))
