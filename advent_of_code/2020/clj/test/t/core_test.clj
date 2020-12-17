@@ -200,5 +200,5 @@
          (day17/parse (sample 17))))
   (is (= 112 (day17/part1 (day17/parse (sample 17)))))
   (is (= 380 (day17/part1 (day17/parse (data 17)))))
-  (is (= nil (day17/part2 (day17/parse (sample 17)))))
-  (is (= nil (day17/part2 (day17/parse (data 17))))))
+  (is (= 848 (day17/part2 (day17/parse (sample 17)))))
+  (is (= 2332 (day17/part2 (day17/parse (data 17))))))
