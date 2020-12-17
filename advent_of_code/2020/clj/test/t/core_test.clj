@@ -192,5 +192,4 @@
          (day16/parse (sample 16))))
   (is (= 71 (day16/part1 (day16/parse (sample 16)))))
   (is (= 19240 (day16/part1 (day16/parse (data 16)))))
-  (is (= nil (day16/part2 (day16/parse (sample 16)))))
-  (is (= nil (day16/part2 (day16/parse (data 16))))))
+  (is (= 21095351239483 (day16/part2 (day16/parse (data 16))))))

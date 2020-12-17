@@ -1,5 +1,6 @@
 (ns t.day16
-  (:require [clojure.string :as string]))
+  (:require [clojure.set :as set]
+            [clojure.string :as string]))
 
 (defn parse
   [lines]
@@ -15,7 +16,7 @@
                   (mapv (fn [line] (mapv #(Long/parseLong %) (string/split line #"," )))))}))
 
 (defn part1
-  [{:keys [rules mine others]}]
+  [{:keys [rules others]}]
   (let [valid (->> rules
                    vals
                    (apply concat)
@@ -27,4 +28,39 @@
          (reduce +))))
 
 (defn part2
-  [input])
+  [{:keys [rules mine others]}]
+  (let [valid (->> rules
+                   vals
+                   (apply concat)
+                   (mapcat (fn [[s e]] (range s (inc e))))
+                   (into #{}))
+        valid-others (->> others
+                          (remove (fn [other] (some (complement valid) other))))
+        rule-sets (->> rules
+                       (map (fn [[n [[v1 v2] [v3 v4]]]]
+                              [n (set (concat (range v1 (inc v2))
+                                              (range v3 (inc v4))))])))
+        field-options (->> valid-others
+                           (apply map vector)
+                           (map-indexed (fn [idx values]
+                                          [idx (->> rule-sets
+                                                    (filter (fn [[n s]] (every? s values)))
+                                                    (map first)
+                                                    set)]))
+                           (into {}))
+        field-idx (loop [known {}
+                         unknown field-options]
+                    (if (empty? unknown)
+                      known
+                      (let [[idx f] (->> unknown (filter (fn [[_ v]] (= 1 (count v)))) first)]
+                        (recur (assoc known idx (first f))
+                               (reduce-kv (fn [acc k v]
+                                            (assoc acc k (set/difference v f)))
+                                          {}
+                                          (dissoc unknown idx))))))
+        departures (->> field-idx
+                       (filter (fn [[idx name]] (string/starts-with? name "departure")))
+                       (map first))]
+    (->> departures
+         (map (fn [idx] (mine idx)))
+         (reduce *))))
