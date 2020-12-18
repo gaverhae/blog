@@ -5,7 +5,11 @@
 
 (defn parse
   [lines]
-  (->> lines
+  lines)
+
+(defn part1
+  [input]
+  (->> input
        (map (insta/parser "S = expr
                            <expr> = plus | times | np
                            plus = expr <'+'> np
@@ -18,22 +22,30 @@
          (fn [node]
            (match node
              [:num n] (Long/parseLong n)
-             :times :*
-             :plus :+
+             [:times a b] (* a b)
+             [:plus a b] (+ a b)
              [:S e] e
-             :else node)))))
-
-(defn part1
-  [input]
-  (->> input
-       (map #(walk/postwalk
-               (fn [node]
-                 (match node
-                        [:+ a b] (+ a b)
-                        [:* a b] (* a b)
-                        :else node))
-               %))
+             :else node)))
        (reduce +)))
 
+
 (defn part2
-  [input])
+  [input]
+  (->> input
+       (map (insta/parser "S = expr
+                           <expr> = times | np
+                           plus = np (<'+'> expr)*
+                           times = plus (<'*'> plus)*
+                           <np> = num | par
+                           <par> = w <'('> expr <')'> w
+                           num = w #'\\d+' w
+                           <w> = <#'\\s*'>"))
+       (walk/postwalk
+         (fn [node]
+           (match node
+                  [:num n] (Long/parseLong n)
+                  [:times & r] (reduce * r)
+                  [:plus & r] (reduce + r)
+                  [:S e] e
+                  :else node)))
+            (reduce +)))
