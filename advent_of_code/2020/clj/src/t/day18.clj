@@ -34,7 +34,7 @@
   (->> input
        (map (insta/parser "S = expr
                            <expr> = times | np
-                           plus = np (<'+'> expr)*
+                           plus = np (<'+'> np)*
                            times = plus (<'*'> plus)*
                            <np> = num | par
                            <par> = w <'('> expr <')'> w
