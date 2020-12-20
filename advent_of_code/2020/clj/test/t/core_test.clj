@@ -20,7 +20,8 @@
             [t.day16 :as day16]
             [t.day17 :as day17]
             [t.day18 :as day18]
-            [t.day19 :as day19]))
+            [t.day19 :as day19]
+            [t.day20 :as day20]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -229,7 +230,57 @@
                   "aaabbb"
                   "aaaabbb"]}
          (day19/parse (sample 19))))
-  (is (= 2
-         (day19/part1 (day19/parse (sample 19)))))
+  (is (= 2 (day19/part1 (day19/parse (sample 19)))))
   (is (= 269 (day19/part1 (day19/parse (data 19)))))
   (is (= 403 (day19/part2 (day19/parse (data 19))))))
+
+(deftest day20
+  (is (= [{:id 2311
+           :borders [[0 0 1 1 0 1 0 0 1 0]
+                     [0 0 0 1 0 1 1 0 0 1]
+                     [0 0 1 1 1 0 0 1 1 1]
+                     [0 1 1 1 1 1 0 0 1 0]]}
+          {:id 1951
+           :borders [[1 0 1 1 0 0 0 1 1 0]
+                     [0 1 1 1 1 1 0 0 1 0]
+                     [1 0 0 0 1 1 0 1 0 0]
+                     [1 1 0 1 0 0 1 0 0 1]]}
+          {:id 1171
+           :borders [[1 1 1 1 0 0 0 1 1 0]
+                     [0 1 0 0 1 0 0 0 0 0]
+                     [0 0 0 0 0 1 1 0 0 0]
+                     [1 1 1 0 0 0 0 1 1 0]]}
+          {:id 1427
+           :borders [[1 1 1 0 1 1 0 1 0 0]
+                     [0 0 1 1 1 0 1 0 1 0]
+                     [0 0 1 1 0 1 0 0 1 0]
+                     [1 0 0 1 0 0 0 0 0 0]]}
+          {:id 1489
+           :borders [[1 1 0 1 0 1 0 0 0 0]
+                     [0 0 0 0 0 1 0 0 1 0]
+                     [1 1 1 0 1 1 0 1 0 0]
+                     [1 0 0 0 1 1 0 1 0 1]]}
+          {:id 2473
+           :borders [[1 0 0 0 0 1 1 1 1 0]
+                     [0 0 0 1 1 1 0 1 0 0]
+                     [0 0 1 1 1 0 1 0 1 0]
+                     [1 1 1 1 0 0 0 1 1 0]]}
+          {:id 2971
+           :borders [[0 0 1 0 1 0 0 0 0 1]
+                     [1 0 0 0 1 1 0 1 0 1]
+                     [0 0 0 1 0 1 0 1 0 1]
+                     [0 1 1 1 0 0 1 0 0 0]]}
+          {:id 2729
+           :borders [[0 0 0 1 0 1 0 1 0 1]
+                     [1 0 0 1 0 0 0 0 0 0]
+                     [1 0 1 1 0 0 0 1 1 0]
+                     [0 1 0 0 0 0 1 1 1 1]]}
+          {:id 3079
+           :borders [[1 0 1 0 1 1 1 1 1 0]
+                     [0 1 0 0 0 0 1 0 0 0]
+                     [0 0 1 0 1 1 1 0 0 0]
+                     [1 0 0 1 1 0 1 0 0 0]]}]
+         (day20/parse (sample 20))))
+  (is (= 20899048083289 (day20/part1 (day20/parse (sample 20)))))
+  (is (= 47213728755493 (day20/part1 (day20/parse (data 20)))))
+  (is (= nil (day20/part2 (day20/parse (data 20))))))
