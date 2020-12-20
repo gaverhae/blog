@@ -19,7 +19,8 @@
             [t.day15 :as day15]
             [t.day16 :as day16]
             [t.day17 :as day17]
-            [t.day18 :as day18]))
+            [t.day18 :as day18]
+            [t.day19 :as day19]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -211,3 +212,22 @@
   (is (= (+ 231 51 46 1445 669060 23340)
          (day18/part2 (day18/parse (sample 18)))))
   (is (= 362464596624526 (day18/part2 (day18/parse (data 18))))))
+
+(deftest day19
+  (is (= {:grammar ["S: 0"
+                    "0: 4 1 5"
+                    "1: 2 3 | 3 2"
+                    "2: 4 4 | 5 5"
+                    "3: 4 5 | 5 4"
+                    "4: \"a\""
+                    "5: \"b\""]
+          :lines ["ababbb"
+                  "bababa"
+                  "abbbab"
+                  "aaabbb"
+                  "aaaabbb"]}
+         (day19/parse (sample 19))))
+  (is (= 2
+         (day19/part1 (day19/parse (sample 19)))))
+  (is (= 269 (day19/part1 (day19/parse (data 19)))))
+  (is (= 403 (day19/part2 (day19/parse (data 19))))))
