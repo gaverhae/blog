@@ -1,5 +1,5 @@
 (ns t.core-test
-  (:require [clojure.test :refer :all]; :exclude [is]]
+  (:require [clojure.test :refer :all :exclude [is]]
             [clojure.string :as string]
             [t.core :as t]
             [t.day1 :as day1]
@@ -28,9 +28,14 @@
   (defn data [i] (read "day" i)))
 
 
-#_(defmacro is
+(defmacro is
   [form]
-  `(do (prn (quote ~form)) (time (clojure.test/is ~form)) (println)))
+  `(let [form# (quote ~form)
+         start# (System/currentTimeMillis)
+         _# (clojure.test/is ~form)
+         t# (- (System/currentTimeMillis) start#)]
+     (when (> t# 100)
+       (println (format "%d %s" t# (nth form# 2))))))
 
 (deftest day1
   (is (= [1721 979 366 299 675 1456]
