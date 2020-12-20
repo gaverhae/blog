@@ -1,7 +1,6 @@
 (ns t.day19
   (:require [clojure.core.match :refer [match]]
-            [clojure.string :as string]
-            [instaparse.core :as insta]))
+            [clojure.string :as string]))
 
 (defn parse-grammar
   [g]
@@ -27,23 +26,23 @@
   [lines]
   (let [[grammar _ lines] (partition-by #{""} lines)]
     {:grammar (->> grammar parse-grammar)
-     :raw-grammar grammar
      :lines lines}))
 
 (defn apply-grammar
   [g rule s]
   (match rule
-    [:or alt1 alt2] (or (apply-grammar g alt1 s)
-                        (apply-grammar g alt2 s))
-    [:seq & rs] (reduce (fn [s r]
-                          (when s (apply-grammar g (g r) s)))
-                        s
+    [:or alt1 alt2] (concat (apply-grammar g alt1 s)
+                            (apply-grammar g alt2 s))
+    [:seq & rs] (reduce (fn [ss r]
+                          (mapcat (fn [s] (when s (apply-grammar g (g r) s)))
+                                  ss))
+                        [s]
                         rs)
-    [:terminal c] (when (= c (first s)) (subs s 1))))
+    [:terminal c] (when (= c (first s)) [(subs s 1)])))
 
 (defn check
   [g s]
-  (= "" (apply-grammar g (g 0) s)))
+  (some #{""} (apply-grammar g (g 0) s)))
 
 (defn part1
   [input]
@@ -54,14 +53,5 @@
 
 (defn part2
   [input]
-  (let [g (->> (:raw-grammar input)
-               (map (fn [^String r]
-                      (cond (.startsWith r "8: ") "8: 42 | 42 8"
-                            (.startsWith r "11: ") "11: 42 31 | 42 11 31"
-                            :else r)))
-               (cons "S: 0"))
-        p (insta/parser (string/join "\n" g))
-        valid? (fn [line] (not-empty (insta/parses p line)))]
-    (->> (:lines input)
-         (filter valid?)
-         count)))
+  (part1 (update input :grammar assoc 8 [:or [:seq 42] [:seq 42 8]]
+                                      11 [:or [:seq 42 31] [:seq 42 11 31]])))
