@@ -23,6 +23,8 @@
   [input]
   (brute-force 2020 input))
 
-(defn part2
+(def part2
+  (memoize (fn
   [input]
   (brute-force 30000000 input))
+           ))
