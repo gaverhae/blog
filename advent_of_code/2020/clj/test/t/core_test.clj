@@ -214,13 +214,21 @@
   (is (= 362464596624526 (day18/part2 (day18/parse (data 18))))))
 
 (deftest day19
-  (is (= {:grammar ["S: 0"
-                    "0: 4 1 5"
-                    "1: 2 3 | 3 2"
-                    "2: 4 4 | 5 5"
-                    "3: 4 5 | 5 4"
-                    "4: \"a\""
-                    "5: \"b\""]
+  (is (= {:grammar {0 [:seq 4 1 5]
+                    1 [:or [:seq 2 3]
+                           [:seq 3 2]]
+                    2 [:or [:seq 4 4]
+                           [:seq 5 5]]
+                    3 [:or [:seq 4 5]
+                           [:seq 5 4]]
+                    4 [:terminal \a]
+                    5 [:terminal \b]}
+          :raw-grammar ["0: 4 1 5"
+                        "1: 2 3 | 3 2"
+                        "2: 4 4 | 5 5"
+                        "3: 4 5 | 5 4"
+                        "4: \"a\""
+                        "5: \"b\""]
           :lines ["ababbb"
                   "bababa"
                   "abbbab"
