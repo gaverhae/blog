@@ -336,13 +336,19 @@
   (is (= 47213728755493 (day20/part1 (day20/parse (data 20)))))
   (is (= 273 (day20/part2 (day20/parse (sample 20)))))
   (is (= 1599 (day20/part2 (day20/parse (data 20))))))
+
 (deftest day21
-  (is (= #{[#{"mxmxvkd" "kfcds" "sqjhc" "nhms"} #{"fish" "dairy"}]
-           [#{"trh" "fvjkl" "sbzzf" "mxmxvkd"} #{"dairy"}]
-           [#{"sqjhc" "fvjkl"} #{"soy"}]
-           [#{"sqjhc" "mxmxvkd" "sbzzf"} #{"fish"}]}
-        (day21/parse (sample 21))))
+  (is (= {:recipes [["mxmxvkd" "kfcds" "sqjhc" "nhms"]
+                    ["trh" "fvjkl" "sbzzf" "mxmxvkd"]
+                    ["sqjhc" "fvjkl"]
+                    ["sqjhc" "mxmxvkd" "sbzzf"]]
+          :allergens {"dairy" "mxmxvkd"
+                      "fish" "sqjhc"
+                      "soy" "fvjkl"}}
+         (day21/parse (sample 21))))
   (is (= 5 (day21/part1 (day21/parse (sample 21)))))
   (is (= 2280 (day21/part1 (day21/parse (data 21)))))
-  (is (= nil (day21/part2 (day21/parse (sample 21)))))
-  (is (= nil (day21/part2 (day21/parse (data 21))))))
+  (is (= "mxmxvkd,sqjhc,fvjkl"
+         (day21/part2 (day21/parse (sample 21)))))
+  (is (= "vfvvnm,bvgm,rdksxt,xknb,hxntcz,bktzrz,srzqtccv,gbtmdb"
+         (day21/part2 (day21/parse (data 21))))))
