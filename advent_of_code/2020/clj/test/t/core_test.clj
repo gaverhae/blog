@@ -353,11 +353,12 @@
          (day21/part2 (day21/parse (sample 21)))))
   (is (= "vfvvnm,bvgm,rdksxt,xknb,hxntcz,bktzrz,srzqtccv,gbtmdb"
          (day21/part2 (day21/parse (data 21))))))
+
 (deftest day22
   (is (= [[9 2 6 3 1]
           [5 8 4 7 10]]
          (day22/parse (sample 22))))
   (is (= 306 (day22/part1 (day22/parse (sample 22)))))
   (is (= 32033 (day22/part1 (day22/parse (data 22)))))
-  (is (= nil(day22/part2 (day22/parse (sample 22)))))
-  (is (= nil(day22/part2 (day22/parse (data 22))))))
+  (is (= 291(day22/part2 (day22/parse (sample 22)))))
+  (is (= 34901(day22/part2 (day22/parse (data 22))))))
