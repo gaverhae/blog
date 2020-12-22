@@ -22,7 +22,8 @@
             [t.day18 :as day18]
             [t.day19 :as day19]
             [t.day20 :as day20]
-            [t.day21 :as day21]))
+            [t.day21 :as day21]
+            [t.day22 :as day22]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -352,3 +353,11 @@
          (day21/part2 (day21/parse (sample 21)))))
   (is (= "vfvvnm,bvgm,rdksxt,xknb,hxntcz,bktzrz,srzqtccv,gbtmdb"
          (day21/part2 (day21/parse (data 21))))))
+(deftest day22
+  (is (= [[9 2 6 3 1]
+          [5 8 4 7 10]]
+         (day22/parse (sample 22))))
+  (is (= 306 (day22/part1 (day22/parse (sample 22)))))
+  (is (= 32033 (day22/part1 (day22/parse (data 22)))))
+  (is (= nil(day22/part2 (day22/parse (sample 22)))))
+  (is (= nil(day22/part2 (day22/parse (data 22))))))
