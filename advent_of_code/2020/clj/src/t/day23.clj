@@ -11,29 +11,31 @@
   [input num-cups num-turns]
   (let [num-labels (count input)
         cups (concat input (map inc (range (count input) num-cups)))
-        links (->> cups
-                   (map dec)
-                   (partition 2 1 [(dec (first input))])
-                   (reduce (fn [acc [c1 c2]]
-                             (assoc acc c1 c2))
-                           {}))]
+        links (long-array num-cups)
+        next-cup (fn ^long [^long n] (aget links n))]
+    (doseq [[^long c1 ^long c2] (->> cups
+                                      (map dec)
+                                      (partition 2 1 [(dec (first input))]))]
+      (aset links c1 c2))
     (loop [cur (dec (first input))
-           next-cup links
            n 0]
-      (if (= n num-turns)
+      (if (== n num-turns)
         (->> (iterate next-cup 0)
              (take num-cups)
              (map inc))
-        (let [[_ p1 p2 p3 nxt] (take 5 (iterate next-cup cur))
+        (let [p1 (next-cup cur)
+              p2 (next-cup p1)
+              p3 (next-cup p2)
+              nxt (next-cup p3)
               lbl (loop [tgt (mod (dec cur) num-cups)]
                     (if (#{p1 p2 p3} tgt)
                       (recur (mod (dec tgt) num-cups))
-                      tgt))]
+                      tgt))
+              post-p3 (next-cup lbl)]
+          (aset links (int cur) (long nxt))
+          (aset links (int lbl) (long p1))
+          (aset links (int p3) (long post-p3))
           (recur nxt
-                 (-> next-cup
-                     (assoc cur nxt)
-                     (assoc lbl p1)
-                     (assoc p3 (next-cup lbl)))
                  (inc n)))))))
 
 (defn part1
