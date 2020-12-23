@@ -361,12 +361,13 @@
          (day22/parse (sample 22))))
   (is (= 306 (day22/part1 (day22/parse (sample 22)))))
   (is (= 32033 (day22/part1 (day22/parse (data 22)))))
-  (is (= 291(day22/part2 (day22/parse (sample 22)))))
-  (is (= 34901(day22/part2 (day22/parse (data 22))))))
+  (is (= 291 (day22/part2 (day22/parse (sample 22)))))
+  (is (= 34901 (day22/part2 (day22/parse (data 22))))))
+
 (deftest day23
   (is (= [3 8 9 1 2 5 4 6 7]
          (day23/parse (sample 23))))
   (is (= 67384529 (day23/part1 (day23/parse (sample 23)))))
   (is (= 45983627 (day23/part1 (day23/parse (data 23)))))
-  #_(is (= nil (day23/part2 (day23/parse (sample 23)))))
-  #_(is (= nil (day23/part2 (day23/parse (data 23))))))
+  (is (= 149245887792 (day23/part2 (day23/parse (sample 23)))))
+  (is (= 111080192688 (day23/part2 (day23/parse (data 23))))))
