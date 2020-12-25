@@ -14,8 +14,8 @@
         links (long-array num-cups)
         next-cup (fn ^long [^long n] (aget links n))]
     (doseq [[^long c1 ^long c2] (->> cups
-                                      (map dec)
-                                      (partition 2 1 [(dec (first input))]))]
+                                     (map dec)
+                                     (partition 2 1 [(dec (first input))]))]
       (aset links c1 c2))
     (loop [cur (dec (first input))
            n 0]
