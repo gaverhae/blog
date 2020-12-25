@@ -373,11 +373,10 @@
   (is (= 149245887792 (day23/part2 (day23/parse (sample 23)))))
   (is (= 111080192688 (day23/part2 (day23/parse (data 23))))))
 (deftest day24
-  (is (= [[1 -3 2] [2 1 -3] [0 -3 3] [0 2 -2] [1 1 -2] [1 -1 0] [2 1 -3]
-          [2 -2 0] [1 0 -1] [1 -2 1] [2 0 -2] [2 0 -2] [0 3 -3] [1 -1 0]
-          [-2 0 2] [0 0 0] [1 1 -2] [0 2 -2] [-2 2 0] [2 -1 -1]]
+  (is (= #{[1 -3 2] [0 -3 3] [2 -2 0] [1 0 -1] [1 -2 1]
+           [0 3 -3] [-2 0 2] [0 0 0] [-2 2 0] [2 -1 -1]}
          (day24/parse (sample 24))))
   (is (= 10 (day24/part1 (day24/parse (sample 24)))))
   (is (= 411 (day24/part1 (day24/parse (data 24)))))
-  #_(is (= nil (day24/part2 (day24/parse (sample 24)))))
-  #_(is (= nil (day24/part2 (day24/parse (data 24))))))
+  (is (= 2208 (day24/part2 (day24/parse (sample 24)))))
+  (is (= 4092 (day24/part2 (day24/parse (data 24))))))
