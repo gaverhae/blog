@@ -65,6 +65,11 @@ resource "aws_security_group" "allow_http" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_security_group" "allow_ssh" {
+  name   = "allow_ssh"
+  vpc_id = aws_vpc.main.id
 
   ingress {
     from_port   = 22
@@ -72,14 +77,6 @@ resource "aws_security_group" "allow_http" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
 }
 
 resource "aws_instance" "web" {
@@ -137,7 +134,7 @@ $ echo $?
 
 Not only did execution not stop on the error, but the script has overall
 signalled successful completion. This is in most cases a huge deal: Bash
-generally deals with killing processes and deleting files, you absolutely do
+generally deals with killing processes and deleting files, so you absolutely do
 not want to keep going in the presence of unexpected errors. This doesn't
 really seem like a big deal in this silly example, but what about the
 following?
@@ -149,7 +146,7 @@ send-email "admin@example.org" "Backup completed, you can sleep soundly."
 
 Believing you have backups when you actually don't can be a Very Bad Thing™.
 
-There is a simple fix for this issue. It's for from covering all of the Bash
+There is a simple fix for this issue. It's far from covering all of the Bash
 safety issues, but it does go a long way: the `-e` flag. Behold:
 
 ```shell
@@ -169,7 +166,7 @@ if you share that script with someone else, they also need to know to set that
 flag.
 
 Fortunately, Bash has a solution for this too: you can set such flags at any
-point from the Bash script itself, and it sill turn the flag on from that point
+point from the Bash script itself, and it will turn the flag on from that point
 on. So this should really be the first thing you do in every Bash script.
 
 ```shell
@@ -190,4 +187,9 @@ EOF
 
   depends_on = [aws_internet_gateway.gw]
 
+}
+
+resource "aws_eip" "ip" {
+  instance   = aws_instance.web.id
+  depends_on = [aws_internet_gateway.gw]
 }
