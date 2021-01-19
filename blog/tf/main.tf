@@ -11,6 +11,18 @@ provider "aws" {
   region = "us-east-1"
 }
 
+variable "email" {
+  type = string
+}
+
+variable "domain" {
+  type = string
+}
+
+variable "public_ssh_key" {
+  type = string
+}
+
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -65,6 +77,13 @@ resource "aws_security_group" "allow_http" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_security_group" "allow_ssh" {
@@ -90,23 +109,47 @@ resource "aws_instance" "web" {
     volume_size = 20
   }
 
-  vpc_security_group_ids = [aws_security_group.allow_http.id]
+  vpc_security_group_ids = [
+    aws_security_group.allow_http.id,
+    #aws_security_group.allow_ssh.id,
+  ]
 
   user_data = <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 
 mkdir -p /home/ubuntu/.ssh
-echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCwYQn97wq60S+Wyvdp3BVRtN5uAcaoJeWbpkeDPEa4A9qauhKOSJJ3UuO+Yqrh7wC8sUJGl0gIuilZbmZK3NmLFc6fla99/Di6rrz6DScat0IpSQZV51NWRxpxqgc0BYQqtrlt1xakT1wWNbbv3CWHeZetvH5rB+sBBGlGtXJhVRExRqWyIvDwVaL9cvGt/tyBnUjIwDBHV1lD4ee2epjLpQrCGHoEq17k8TFsA6NE8Obk1hefabelwcRTDdC4N09OYDh4ogmavp0986H/SUeN1Dk+68+XMeWd4jQ7a9gqnGuNrM4ENnLthBDZL6/CM69oLmGpZhVuduLuQ8nneB1r gverhaegen@ALMB0115.local" > /home/ubuntu/.ssh/authorized_users
+echo "${var.public_ssh_key}" > /home/ubuntu/.ssh/authorized_users
 chown -R ubuntu /home/ubuntu
 chmod 0400 /home/ubuntu/.ssh/authorized_keys
 
 apt-get update
 apt-get upgrade -q -y
 
-apt-get install -q -y nginx
+apt-get install -q -y nginx certbot python3-certbot-nginx
 
-cat <<'BLOG' > /var/www/html/index.html
+DOMAIN=${var.domain}
+mkdir -p /var/www/$DOMAIN/html
+
+cat <<CONFIG > /etc/nginx/sites-available/$DOMAIN
+server {
+  listen 80;
+  listen [::]:80;
+
+  root /var/www/$DOMAIN/html;
+  index index.html;
+
+  server_name $DOMAIN www.$DOMAIN;
+
+  location / {
+    try_files \$uri \$uri/ =404;
+  }
+}
+CONFIG
+
+ln -s /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
+
+cat <<'BLOG' > /var/www/$DOMAIN/html/index.html
 <pre>
 # Turning on die-on-error in Bash scripts
 
@@ -182,6 +225,16 @@ $
 ```
 </pre>
 BLOG
+
+chown -R ubuntu:ubuntu /var/www/$DOMAIN/html
+systemctl restart nginx
+certbot run --nginx \
+            --non-interactive \
+            --agree-tos \
+            --email ${var.email} \
+            --redirect \
+            -d $DOMAIN \
+            -d www.$DOMAIN
 
 EOF
 
