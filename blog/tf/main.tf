@@ -86,6 +86,68 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
+resource "aws_s3_bucket" "blog" {
+  bucket = "cuddly-octo-palm-tree-blog"
+  acl    = "private"
+}
+
+resource "aws_iam_instance_profile" "read-blog" {
+  name = "read-blog"
+  role = aws_iam_role.read-blog.name
+}
+
+resource "aws_iam_role" "read-blog" {
+  name               = "read-blog"
+  path               = "/"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_policy" "read-blog" {
+  name = "read-blog"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "${aws_s3_bucket.blog.arn}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:HeadObject"
+      ],
+      "Resource": "${aws_s3_bucket.blog.arn}/*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "read-blog" {
+  role       = aws_iam_role.read-blog.name
+  policy_arn = aws_iam_policy.read-blog.arn
+}
+
 resource "aws_instance" "web" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t3.nano"
@@ -101,6 +163,8 @@ resource "aws_instance" "web" {
     aws_security_group.allow_http.id,
     #aws_security_group.allow_ssh.id,
   ]
+
+  iam_instance_profile = aws_iam_instance_profile.read-blog.name
 
   user_data = file("init.sh")
 
