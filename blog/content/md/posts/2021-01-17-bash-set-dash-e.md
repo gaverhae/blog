@@ -1,4 +1,4 @@
-{:title "Turning on die-on-error in Bash scripts"
+{:title "Safer Bash: die on error"
  :layout :post
  :tags ["bash" "unix"]}
 
@@ -13,7 +13,7 @@ silently ignore errors. It's great that Bash supports that; it's unfortunate
 that it's turned off by default. In most installations, the following runs to
 completion:
 
-```shell
+```plaintext
 $ cat script.sh
 does-not-exist
 echo "hello"
@@ -41,7 +41,7 @@ Believing you have backups when you actually don't can be a Very Bad Thing™.
 There is a simple fix for this issue. It's far from covering all of the Bash
 safety issues, but it does go a long way: the `-e` flag. Behold:
 
-```shell
+```plaintext
 $ cat script.sh
 does-not-exist
 echo "hello"
@@ -61,7 +61,7 @@ Fortunately, Bash has a solution for this too: you can set such flags at any
 point from the Bash script itself, and it will turn the flag on from that point
 on. So this should really be the first thing you do in every Bash script.
 
-```shell
+```plaintext
 $ cat script.sh
 set -e
 does-not-exist
