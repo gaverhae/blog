@@ -86,8 +86,8 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
-resource "aws_s3_bucket" "blog" {
-  bucket = "cuddly-octo-palm-tree-blog"
+resource "aws_s3_bucket" "bucket" {
+  bucket = "cuddly-octo-palm-tree"
   acl    = "private"
 }
 
@@ -128,7 +128,7 @@ resource "aws_iam_policy" "read-blog" {
       "Action": [
         "s3:ListBucket"
       ],
-      "Resource": "${aws_s3_bucket.blog.arn}"
+      "Resource": "${aws_s3_bucket.bucket.arn}"
     },
     {
       "Effect": "Allow",
@@ -136,7 +136,16 @@ resource "aws_iam_policy" "read-blog" {
         "s3:GetObject",
         "s3:HeadObject"
       ],
-      "Resource": "${aws_s3_bucket.blog.arn}/*"
+      "Resource": "${aws_s3_bucket.bucket.arn}/public/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:HeadObject",
+        "s3:PutObject"
+      ],
+      "Resource": "${aws_s3_bucket.bucket.arn}/cert/current.tar.gz"
     }
   ]
 }
