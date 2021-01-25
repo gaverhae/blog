@@ -28,7 +28,8 @@ CONFIG
 ln -s /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/
 
 S3=s3://cuddly-octo-palm-tree
-TARBALL=public/2021-01-24-manual.tar.gz
+# This is a Terraform substitution!
+TARBALL=public/${version}.tar.gz
 if aws s3 ls $S3/$TARBALL; then
     aws s3 cp $S3/$TARBALL /tmp/blog
     tar xzf /tmp/blog -C /var/www/$DOMAIN/html/

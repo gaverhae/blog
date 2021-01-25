@@ -11,6 +11,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
+variable "blog_version" {}
+
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -175,7 +177,7 @@ resource "aws_instance" "web" {
 
   iam_instance_profile = aws_iam_instance_profile.read-blog.name
 
-  user_data = file("init.sh")
+  user_data = templatefile("init.sh", { version = var.blog_version })
 
   depends_on = [aws_internet_gateway.gw]
 
