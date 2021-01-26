@@ -107,3 +107,127 @@
   (foldtree (fn [v s] [:node (f v) s])
             (fn [hd tl] [:cons hd tl])
             nil))
+
+;; Section 4
+
+; next n x = (x + n/x) / 2
+(defn next [n x] (/ (+ x (/ n 1.0 x)) 2.0))
+; repeat f a = Cons a (repeat f (f a))
+(defn repeat [f a] (cons a (lazy-seq (repeat f (f a)))))
+; within eps (Cons a (Cons b rest))
+;   = b, if abs (a - b) <= eps
+;   = with eps (Cons b rest), otherwise
+(defn within
+  [eps [a b & rs]]
+  (if (>= eps (Math/abs (- a b)))
+    b
+    (within eps (cons b rs))))
+; sqrt a0 eps n = within eps (repeat (next n) a0)
+(defn sqrt
+  [a0 eps n]
+  (within eps (repeat #(next n %) a0)))
+
+; relative eps (Cons a (Cons b rest))
+;   = b, if abs (a/b - 1) <= eps
+;   = relative eps (Cons b rest), otherwise
+(defn relative
+  [eps [a b & rs]]
+  (if (>= eps (Math/abs (dec (/ a 1.0 b))))
+    b
+    (relative eps (cons b rs))))
+
+; relativesqrt a0 eps n = relative eps (repeat (next n) a0)
+(defn relativesqrt
+  [a0 eps n]
+  (relative eps (repeat #(next n %) a0)))
+
+; easydiff f x h = (f(x + h) - f x) / h
+(defn easydiff
+  [f x h]
+  (/ (- (f (+ x h))
+        (f x))
+     h))
+
+; differentiate h0 f x = map (easydiff f x) (repeat halve h0)
+; halve x = x / 2
+
+;; Note: foldr is not lazy, so map is not lazy
+(def map' clojure.core/map)
+(defn halve [x] (/ x 2.0))
+(defn differentiate
+  [h0 f x]
+  (map' (fn [h] (easydiff f x h)) (repeat halve h0)))
+
+; elimerror n (Cons a (Cons b rest))
+; = Cons ((b * (2^n) - a)/(2^n-1)) (elimerror n (Cons b rest))
+(defn elimerror
+  [n [a b & tl]]
+  (cons (/ (- (* b (Math/pow 2.0 n))
+              a)
+           (- (Math/pow 2.0 n) 1.0))
+        (lazy-seq (elimerror n (cons b tl)))))
+
+; order (Cons a (Cons b (Cons c rest)))
+; = round (log2 ((a - c)/(b - c) -1))
+; round x = x rounded to the nearest integer
+; log2 x = the logarithm of x to the base 2
+(defn round [x] (Math/round x))
+(defn log2 [x] (/ (Math/log x) (Math/log 2.0)))
+(defn order
+  [[a b c & tl]]
+  (round (log2 (- (/ (- a c)
+                     (- b c))
+                  1.0))))
+
+; improve s = elimerror (order s) s
+(defn improve
+  [s]
+  (elimerror (order s) s))
+
+; super s = map second (repeat improve s)
+; second (Cons a (Cons b rest)) = b
+(defn super
+  [s]
+  (map' second (repeat improve s)))
+
+; easyintegrate f a b = (f a + f b) * (b - a) / 2
+(defn easyintegrate
+  [f a b]
+  (* (+ (f a) (f b))
+     (- b a)
+     0.5))
+
+; integrate f a b = Cons (easyintegrate f a b)
+;                        (map addpair (zip2 (integrate f a mid)
+;                                           (integrate f mid b)))
+; where mid = (a + b) / 2
+; zip2 (Cons a s) (Cons b t) = Cons (a, b) (zip2 s t)
+;; no base case for zip2
+;; addpair is never defined
+(defn integrate
+  [f a b]
+  (let [mid (/ (+ a b) 2.0)]
+    (cons (easyintegrate f a b)
+          ;; example of indentation no autoindent can help with
+          (lazy-seq (map' + (integrate f a mid)
+                            (integrate f mid b))))))
+
+; integrate f a b = integ f a b (f a) (f b)
+; integ f a b fa fb = Cons ((fa + fb) * (b - &) / 2)
+;                          map addpair (zip2 (integ f a m fa fm)
+;                                            (integ f m b fm fb))) ;; yes, that's an unbalanced paren
+; where m = (a + b) / 2
+;       fm = f m
+(defn integrate2
+  [f a b]
+  (let [integ (fn integ [f a b fa fb]
+                (let [m (/ (+ a b) 2.0)
+                      fm (f m)]
+                  (cons (* (+ fa fb) (- b a) 0.5)
+                        (lazy-seq (map' + (integ f a m fa fm)
+                                          (integ f m b fm fb))))))]
+    (integ f a b (f a) (f b))))
+
+(comment
+(take 5 (super (integrate2 #(Math/sin %) 0 4)))
+)
