@@ -2,6 +2,8 @@
   (:refer-clojure :exclude [double map next repeat])
   (:require [clojure.core.match :refer [match]]))
 
+(def map' clojure.core/map)
+
 ;; Section 3
 
 (comment
@@ -61,52 +63,33 @@
 ;; Node 1 (Cons (Node 2 Nil)
 ;;              (Cons (Node 3 (Cons (Node 4 Nil) Nil))
 ;;                    Nil))
-(def tree'
-  [1 [2] [3 [4]]])
-;; or
 (def tree
-  [:node 1 [:cons [:node 2 nil]
-                  [:cons [:node 3 [:cons [:node 4 nil] nil]]
-                         nil]]])
+  [1 [[2 []] [3 [[4 []]]]]])
 
 ; foldtree f g a (Node label subtrees) =
 ;   f label (foldtree f g a subtrees)
 ; foldtree f g a (Cons subtree rest) =
 ;   g (foldtree f g a subtree) (foldtree f g a rest)
 ; foldtree f g a Nil = a
-(defn foldtree'
-  [node-fn cons-fn nil-value]
-  (fn rec [tree]
-    (match tree
-      ([] :seq) nil-value
-      ([value & subtrees] :seq) (node-fn value
-                                         ((foldr cons-fn nil-value) ((map rec) subtrees))))))
-; sumtree = foldtree (+) (+) 0
-(def sumtree' (foldtree' + + 0))
-; labels = foldtree Cons append Nil
-(def labels' (foldtree' cons append nil))
-; maptree f = foldtree (Node . f) Cons Nil
-(defn maptree'
-  [f]
-  (foldtree' (fn [v s] (cons (f v) s)) cons '()))
-
 (defn foldtree
-  [node-fn cons-fn nil-value]
-  (fn rec [tree]
-    (match tree
-      [:node v subtrees] (node-fn v (rec subtrees))
-      [:cons node subtrees] (cons-fn (rec node) (rec subtrees))
-      nil nil-value)))
+  [node-fn list-fn zero [node children]]
+  ;; This is a foldr, so it's not lazy
+  (node-fn node
+           (reduce list-fn
+                   zero
+                   (map' #(foldtree node-fn list-fn zero %) children))))
+
 ; sumtree = foldtree (+) (+) 0
-(def sumtree (foldtree + + 0))
+(def sumtree #(foldtree + + 0 %))
 ; labels = foldtree Cons append Nil
-(def labels (foldtree cons append nil))
+(def labels #(foldtree cons append nil %))
 ; maptree f = foldtree (Node . f) Cons Nil
 (defn maptree
   [f]
-  (foldtree (fn [v s] [:node (f v) s])
-            (fn [hd tl] [:cons hd tl])
-            nil))
+  #(foldtree
+;; (Node . f) doesn't translate
+     (fn [node children] [(f node) children])
+     conj [] %))
 
 ;; Section 4
 
@@ -152,7 +135,6 @@
 ; halve x = x / 2
 
 ;; Note: foldr is not lazy, so map is not lazy
-(def map' clojure.core/map)
 (defn halve [x] (/ x 2.0))
 (defn differentiate
   [h0 f x]
@@ -228,6 +210,3 @@
                                           (integ f m b fm fb))))))]
     (integ f a b (f a) (f b))))
 
-(comment
-(take 5 (super (integrate2 #(Math/sin %) 0 4)))
-)
