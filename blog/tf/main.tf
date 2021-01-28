@@ -147,7 +147,7 @@ resource "aws_iam_policy" "read-blog" {
         "s3:HeadObject",
         "s3:PutObject"
       ],
-      "Resource": "${aws_s3_bucket.bucket.arn}/cert/current.tar.gz"
+      "Resource": "${aws_s3_bucket.bucket.arn}/cert/*"
     }
   ]
 }
