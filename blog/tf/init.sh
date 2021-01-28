@@ -65,4 +65,33 @@ cd /etc/letsencrypt
 tar czf /tmp/new-cert .
 aws s3 cp /tmp/new-cert $S3/cert/current.tar.gz
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-aws s3 cp /tmp/new-cert $S3/cert/$(date -u +'%Y-%m-%dT%H-%M-%S')-$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id).tar.gz
+INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+aws s3 cp /tmp/new-cert $S3/cert/$(date -u +'%Y-%m-%dT%H-%M-%S')-$INSTANCE_ID.tar.gz
+
+cat <<LOGROTATE > /etc/logrotate.d/nginx
+/var/log/nginx/*.log {
+  rotate 14
+  create 0640 www-data adm
+  compress
+  daily
+  dateext
+  dateformat -%Y-%m-%d-$INSTANCE_ID
+  nomail
+  missingok
+  sharedscripts
+  prerotate
+    if [ -d /etc/logrotate.d/httpd-prerotate ]; then
+      run-parts /etc/logrotate.d/httpd-prerotate
+    fi
+  endscript
+  postrotate
+    invoke-rc.d nginx rotate >/dev/null 2>&1
+  endscript
+  lastaction
+    cd /var/log/nginx
+    for f in *.gz; do
+      aws s3 cp \$f $S3/logs/\$f
+    done
+  endscript
+}
+LOGROTATE

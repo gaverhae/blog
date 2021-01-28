@@ -148,6 +148,13 @@ resource "aws_iam_policy" "read-blog" {
         "s3:PutObject"
       ],
       "Resource": "${aws_s3_bucket.bucket.arn}/cert/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Resource": "${aws_s3_bucket.bucket.arn}/logs/*"
     }
   ]
 }
