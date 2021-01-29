@@ -95,3 +95,34 @@ cat <<LOGROTATE > /etc/logrotate.d/nginx
   endscript
 }
 LOGROTATE
+
+SERVICE=/etc/systemd/system/save_logs
+cat <<SAVE_LOGS > $SERVICE
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd /var/log/nginx
+for f in access.log error.log; do
+  gzip -9 \$f
+  /usr/bin/aws s3 cp \$f.gz s3://cuddly-octo-palm-tree/logs/\$f-\$(date +%Y-%m-%d)-$INSTANCE_ID.gz
+done
+SAVE_LOGS
+chmod +x $SERVICE
+
+cat <<SERVICE_DEFINITION > $SERVICE.service
+[Unit]
+Description=
+Before=shutdown.target reboot.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=$SERVICE
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+SERVICE_DEFINITION
+systemctl enable $SERVICE.service
+systemctl start save_logs
