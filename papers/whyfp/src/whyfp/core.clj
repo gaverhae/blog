@@ -210,3 +210,105 @@
                                           (integ f m b fm fb))))))]
     (integ f a b (f a) (f b))))
 
+;; Section 5
+
+;; left as an exercise to the reader
+; moves :: position -> listof position
+(def start-pos-tic-tac-toe
+  {:next-player 1 :board [[0 0 0] [0 0 0] [0 0 0]]})
+
+(defn winner-tic-tac-toe
+  [{:keys [board]}]
+  (let [horizontals (for [y (range 3)]
+                      (for [x (range 3)]
+                        [y x]))
+        verticals (for [x (range 3)]
+                    (for [y (range 3)]
+                      [y x]))
+        diagonals [[[0 0] [1 1] [2 2]]
+                   [[0 2] [1 1] [2 0]]]
+        lines (concat horizontals verticals diagonals)]
+    (->> lines
+         (map' (fn [line]
+                 (->> line
+                      (map' (fn [pos] (get-in board pos)))
+                      set)))
+         (filter (fn [s] (= 1 (count s))))
+         (map' first)
+         (remove #{0})
+         first)))
+
+(defn moves-tic-tac-toe
+  [{:keys [board next-player] :as state}]
+  (if (winner-tic-tac-toe state)
+    []
+    (for [y (range 3)
+          x (range 3)
+          :let [p (get-in board [y x])]
+          :when (zero? p)]
+      {:board (assoc-in board [y x] next-player)
+       :next-player ({1 2, 2 1} next-player)})))
+
+
+; reptree f a = Node a (map (reptree f) (f a))
+; gametree p = reptree moves p
+(defn reptree
+  [f a]
+  {:value a
+   :children (map' (fn [p] (reptree f p)) (f a))})
+
+;; also left as an exercise
+; static :: position -> number
+(defn static-tic-tac-toe
+  "1 if player 1 wins, -1 if player 2 wins, 0 otherwise. Assumes game has not
+  been played past first win condition."
+  [state]
+  (case (winner-tic-tac-toe state)
+    nil 0
+    1 1
+    2 -1))
+
+;; maptree above uses foldr and thus is eager; let's make a lazy one
+(defn maptree'
+  [f {:keys [value children]}]
+  {:value (f value)
+   :children (map' #(maptree' f %) children)})
+
+; maximize (Node n sub) = max (map minimize sub)
+; maximize (Node n Nil) = n
+; minimize (Node n sub) = min (map maximize sub)
+; minimize (Node n Nil) = n
+;; Clojure compiler is single-passe
+(declare minimize)
+(defn maximize
+  [{:keys [value children]}]
+  (if (empty? children)
+    value
+    ;; Clojure builtin max is not built on lists
+    (reduce max ((map minimize) children))))
+(defn minimize
+  [{:keys [value children]}]
+  (if (empty? children)
+    value
+    (reduce min ((map maximize) children))))
+
+; prune 0 (Node a x) = Node a Nil
+; prune (n+1) (Node a x) = Node a (map (prune n) x)
+(defn prune
+  [n {:keys [value children]}]
+  {:value value
+   :children (if (zero? n)
+               []
+               (map' #(prune (dec n) %) children))})
+
+; evaluate = maximize . maptree static . prune 5 . gametree
+(defn evaluate
+  [lookahead moves static pos]
+  (->> pos
+       (reptree moves)
+       (prune lookahead)
+       (maptree' static)
+       maximize))
+
+; no more useful points in the rest, but lots of badly-named, badly-factored,
+; hard-to-understand functions.

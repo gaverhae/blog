@@ -57,3 +57,36 @@
             (core/integrate2
               (fn [x] (/ 1.0 (+ 1 (* x x))))
               0 1))))))
+
+(defn infinite-moves
+  [state]
+  [state state])
+
+(defn lazy-flatten
+  [{:keys [value children]}]
+  (cons value (lazy-seq (mapcat lazy-flatten children))))
+
+(deftest section5
+  (is (= [{:next-player 2 :board [[1 0 0] [0 0 0] [0 0 0]]}
+          {:next-player 2 :board [[0 1 0] [0 0 0] [0 0 0]]}
+          {:next-player 2 :board [[0 0 1] [0 0 0] [0 0 0]]}
+          {:next-player 2 :board [[0 0 0] [1 0 0] [0 0 0]]}
+          {:next-player 2 :board [[0 0 0] [0 1 0] [0 0 0]]}
+          {:next-player 2 :board [[0 0 0] [0 0 1] [0 0 0]]}
+          {:next-player 2 :board [[0 0 0] [0 0 0] [1 0 0]]}
+          {:next-player 2 :board [[0 0 0] [0 0 0] [0 1 0]]}
+          {:next-player 2 :board [[0 0 0] [0 0 0] [0 0 1]]}]
+         (core/moves-tic-tac-toe core/start-pos-tic-tac-toe)))
+  ;; reptree is lazy
+  (is (= 10 (count (take 10 (lazy-flatten (core/reptree infinite-moves {}))))))
+  ;; evaluate is cutting off
+  (is (= 0 (core/evaluate 5 infinite-moves (constantly 0) {})))
+  (is (= 0 (core/evaluate 5 core/moves-tic-tac-toe core/static-tic-tac-toe core/start-pos-tic-tac-toe)))
+  (is (= 1 (core/evaluate
+             5
+             core/moves-tic-tac-toe
+             core/static-tic-tac-toe
+             {:board [[1 0 0] [1 0 2] [0 0 2]]
+              :next-player 1})))
+  )
+
