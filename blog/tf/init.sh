@@ -105,7 +105,7 @@ set -euo pipefail
 cd /var/log/nginx
 for f in access.log error.log; do
   gzip -9 \$f
-  /usr/bin/aws s3 cp \$f.gz s3://cuddly-octo-palm-tree/logs/\$f-\$(date +%Y-%m-%d)-$INSTANCE_ID.gz
+  /usr/bin/aws s3 cp \$f.gz s3://cuddly-octo-palm-tree/logs/\$f-\$(date +%Y-%m-%d)-$INSTANCE_ID-shutdown.gz
 done
 SAVE_LOGS
 chmod +x $SERVICE
