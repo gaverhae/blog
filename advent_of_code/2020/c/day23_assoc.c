@@ -14,7 +14,7 @@ int main() {
         if (i < 8) {
             cups[input[i] - 1] = input[i + 1] - 1;
         } else if (i == 8) {
-            cups[input[8] - 1] = 9;
+            cups[input[i] - 1] = 9;
         } else if (i < NUM_CUPS - 1) {
             cups[i] = i + 1;
         } else {
