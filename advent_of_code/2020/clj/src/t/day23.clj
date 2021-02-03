@@ -15,7 +15,6 @@
         dec-input-size ^int (unchecked-dec-int input-size)
         max-cup ^int (unchecked-dec-int num-cups)
         cups ^longs (long-array num-cups)
-        next-cup (fn ^long [^long n] (aget cups n))
         bef ^long (System/currentTimeMillis)]
     (dotimes [i num-cups]
       (cond
@@ -35,28 +34,31 @@
 
         :else
         (aset cups i (unchecked-dec-int (aget input 0)))))
-    #_(println "after: " (- (System/currentTimeMillis) bef))
-    (loop [cur (dec (first input))
-           n 0]
+    (loop [cur (unchecked-dec (aget input 0))
+           n (long 0)]
       (if (== n num-turns)
-        (do #_(println "final: " (- (System/currentTimeMillis) bef))
-            (->> (iterate next-cup 0)
-                 (take num-cups)
-                 (map inc)))
-        (let [p1 (next-cup cur)
-              p2 (next-cup p1)
-              p3 (next-cup p2)
-              nxt (next-cup p3)
-              lbl (loop [tgt (mod (dec cur) num-cups)]
-                    (if (#{p1 p2 p3} tgt)
-                      (recur (mod (dec tgt) num-cups))
-                      tgt))
-              post-p3 (next-cup lbl)]
-          (aset cups (int cur) (long nxt))
-          (aset cups (int lbl) (long p1))
-          (aset cups (int p3) (long post-p3))
+        (->> (iterate #(aget cups %) 0)
+             (take num-cups)
+             (map inc))
+        (let [p1 (aget cups cur)
+              p2 (aget cups p1)
+              p3 (aget cups p2)
+              nxt (aget cups p3)
+              lbl (loop [lbl (unchecked-dec cur)]
+                    (if (or (== lbl p1)
+                            (== lbl p2)
+                            (== lbl p3)
+                            (== lbl (long -1)))
+                      (if (== lbl (long -1))
+                        (recur max-cup)
+                        (recur (unchecked-dec lbl)))
+                      lbl))
+              post-p3 (aget cups lbl)]
+          (aset cups cur nxt)
+          (aset cups lbl p1)
+          (aset cups p3 post-p3)
           (recur nxt
-                 (inc n)))))))
+                 (unchecked-inc n)))))))
 
 (defn part1
   [input]
