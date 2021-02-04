@@ -23,7 +23,7 @@
 (defn part2
   [input]
   (->> input
-       (filter (fn [[min max c ^String pw]]
+       (filter (fn [[min max ^char c ^String pw]]
                  (let [a (= c (.charAt pw (dec min)))
                        b (= c (.charAt pw (dec max)))]
                    (if a (not b) b))))

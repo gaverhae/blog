@@ -40,7 +40,7 @@
                           (let [sub1 (take (first p1) (rest p1))
                                 sub2 (take (first p2) (rest p2))
                                 [winner _] (play-game [sub1 sub2] #{})]
-                            (case winner
+                            (case (int winner)
                               0 (recur (win-round p1 p2) (conj mem [p1 p2]))
                               1 (recur (reverse (win-round p2 p1)) (conj mem [p1 p2]))))
 

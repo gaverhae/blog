@@ -17,10 +17,10 @@
       (= pos (count input)) [:end acc]
       (> pos (count input)) [:error acc]
       :else
-      (let [[instr arg] (get input pos)]
+      (let [[instr ^long arg] (get input pos)]
          (case instr
            :nop (recur (inc pos) acc (conj visited pos))
-           :acc (recur (inc pos) (+ acc arg) (conj visited pos))
+           :acc (recur (inc pos) (unchecked-add acc arg) (conj visited pos))
            :jmp (recur (+ pos arg) acc (conj visited pos))
            [:error acc])))))
 

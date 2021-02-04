@@ -12,7 +12,7 @@
          pos geo]
     (if (empty? pos)
       n
-      (recur (+ n (ffirst pos))
+      (recur (unchecked-add n (long (ffirst pos)))
              (drop down (map #(drop right %) pos))))))
 
 (def part1 (partial slope [3 1]))
