@@ -27,31 +27,43 @@
 
 (defn part2
   [[init1 init2]]
-  (let [win-round (fn [winner loser]
-                    [(concat (rest winner) [(first winner) (first loser)])
-                     (rest loser)])
-        play-game (fn play-game [[p1 p2] mem]
+  (let [q (fn [ls] (into clojure.lang.PersistentQueue/EMPTY ls))
+        play-game (fn play-game [p1 p2 mem]
                     (cond (contains? mem [p1 p2]) [0 p1]
                           (empty? p1) [1 p2]
                           (empty? p2) [0 p1]
 
                           (and (> (count p1) (first p1))
                                (> (count p2) (first p2)))
-                          (let [sub1 (take (first p1) (rest p1))
-                                sub2 (take (first p2) (rest p2))
-                                [winner _] (play-game [sub1 sub2] #{})]
+                          (let [sub1 (q (take (first p1) (rest p1)))
+                                sub2 (q (take (first p2) (rest p2)))
+                                [winner _] (play-game sub1 sub2 #{})]
                             (case (int winner)
-                              0 (recur (win-round p1 p2) (conj mem [p1 p2]))
-                              1 (recur (reverse (win-round p2 p1)) (conj mem [p1 p2]))))
+                              0 (recur (-> (pop p1)
+                                           (conj (peek p1))
+                                           (conj (peek p2)))
+                                       (pop p2)
+                                       (conj mem [p1 p2]))
+                              1 (recur (pop p1)
+                                       (-> (pop p2)
+                                           (conj (peek p2))
+                                           (conj (peek p1)))
+                                       (conj mem [p1 p2]))))
 
                           (> (first p1) (first p2))
-                          (recur (win-round p1 p2)
+                          (recur (-> (pop p1)
+                                     (conj (peek p1))
+                                     (conj (peek p2)))
+                                 (pop p2)
                                  (conj mem [p1 p2]))
 
                           (< (first p1) (first p2))
-                          (recur (reverse (win-round p2 p1))
+                          (recur (pop p1)
+                                 (-> (pop p2)
+                                     (conj (peek p2))
+                                     (conj (peek p1)))
                                  (conj mem [p1 p2]))))
-        [_ winner-deck] (play-game [init1 init2] #{})]
+        [_ winner-deck] (play-game (q init1) (q init2) #{})]
     (->> winner-deck
          reverse
          (map-indexed vector)
