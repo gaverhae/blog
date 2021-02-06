@@ -33,10 +33,10 @@
                           (empty? p1) [1 p2]
                           (empty? p2) [0 p1]
 
-                          (and (> (count p1) (first p1))
-                               (> (count p2) (first p2)))
-                          (let [sub1 (q (take (first p1) (rest p1)))
-                                sub2 (q (take (first p2) (rest p2)))
+                          (and (> (count p1) (peek p1))
+                               (> (count p2) (peek p2)))
+                          (let [sub1 (q (take (peek p1) (pop p1)))
+                                sub2 (q (take (peek p2) (pop p2)))
                                 [winner _] (play-game sub1 sub2 #{})]
                             (case (int winner)
                               0 (recur (-> (pop p1)
@@ -50,14 +50,14 @@
                                            (conj (peek p1)))
                                        (conj mem [p1 p2]))))
 
-                          (> (first p1) (first p2))
+                          (> (peek p1) (peek p2))
                           (recur (-> (pop p1)
                                      (conj (peek p1))
                                      (conj (peek p2)))
                                  (pop p2)
                                  (conj mem [p1 p2]))
 
-                          (< (first p1) (first p2))
+                          (< (peek p1) (peek p2))
                           (recur (pop p1)
                                  (-> (pop p2)
                                      (conj (peek p2))
