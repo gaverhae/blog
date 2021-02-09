@@ -19,3 +19,5 @@ for log in $LOGS; do
         aws s3 cp $BUCKET/logs/$log logs/$log
     fi
 done
+
+cat logs/access* | gunzip | goaccess - -o report.html --log-format=COMBINED

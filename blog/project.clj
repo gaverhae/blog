@@ -4,9 +4,7 @@
                  [compojure "1.6.2"]
                  [ring-server "0.5.0"]
                  [cryogen-flexmark "0.1.4"]
-                 [cryogen-core "0.4.0"]
-                 [instaparse "1.4.10"]
-                 [org.clojure/core.match "1.0.0"]]
+                 [cryogen-core "0.4.0"]]
   :plugins [[lein-ring "0.12.5"]]
   :main cryogen.core
   :ring {:init cryogen.server/init

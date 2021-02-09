@@ -25,6 +25,7 @@ in rec {
     aws = pkgs.awscli;
     terraform = pkgs.terraform_0_14.withPlugins (p: with p; [
     ]);
+    goaccess = pkgs.goaccess;
 
     # Java
     #jdk    = pkgs.jdk8;
