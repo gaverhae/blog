@@ -19,27 +19,21 @@
   [v]
   (disj (neighbourhood v) v))
 
+(defn to-check
+  [active]
+  (->> active
+       (mapcat neighbourhood)
+       set))
+
 (defn part1
   [input]
   (->> (reduce (fn [prev _]
-                 (let [[min-x max-x min-y max-y min-z max-z]
-                       (reduce (fn [[min-x max-x min-y max-y min-z max-z] [x y z]]
-                                 [(min min-x (dec x))
-                                  (max max-x (inc x))
-                                  (min min-y (dec y))
-                                  (max max-y (inc y))
-                                  (min min-z (dec z))
-                                  (max max-z (inc z))])
-                               [0 0 0 0 0 0]
-                               prev)]
-                   (set (for [x (range min-x (inc max-x))
-                              y (range min-y (inc max-y))
-                              z (range min-z (inc max-z))
-                              :let [active? (prev [x y z])
-                                    active-neighbours (count (set/intersection (neighbours [x y z]) prev))]
-                              :when (or (and active? (#{2 3} active-neighbours))
-                                        (and (not active?) (= 3 active-neighbours)))]
-                          [x y z]))))
+                 (set (for [v (to-check prev)
+                            :let [active? (prev v)
+                                  active-neighbours (count (set/intersection (neighbours v) prev))]
+                            :when (or (and active? (#{2 3} active-neighbours))
+                                      (and (not active?) (= 3 active-neighbours)))]
+                        v)))
                input
                (range 6))
        count))
@@ -47,27 +41,12 @@
 (defn part2
   [input]
   (->> (reduce (fn [prev _]
-                 (let [[min-x max-x min-y max-y min-z max-z min-w max-w]
-                       (reduce (fn [[min-x max-x min-y max-y min-z max-z min-w max-w] [x y z w]]
-                                 [(min min-x (dec x))
-                                  (max max-x (inc x))
-                                  (min min-y (dec y))
-                                  (max max-y (inc y))
-                                  (min min-z (dec z))
-                                  (max max-z (inc z))
-                                  (min min-w (dec w))
-                                  (max max-w (inc w))])
-                               [0 0 0 0 0 0 0 0]
-                               prev)]
-                   (set (for [x (range min-x (inc max-x))
-                              y (range min-y (inc max-y))
-                              z (range min-z (inc max-z))
-                              w (range min-w (inc max-w))
-                              :let [active? (prev [x y z w])
-                                    active-neighbours (count (set/intersection (neighbours [x y z w]) prev))]
-                              :when (or (and active? (#{2 3} active-neighbours))
-                                        (and (not active?) (= 3 active-neighbours)))]
-                          [x y z w]))))
+                 (set (for [v (to-check prev)
+                            :let [active? (prev v)
+                                  active-neighbours (count (set/intersection (neighbours v) prev))]
+                            :when (or (and active? (#{2 3} active-neighbours))
+                                      (and (not active?) (= 3 active-neighbours)))]
+                        v)))
                (set (map (fn [[x y z]] [x y z 0]) input))
                (range 6))
        count))
