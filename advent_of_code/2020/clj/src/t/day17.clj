@@ -40,13 +40,4 @@
 
 (defn part2
   [input]
-  (->> (reduce (fn [prev _]
-                 (set (for [v (to-check prev)
-                            :let [active? (prev v)
-                                  active-neighbours (count (set/intersection (neighbours v) prev))]
-                            :when (or (and active? (#{2 3} active-neighbours))
-                                      (and (not active?) (= 3 active-neighbours)))]
-                        v)))
-               (set (map (fn [[x y z]] [x y z 0]) input))
-               (range 6))
-       count))
+  (part1 (set (map (fn [[x y z]] [x y z 0]) input))))
