@@ -8,35 +8,30 @@
        (apply concat)
        set))
 
-(defn neighbourhood
-  [v]
-  (reduce (fn [n idx]
-            (set (mapcat (fn [t] [t (update t idx inc) (update t idx dec)]) n)))
-          #{v}
-          (range (count v))))
-
-(defn neighbours
-  [v]
-  (disj (neighbourhood v) v))
-
-(defn to-check
-  [active]
-  (->> active
-       (mapcat neighbourhood)
-       set))
-
 (defn part1
   [input]
-  (->> (reduce (fn [prev _]
-                 (set (for [v (to-check prev)
-                            :let [active? (prev v)
-                                  active-neighbours (count (set/intersection (neighbours v) prev))]
-                            :when (or (and active? (#{2 3} active-neighbours))
-                                      (and (not active?) (= 3 active-neighbours)))]
-                        v)))
-               input
-               (range 6))
-       count))
+  (let [neighbourhood (memoize
+                        (fn [v]
+                          (reduce (fn [n idx]
+                                    (set (mapcat (fn [t] [t (update t idx inc) (update t idx dec)]) n)))
+                                  #{v}
+                                  (range (count v)))))
+        neighbours (fn [v]
+                     (disj (neighbourhood v) v))
+        to-check (fn [active]
+                   (->> active
+                        (mapcat neighbourhood)
+                        set))]
+    (->> (reduce (fn [prev _]
+                   (set (for [v (to-check prev)
+                              :let [active? (prev v)
+                                    active-neighbours (count (set/intersection (neighbours v) prev))]
+                              :when (or (and active? (#{2 3} active-neighbours))
+                                        (and (not active?) (= 3 active-neighbours)))]
+                          v)))
+                 input
+                 (range 6))
+         count)))
 
 (defn part2
   [input]
