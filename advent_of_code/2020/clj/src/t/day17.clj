@@ -10,10 +10,20 @@
 
 (defn part1
   [input]
-  (let [neighbourhood (memoize
+  (let [encode (fn [v] (->> v
+                            (map (fn [i] (char (+ 128 i))))
+                            (apply str)))
+        get-at (fn [^String e idx] (- (int (.charAt e idx)) 128))
+        inc-at (fn [^String e idx] (let [cs (.toCharArray e)]
+                                     (aset cs idx (char (inc (int (aget cs idx)))))
+                                     (String. cs)))
+        dec-at (fn [^String e idx] (let [cs (.toCharArray e)]
+                                     (aset cs idx (char (dec (int (aget cs idx)))))
+                                     (String. cs)))
+        neighbourhood (memoize
                         (fn [v]
                           (reduce (fn [n idx]
-                                    (set (mapcat (fn [t] [t (update t idx inc) (update t idx dec)]) n)))
+                                    (set (mapcat (fn [t] [t (dec-at t idx) (inc-at t idx)]) n)))
                                   #{v}
                                   (range (count v)))))
         neighbours (fn [v]
@@ -29,7 +39,7 @@
                               :when (or (and active? (#{2 3} active-neighbours))
                                         (and (not active?) (= 3 active-neighbours)))]
                           v)))
-                 input
+                 (set (map encode input))
                  (range 6))
          count)))
 
