@@ -10,22 +10,20 @@
 
 (defn part1
   [input]
-  (let [encode (fn [v] (->> v
-                            (map (fn [i] (char (+ 128 i))))
-                            (apply str)))
-        get-at (fn [^String e idx] (- (int (.charAt e idx)) 128))
-        inc-at (fn [^String e idx] (let [cs (.toCharArray e)]
-                                     (aset cs idx (char (inc (int (aget cs idx)))))
-                                     (String. cs)))
-        dec-at (fn [^String e idx] (let [cs (.toCharArray e)]
-                                     (aset cs idx (char (dec (int (aget cs idx)))))
-                                     (String. cs)))
+  (let [size ^long (->> input first count)
+        encode (fn [v] (->> v
+                            (map (fn [i] (+ 50 i)))
+                            (reduce (fn [acc el]
+                                      (+ el (* 100 acc)))
+                                    0)))
+        incs [#(+ % 1) #(+ % 100) #(+ % 10000) #(+ % 1000000)]
+        decs [#(- % 1) #(- % 100) #(- % 10000) #(- % 1000000)]
         neighbourhood (memoize
                         (fn [v]
                           (reduce (fn [n idx]
-                                    (set (mapcat (fn [t] [t (dec-at t idx) (inc-at t idx)]) n)))
+                                    (set (mapcat (fn [t] [t ((get incs idx) t) ((get decs idx) t)]) n)))
                                   #{v}
-                                  (range (count v)))))
+                                  (range size))))
         neighbours (fn [v]
                      (disj (neighbourhood v) v))
         to-check (fn [active]
