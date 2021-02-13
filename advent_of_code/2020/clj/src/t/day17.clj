@@ -25,18 +25,18 @@
                                   #{v}
                                   (range size))))
         neighbours (fn [v]
-                     (disj (neighbourhood v) v))
-        to-check (fn [active]
-                   (->> active
-                        (mapcat neighbourhood)
-                        set))]
+                     (disj (neighbourhood v) v))]
     (->> (reduce (fn [prev _]
-                   (set (for [v (to-check prev)
-                              :let [active? (prev v)
-                                    active-neighbours (count (set/intersection (neighbours v) prev))]
-                              :when (or (and active? (#{2 3} active-neighbours))
-                                        (and (not active?) (= 3 active-neighbours)))]
-                          v)))
+                   (->> prev
+                        (mapcat neighbours)
+                        (reduce (fn [acc el]
+                                     (update acc el (fnil inc 0)))
+                                   {})
+                        (keep (fn [[x n]]
+                                (when (or (and (prev x) (#{2 3} n))
+                                          (and (not (prev x)) (= 3 n)))
+                                  x)))
+                        set))
                  (set (map encode input))
                  (range 6))
          count)))
