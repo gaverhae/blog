@@ -24,16 +24,20 @@
                              [0])
                      rest)
         neighbours (eval
-                     (let [tagged-arg (with-meta 'i {:tag long})]
-                       `(fn [~tagged-arg]
-                          [~@(map (fn [o] `(unchecked-add ~tagged-arg (long ~o)))
-                                  offsets)])))]
+                     (let [tagged-arg (with-meta 'i {:tag long})
+                           tagged-args (with-meta [tagged-arg] {:tag longs})
+                           tagged-arr (with-meta `(long-array ~(count offsets)) {:tag longs})]
+                       `(fn ~tagged-args
+                          (doto ~tagged-arr
+                            ~@(map-indexed (fn [idx o] `(aset ~idx (long (unchecked-add ~tagged-arg (long ~o)))))
+                                           offsets)))))]
     (->> (reduce (fn [prev _]
                    (->> prev
-                        (mapcat neighbours)
-                        (reduce (fn [acc el]
-                                     (update acc el (fnil inc 0)))
-                                   {})
+                        (map neighbours)
+                        (reduce (fn [acc ^longs neighs]
+                                  (areduce neighs idx ret acc
+                                           (update ret (aget neighs idx) (fnil inc 0))))
+                                {})
                         (keep (fn [[x n]]
                                 (when (or (and (prev x) (#{2 3} n))
                                           (and (not (prev x)) (= 3 n)))
