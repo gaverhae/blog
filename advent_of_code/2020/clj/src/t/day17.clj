@@ -74,6 +74,40 @@
 
   (defn go [] (part2 in))
 
+
+(defn neighbourhood
+  [v]
+  (->> (range (count v))
+       (reduce (fn [n idx]
+                 (mapcat (fn [t] [t (update t idx inc) (update t idx dec)]) n))
+               #{v})
+       rest))
+
+(defn mk-neighs [s]
+  (let [args (vec (repeatedly s gensym))]
+    `(fn [~args]
+       [~@(->> (range s)
+               (reduce (fn [acc idx]
+                         (mapcat (fn [t] [t (update t idx (fn [s] `(inc ~s))) (update t idx (fn [s] `(dec ~s)))])
+                                 acc))
+                       `#{~args})
+               rest)])))
+
+(mk-neighs 1)
+(clojure.core/fn [[G__57757]] [[(clojure.core/inc G__57757)] [(clojure.core/dec G__57757)]])
+(mk-neighs 2)
+(clojure.core/fn [[G__57760 G__57761]] [[G__57760 (clojure.core/inc G__57761)] [G__57760 (clojure.core/dec G__57761)] [(clojure.core/inc G__57760) G__57761] [(clojure.core/inc G__57760) (clojure.core/inc G__57761)] [(clojure.core/inc G__57760) (clojure.core/dec G__57761)] [(clojure.core/dec G__57760) G__57761] [(clojure.core/dec G__57760) (clojure.core/inc G__57761)] [(clojure.core/dec G__57760) (clojure.core/dec G__57761)]])
+
+(defn mk-neighbourhood
+  [n]
+  (fn [v]
+    (->> (range n)
+         (reduce (fn [acc idx]
+                   (mapcat (fn [t] [t (update t idx inc) (update t idx dec)]) acc))
+                 #{v})
+         rest)))
+
+
 (require '[criterium.core :as crit :refer [bench]])
 
 (defmacro b [e] `(first (:mean (crit/benchmark ~e {}))))
