@@ -47,8 +47,10 @@
                                 (let [e ^java.util.Map$Entry (aget entries e-idx)
                                       x (long (.getKey e))
                                       n (long (.getValue e))]
-                                  (when (or (and (active? prev x) (or (== 2 n) (== 3 n)))
-                                            (and (not (active? prev x)) (== 3 n)))
+                                  (when (or (and (or (== 2 n) (== 3 n))
+                                                 (active? prev x))
+                                            (and (== 3 n)
+                                                 (not (active? prev x))))
                                     (.add nex x))))
                      boxed (.toArray nex)
                      ret (long-array (alength boxed))]
