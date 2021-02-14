@@ -117,17 +117,46 @@
  (unchecked-add i -10101)]
   )
 
+(defn nei-arr ^longs [^long i]
+  (doto ^longs (long-array 26)
+    (aset 0 (unchecked-add i 10000))
+    (aset 1 (unchecked-add i -10000))
+    (aset 2 (unchecked-add i 100)   )
+    (aset 3 (unchecked-add i 10100) )
+    (aset 4 (unchecked-add i -9900) )
+    (aset 5 (unchecked-add i -100)  )
+    (aset 6 (unchecked-add i 9900)  )
+    (aset 7 (unchecked-add i -10100))
+    (aset 8 (unchecked-add i 1)     )
+    (aset 9 (unchecked-add i 10001) )
+    (aset 10 (unchecked-add i -9999) )
+    (aset 11 (unchecked-add i 101)   )
+    (aset 12 (unchecked-add i 10101) )
+    (aset 13 (unchecked-add i -9899) )
+    (aset 14 (unchecked-add i -99)   )
+    (aset 15 (unchecked-add i 9901)  )
+    (aset 16 (unchecked-add i -10099))
+    (aset 17 (unchecked-add i -1)    )
+    (aset 18 (unchecked-add i 9999)  )
+    (aset 19 (unchecked-add i -10001))
+    (aset 20 (unchecked-add i 99)    )
+    (aset 21 (unchecked-add i 10099) )
+    (aset 22 (unchecked-add i -9901) )
+    (aset 23 (unchecked-add i -101)  )
+    (aset 24 (unchecked-add i 9899)  )
+    (aset 25 (unchecked-add i -10101))
+    ))
 
 (b (nei [1 2 3]))
-4.18045982016832E-6
+4.395512656638458E-6
 
 (b (nei-vec [1 2 3]))
-4.809528450957648E-7
+4.2312273984130804E-7
 
 (b (nei-int 514950))
-1.2762183457518551E-7
-1.2973619679462592E-7
-1.1909981092958412E-7
-7.210075680544255E-7
+1.1762816901491361E-7
+
+(b (nei-arr 514950))
+2.4585955424968558E-8
 
   )
