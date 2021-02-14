@@ -16,16 +16,18 @@
                             (reduce (fn [acc el]
                                       (+ el (* 100 acc)))
                                     0)))
-        incs [#(+ % 1) #(+ % 100) #(+ % 10000) #(+ % 1000000)]
-        decs [#(- % 1) #(- % 100) #(- % 10000) #(- % 1000000)]
-        neighbourhood (memoize
-                        (fn [v]
-                          (reduce (fn [n idx]
-                                    (set (mapcat (fn [t] [t ((get incs idx) t) ((get decs idx) t)]) n)))
-                                  #{v}
-                                  (range size))))
-        neighbours (fn [v]
-                     (disj (neighbourhood v) v))]
+        offsets (->> (iterate #(* 100 %) 1)
+                     (take size)
+                     (reduce (fn [n idx]
+                               (mapcat (fn [t] [t (+ t idx) (- t idx)])
+                                       n))
+                             [0])
+                     rest)
+        neighbours (eval
+                     (let [tagged-arg (with-meta 'i {:tag long})]
+                       `(fn [~tagged-arg]
+                          [~@(map (fn [o] `(unchecked-add ~tagged-arg (long ~o)))
+                                  offsets)])))]
     (->> (reduce (fn [prev _]
                    (->> prev
                         (mapcat neighbours)
