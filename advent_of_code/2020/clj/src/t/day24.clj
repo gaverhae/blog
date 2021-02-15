@@ -30,8 +30,12 @@
 (defn part2
   [input]
   (let [neighbours (fn [[x y z]]
-                     (map (fn [[dx dy dz]] [(+ x dx) (+ y dy) (+ z dz)])
-                          [[-1 0 1] [0 -1 1] [-1 1 0] [1 0 -1] [0 1 -1] [1 -1 0]]))]
+                     [[(dec x) y (inc z)]
+                      [x (dec y) (inc z)]
+                      [(dec x) (inc y) z]
+                      [(inc x) y (dec z)]
+                      [x (inc y) (dec z)]
+                      [(inc x) (dec y) z]])]
     (->> (range 100)
          (reduce (fn [prev _]
                    (->> (mapcat neighbours prev)
