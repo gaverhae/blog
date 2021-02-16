@@ -38,18 +38,27 @@
                       [(inc x) (dec y) z]])]
     (->> (range 100)
          (reduce (fn [prev _]
-                   (->> (mapcat neighbours prev)
-                        (reduce (fn [acc el]
-                                  (update acc el (fnil inc 0)))
-                                {})
-                        (keep (fn [[pos num-black-neighbours]]
-                                ;; if zero black neighbours, does not appear
-                                (when (or (and (or (== 1 num-black-neighbours)
-                                                   (== 2 num-black-neighbours))
-                                               (contains? prev pos))
-                                          (and (== 2 num-black-neighbours)
-                                               (not (contains? prev pos))))
-                                  pos)))
-                        set))
+                   (let [counts (java.util.HashMap.)]
+                     (doseq [p prev
+                             n (neighbours p)]
+                       (.put counts n (inc (.getOrDefault counts n 0))))
+                     (->> counts
+                          (keep (fn [[pos num-black-neighbours]]
+                                  ;; if zero black neighbours, does not appear
+                                  (when (or (and (or (== 1 num-black-neighbours)
+                                                     (== 2 num-black-neighbours))
+                                                 (contains? prev pos))
+                                            (and (== 2 num-black-neighbours)
+                                                 (not (contains? prev pos))))
+                                    pos)))
+                          set)))
                  input)
          count)))
+
+(comment
+  (def in (-> (slurp "data/day24") clojure.string/split-lines parse))
+  (defn go [] (part2 in))
+
+  (go)
+
+  )
