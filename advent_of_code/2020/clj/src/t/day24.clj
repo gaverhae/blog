@@ -29,16 +29,26 @@
 
 (defn part2
   [input]
-  (let [neighbours (fn [[x y z]]
-                     [[(dec x) y (inc z)]
-                      [x (dec y) (inc z)]
-                      [(dec x) (inc y) z]
-                      [(inc x) y (dec z)]
-                      [x (inc y) (dec z)]
-                      [(inc x) (dec y) z]])]
+  (let [encode (fn [[x y z]]
+                 (+ x (bit-shift-left y 16) (bit-shift-left z 32)))
+        inc-x (fn ^long [^long n] (unchecked-add n 1))
+        dec-x (fn ^long [^long n] (unchecked-subtract n 1))
+        inc-y (fn ^long [^long n] (unchecked-add n 65536))
+        dec-y (fn ^long [^long n] (unchecked-subtract n 65536))
+        inc-z (fn ^long [^long n] (unchecked-add n 4294967296))
+        dec-z (fn ^long [^long n] (unchecked-subtract n 4294967296))
+        neighbours (fn [n]
+                     [(-> n dec-x inc-z)
+                      (-> n dec-y inc-z)
+                      (-> n dec-x inc-y)
+                      (-> n inc-x dec-z)
+                      (-> n inc-y dec-z)
+                      (-> n inc-x dec-y)])]
     (->> (range 100)
-         (reduce (fn [prev _]
-                   (let [counts (java.util.HashMap.)]
+         (reduce (fn [^longs prev _]
+                   (java.util.Arrays/sort prev)
+                   (let [counts (java.util.HashMap.)
+                         black? (fn [^long n] (>= (java.util.Arrays/binarySearch prev n) 0))]
                      (doseq [p prev
                              n (neighbours p)]
                        (.put counts n (inc (.getOrDefault counts n 0))))
@@ -47,12 +57,13 @@
                                   ;; if zero black neighbours, does not appear
                                   (when (or (and (or (== 1 num-black-neighbours)
                                                      (== 2 num-black-neighbours))
-                                                 (contains? prev pos))
+                                                 (black? pos))
                                             (and (== 2 num-black-neighbours)
-                                                 (not (contains? prev pos))))
+                                                 (not (black? pos))))
                                     pos)))
-                          set)))
-                 input)
+                          (into-array Long/TYPE))))
+                 (->> (map encode input)
+                      (into-array Long/TYPE)))
          count)))
 
 (comment
