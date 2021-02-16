@@ -27,44 +27,61 @@
   [input]
   (count input))
 
+(defn encode ^long [[x y z]]
+  (+ x (bit-shift-left y 16) (bit-shift-left z 32)))
+(defn inc-x ^long [^long n] (unchecked-add n 1))
+(defn dec-x ^long [^long n] (unchecked-subtract n 1))
+(defn inc-y ^long [^long n] (unchecked-add n 65536))
+(defn dec-y ^long [^long n] (unchecked-subtract n 65536))
+(defn inc-z ^long [^long n] (unchecked-add n 4294967296))
+(defn dec-z ^long [^long n] (unchecked-subtract n 4294967296))
+
+(defn neighbours
+  ^longs [^long n]
+  (let [ret (long-array 6)]
+    (aset ret 0 (-> n dec-x inc-z))
+    (aset ret 1 (-> n dec-y inc-z))
+    (aset ret 2 (-> n dec-x inc-y))
+    (aset ret 3 (-> n inc-x dec-z))
+    (aset ret 4 (-> n inc-y dec-z))
+    (aset ret 5 (-> n inc-x dec-y))
+    ret))
+
+(defn counts
+  ^java.util.Map [^longs prev]
+  (let [ret (java.util.HashMap.)]
+    (areduce prev p-idx _ nil
+             (let [neighs ^longs (neighbours (aget prev p-idx))]
+               (areduce neighs n-idx _ nil
+                        (let [n (aget neighs n-idx)]
+                          (.put ret n (unchecked-add 1 (long (.getOrDefault ret n 0))))))))
+    ret))
+
+(defn step
+  [^longs prev]
+  (java.util.Arrays/sort prev)
+  (let [black? (fn [^long n] (>= (java.util.Arrays/binarySearch prev n) 0))
+        kept (java.util.stream.LongStream/builder)]
+    (doseq [^java.util.Map$Entry e (.entrySet (counts prev))]
+      (let [pos (.getKey e)
+            num-black-neighbours (.getValue e)]
+        ;; if zero black neighbours, does not appear
+        (when (or (and (or (== 1 num-black-neighbours)
+                           (== 2 num-black-neighbours))
+                       (black? pos))
+                  (and (== 2 num-black-neighbours)
+                       (not (black? pos))))
+          (.accept kept pos))))
+    (.toArray (.build kept))))
+
 (defn part2
   [input]
-  (let [encode (fn [[x y z]]
-                 (+ x (bit-shift-left y 16) (bit-shift-left z 32)))
-        inc-x (fn ^long [^long n] (unchecked-add n 1))
-        dec-x (fn ^long [^long n] (unchecked-subtract n 1))
-        inc-y (fn ^long [^long n] (unchecked-add n 65536))
-        dec-y (fn ^long [^long n] (unchecked-subtract n 65536))
-        inc-z (fn ^long [^long n] (unchecked-add n 4294967296))
-        dec-z (fn ^long [^long n] (unchecked-subtract n 4294967296))
-        neighbours (fn [n]
-                     [(-> n dec-x inc-z)
-                      (-> n dec-y inc-z)
-                      (-> n dec-x inc-y)
-                      (-> n inc-x dec-z)
-                      (-> n inc-y dec-z)
-                      (-> n inc-x dec-y)])]
-    (->> (range 100)
-         (reduce (fn [^longs prev _]
-                   (java.util.Arrays/sort prev)
-                   (let [counts (java.util.HashMap.)
-                         black? (fn [^long n] (>= (java.util.Arrays/binarySearch prev n) 0))]
-                     (doseq [p prev
-                             n (neighbours p)]
-                       (.put counts n (inc (.getOrDefault counts n 0))))
-                     (->> counts
-                          (keep (fn [[pos num-black-neighbours]]
-                                  ;; if zero black neighbours, does not appear
-                                  (when (or (and (or (== 1 num-black-neighbours)
-                                                     (== 2 num-black-neighbours))
-                                                 (black? pos))
-                                            (and (== 2 num-black-neighbours)
-                                                 (not (black? pos))))
-                                    pos)))
-                          (into-array Long/TYPE))))
-                 (->> (map encode input)
-                      (into-array Long/TYPE)))
-         count)))
+  (->> (map encode input)
+       (into-array Long/TYPE)
+       (iterate step)
+       (drop 100)
+       first
+       count))
 
 (comment
   (def in (-> (slurp "data/day24") clojure.string/split-lines parse))
