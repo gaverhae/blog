@@ -41,7 +41,10 @@
                                (> (count p2) (peek p2)))
                           (let [sub1 (q (take (peek p1) (pop p1)))
                                 sub2 (q (take (peek p2) (pop p2)))
-                                [winner _] (play-game sub1 sub2 #{})]
+                                [winner _] (if (> (reduce max sub1)
+                                                  (reduce max sub2))
+                                             [0 nil]
+                                             (play-game sub1 sub2 #{}))]
                             (case (int winner)
                               0 (recur (win p1 p2)
                                        (lose p2)
