@@ -27,7 +27,11 @@
 
 (defn part2
   [[init1 init2]]
-  (let [q (fn [ls] (into clojure.lang.PersistentQueue/EMPTY ls))
+  (let [q (fn q [ls] (into clojure.lang.PersistentQueue/EMPTY ls))
+        win (fn win [p1 p2] (-> (pop p1)
+                            (conj (peek p1))
+                            (conj (peek p2))))
+        lose (fn lose [q] (pop q))
         play-game (fn play-game [p1 p2 mem]
                     (cond (contains? mem [p1 p2]) [0 p1]
                           (empty? p1) [1 p2]
@@ -39,29 +43,21 @@
                                 sub2 (q (take (peek p2) (pop p2)))
                                 [winner _] (play-game sub1 sub2 #{})]
                             (case (int winner)
-                              0 (recur (-> (pop p1)
-                                           (conj (peek p1))
-                                           (conj (peek p2)))
-                                       (pop p2)
+                              0 (recur (win p1 p2)
+                                       (lose p2)
                                        (conj mem [p1 p2]))
-                              1 (recur (pop p1)
-                                       (-> (pop p2)
-                                           (conj (peek p2))
-                                           (conj (peek p1)))
+                              1 (recur (lose p1)
+                                       (win p2 p1)
                                        (conj mem [p1 p2]))))
 
                           (> (peek p1) (peek p2))
-                          (recur (-> (pop p1)
-                                     (conj (peek p1))
-                                     (conj (peek p2)))
-                                 (pop p2)
+                          (recur (win p1 p2)
+                                 (lose p2)
                                  (conj mem [p1 p2]))
 
                           (< (peek p1) (peek p2))
-                          (recur (pop p1)
-                                 (-> (pop p2)
-                                     (conj (peek p2))
-                                     (conj (peek p1)))
+                          (recur (lose p1)
+                                 (win p2 p1)
                                  (conj mem [p1 p2]))))
         [_ winner-deck] (play-game (q init1) (q init2) #{})]
     (->> winner-deck
@@ -70,3 +66,10 @@
          (reduce (fn [acc [idx c]]
                    (+ acc (* (inc idx) c)))
                  0))))
+
+(comment
+
+  (def in (->> (slurp "data/day22") clojure.string/split-lines parse))
+  (defn go [] (part2 in))
+
+  )
