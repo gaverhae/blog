@@ -27,41 +27,37 @@
 
 (defn part2
   [[init1 init2]]
-  (let [q (fn q [ls] (into clojure.lang.PersistentQueue/EMPTY ls))
-        win (fn win [p1 p2] (-> (pop p1)
-                            (conj (peek p1))
-                            (conj (peek p2))))
-        lose (fn lose [q] (pop q))
-        play-game (fn play-game [p1 p2 mem]
-                    (cond (contains? mem [p1 p2]) [0 p1]
-                          (empty? p1) [1 p2]
-                          (empty? p2) [0 p1]
+  (let [q (fn q [ls] (let [ret (java.util.LinkedList.)]
+                       (doseq [e ls]
+                         (.add ret e))
+                       ret))
+        win! (fn win! [^java.util.LinkedList p1 ^java.util.LinkedList p2]
+              (.add p1 (.remove p1))
+              (.add p1 (.remove p2)))
+        play-game (fn play-game [^java.util.LinkedList p1 ^java.util.LinkedList p2 mem]
+                    (let [k [(vec p1) (vec p2)]]
+                    (cond (contains? mem k) [0 p1]
+                          (.isEmpty p1) [1 p2]
+                          (.isEmpty p2) [0 p1]
 
-                          (and (> (count p1) (peek p1))
-                               (> (count p2) (peek p2)))
-                          (let [sub1 (q (take (peek p1) (pop p1)))
-                                sub2 (q (take (peek p2) (pop p2)))
-                                [winner _] (if (> (reduce max sub1)
-                                                  (reduce max sub2))
-                                             [0 nil]
-                                             (play-game sub1 sub2 #{}))]
-                            (case (int winner)
-                              0 (recur (win p1 p2)
-                                       (lose p2)
-                                       (conj mem [p1 p2]))
-                              1 (recur (lose p1)
-                                       (win p2 p1)
-                                       (conj mem [p1 p2]))))
+                          true
+                          (do
+                            (cond
+                              (and (> (.size p1) (.element p1))
+                                   (> (.size p2) (.element p2)))
+                              (let [sub1 (q (take (.element p1) (rest p1)))
+                                    sub2 (q (take (.element p2) (rest p2)))
+                                    [winner _] (if (> (reduce max sub1)
+                                                      (reduce max sub2))
+                                                 [0 nil]
+                                                 (play-game sub1 sub2 #{}))]
+                                (case (int winner)
+                                  0 (win! p1 p2)
+                                  1 (win! p2 p1)))
 
-                          (> (peek p1) (peek p2))
-                          (recur (win p1 p2)
-                                 (lose p2)
-                                 (conj mem [p1 p2]))
-
-                          (< (peek p1) (peek p2))
-                          (recur (lose p1)
-                                 (win p2 p1)
-                                 (conj mem [p1 p2]))))
+                              (> (.element p1) (.element p2)) (win! p1 p2)
+                              (< (.element p1) (.element p2)) (win! p2 p1))
+                            (recur p1 p2 (conj mem k))))))
         [_ winner-deck] (play-game (q init1) (q init2) #{})]
     (->> winner-deck
          reverse
