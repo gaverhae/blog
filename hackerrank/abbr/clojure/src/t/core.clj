@@ -14,7 +14,7 @@
      ~todo
      (conj ~todo (make-todo ~imod ~imat))))
 
-(defn abbr [^String to-modify ^String to-match]
+(defn fast-abbr [^String to-modify ^String to-match]
   (let [nmod (int (count to-modify))
         nmat (int (count to-match))
         up (fn [^Character c] (Character/toUpperCase c))
@@ -44,6 +44,30 @@
                                        (unchecked-inc-int imod) (unchecked-inc-int imat))
                                   (unchecked-inc-int imod) imat))))))))))
 
+(defn abbr [^String to-modify ^String to-match]
+  (let [s (atom #{})
+        h (fn rec [^String x ^String y ^long dx ^long dy]
+            (if (contains? @s [dx dy])
+              false
+              (do
+                (swap! s conj [dx dy])
+                (cond (> dy dx) false
+                      (and (== dx dy) (= x y)) true
+                      (and (zero? dx) (zero? dy)) true
+                      (zero? dx) false
+                      (zero? dy) (= x (.toLowerCase x))
+                      :else
+                      (let [a (first x)
+                            as (subs x 1)
+                            b (first y)
+                            bs (subs y 1)]
+                        (cond (= a b) (recur as bs (unchecked-dec dx) (unchecked-dec dy))
+                              (Character/isUpperCase a) false
+                              (not= (Character/toUpperCase a) b) (recur as y (unchecked-dec dx) dy)
+                              (rec as bs (unchecked-dec dx) (unchecked-dec dy)) true
+                              true (recur as y (unchecked-dec dx) dy)))))))]
+    (h to-modify to-match (.length to-modify) (.length to-match))))
+
 (defn -main
   [& _args]
   (let [out-file (get (System/getenv) "OUTPUT_PATH")
@@ -53,7 +77,7 @@
         (let [to-modify (read-line)
               to-match (read-line)]
           (.write out
-                  (if (abbr to-modify to-match)
+                  (if (fast-abbr to-modify to-match)
                     "YES\n"
                     "NO\n")))))))
 
@@ -74,13 +98,18 @@
            line-seq
            (map {"YES" true "NO" false})
            vec)))
-  (defmacro timed [expr]
-    `(let [start# (System/nanoTime)
-           _# ~expr]
-       (format "%9.6f" (/ (- (System/nanoTime) start#) 1000000.0))))
 
+  (defmacro b [e]
+    `(do (dotimes [_# 10] ~e)
+         (let [start# (System/currentTimeMillis)
+               n# 100]
+           (dotimes [_# n#] ~e)
+           (/ (- (System/currentTimeMillis) start#)
+              1.0
+              n#))))
 
-  (mapv (fn [_] (timed (doseq [[mod mat] in] (abbr mod mat))))
-        (range 100))
-["859.559049" "805.115721" "693.200448" "824.420480" "710.022214" "858.807406" "757.194399" "702.251565" "675.896818" "652.620444" "682.654010" "675.934967" "681.390973" "662.156458" "659.232768" "671.884114" "679.655591" "671.691157" "683.484534" "672.409882" "684.587291" "672.365704" "672.301961" "670.426442" "672.343169" "683.237410" "680.863402" "656.268823" "712.247830" "684.823526" "672.623836" "684.941528" "670.280300" "671.897126" "680.577217" "689.347896" "666.935214" "680.818871" "667.818404" "676.096327" "676.530944" "681.321779" "677.597600" "703.552185" "693.910075" "716.852827" "700.253582" "713.949718" "675.970157" "692.410960" "684.782811" "767.788522" "690.608519" "677.268815" "674.548389" "688.845014" "713.058926" "711.557973" "736.021980" "677.897556" "676.536948" "698.789778" "675.968131" "677.990347" "668.509567" "693.045300" "737.782803" "675.392815" "678.656412" "678.792668" "701.016625" "678.051347" "679.275707" "701.578698" "688.153383" "705.376557" "684.527645" "665.441870" "678.040414" "677.786000" "699.304591" "693.349714" "697.336995" "674.852535" "671.722564" "682.543641" "705.936094" "699.890569" "692.531820" "670.801738" "681.614390" "675.695975" "670.051843" "676.337212" "673.458143" "702.749127" "712.568487" "677.351684" "672.166795" "678.954619"]
-)
+  (b (doseq [[mod mat] in] (abbr mod mat)))
+2871.97
+  (b (doseq [[mod mat] in] (fast-abbr mod mat)))
+731.23
+  )
