@@ -9,11 +9,11 @@
     {% endif %}
 
     <div id="prev-next">
-        {% if post.prev %}
-        <a href="{{post.prev.uri}}">&laquo; {{post.prev.title}}</a>
-        {% endif %}
         {% if post.next %}
-        <a class="right" href="{{post.next.uri}}">{{post.next.title}} &raquo;</a>
+        <a href="{{post.next.uri}}">&laquo; {{post.next.title}}</a>
+        {% endif %}
+        {% if post.prev %}
+        <a class="right" href="{{post.prev.uri}}">{{post.prev.title}} &raquo;</a>
         {% endif %}
     </div>
 </div>
