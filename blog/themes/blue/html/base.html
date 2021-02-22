@@ -63,10 +63,10 @@
             <div id="sidebar">
                 <h3>Links</h3>
                 <ul id="links">
-                    <li><a href="https://carmen.la/blog/archives">Carmen's Blog</a></li>
                     {% for page in sidebar-pages %}
                     <li><a href="{{page.uri}}">{{page.title}}</a></li>
                     {% endfor %}
+                    <li><a href="https://carmen.la/blog/archives">Carmen's Blog</a></li>
                 </ul>
                 {% if latest-posts|not-empty %}
                 <div id="recent">
