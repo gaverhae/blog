@@ -519,7 +519,7 @@ replicate n x = x : replicate (n - 1) x
 (!!) :: [a] -> Int -> a
 [] !! _ = error "spec says this is not valid"
 (x:xs) !! 0 = x
-(x:xs) !! (n+1) = xs !! n
+(x:xs) !! n = xs !! (n - 1)
 ```
 
 ```haskell
@@ -533,10 +533,10 @@ elem x (y:ys) | x == y = True
 >    merges two sorted lists to give a single sorted list. For example:
 >    ```haskell
 >    > merge [2, 5, 6] [1, 3, 4]
->    [1, 2, 3? 4, 5, 6]
+>    [1, 2, 3, 4, 5, 6]
 >    ```
 >    Note: your definition should not use other functions on sorted lists such
->    as `insert` of `isort`, but should be defined using explicit recursion.
+>    as `insert` or `isort`, but should be defined using explicit recursion.
 
 ```haskell
 merge :: Ord a => [a] -> [a] -> [a]
@@ -566,7 +566,7 @@ msort xs = merge (msort h1) (msort h2)
   where (h1, h2) = halves xs
 ```
 
-> 6. sing the five-step process, define the library functions that calculate
+> 6. Using the five-step process, define the library functions that calculate
 >    the `sum` of a list of numbers, `take` a given number of elements from the
 >    start of a list, and select the `last` element of a non-empty list.
 
@@ -580,7 +580,8 @@ sum (x:xs) = x + sum xs
 take :: Int -> [a] -> [a]
 take 0 _ = []
 take _ [] = []
-take (n+1) (x:xs) = x : take n xs
+take n _ | n < 0 = error "n must be positive"
+take n (x:xs) = x : take (n - 1) xs
 ```
 
 ```haskell
