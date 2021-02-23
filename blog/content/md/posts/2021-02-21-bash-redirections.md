@@ -176,6 +176,14 @@ $
 In this case we have created file descriptor 3 just to hold the data that was
 associated with `stdout` so we can swap `stdout` and `stderr`.
 
+At this point, you may be wondering: if `>` creates a write-only file
+descriptor and `<` creates a read-only one, wouldn't it also be useful to have
+a way to create a read-write file descriptor? If so, you're in luck. Sort of.
+Bash does have a way to create a read-write file descriptor, using the `<>`
+operator, which takes the same arguments using the same syntax as the other
+two. I've never had a use for it, though, so I'm not entirely sure about how
+useful it is.
+
 Finally, because the form `>file 2>&1` is so common, there is a shorthand for
 it: `>&file` (where `file` is not a number nor a dash). Or `&>file`; both are
 equivalent.
