@@ -1,14 +1,8 @@
 name:                titans
 version:             0.0.0
-github:              "gaverhae"
-license:             "CC BY-NC-ND 4.0"
-author:              "Gary Verhagen"
-maintainer:          "gary.verhaegen@gmail.com"
-copyright:           "2019 Gary Verhaegen"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 
 description:         Please see the README on GitHub
 
