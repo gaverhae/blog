@@ -20,7 +20,7 @@ data Character = Soldier
                | Druid
                | Sorcerer
                | Spellblade
-               deriving (Show, Ord, Eq, Enum)
+               deriving (Show, Ord, Eq, Enum, Bounded)
 
 data Item = Sword
           | Axe
@@ -45,22 +45,22 @@ data Item = Sword
           | Shield
           | Ring
           | Amulet
-          deriving (Show, Ord, Eq, Enum)
+          deriving (Show, Ord, Eq, Enum, Bounded)
 
 data Furniture = Table
                | Mannequin
                | VerticalRack
                | Shelves
-               deriving (Show, Ord, Eq, Enum)
+               deriving (Show, Ord, Eq, Enum, Bounded)
 
 items :: Set.Set Item
-items = Set.fromList [Sword .. ]
+items = Set.fromList [minBound .. maxBound]
 
 characters :: Set.Set Character
-characters = Set.fromList [Soldier .. Spellblade]
+characters = Set.fromList [minBound .. maxBound]
 
 furnitures :: Set.Set Furniture
-furnitures = Set.fromList [Table .. Shelves]
+furnitures = Set.fromList [minBound .. maxBound]
 
 canUse :: Map.Map Character (Set.Set Item)
 canUse = Map.fromList [(Soldier, Set.fromList [Sword, Mace, Knife, HeavyArmor, HeavyBracers, HeavyShoes, Potion, Shield]),
