@@ -23,7 +23,10 @@ blank_screen = Boxed.replicate 32 (Vector.replicate 64 False)
 
 init :: [Word8] -> ChipState
 init code = ChipState {
-  memory = Vector.generate 4096 (\x -> if ((x - 0x200) >= 0 && (x - 0x200) < length code) then code !! (x - 0x200) else 0),
+  memory = Vector.generate 4096 (\x ->
+    if ((x - 0x200) >= 0 && (x - 0x200) < length code)
+    then code !! (x - 0x200)
+    else 0),
   registers = Vector.replicate 16 0,
   address = 0,
   program_counter = 0x200,
@@ -68,7 +71,8 @@ trunc_word :: Int -> Word8
 trunc_word i = fromIntegral $ (abs i) `rem` 256
 
 -- parameters taken from
--- Saucier, R. (2000). Computer Generation of Statistical Distributions (1st ed.). Aberdeen, MD. Army Research Lab.
+-- Saucier, R. (2000). Computer Generation of Statistical Distributions (1st
+-- ed.). Aberdeen, MD. Army Research Lab.
 -- via https://aaronschlegel.me/linear-congruential-generator-r.html
 next_rand :: Int -> Int
 next_rand prev = (1103515245 * prev + 12345) `rem` (2 ^ 32)
