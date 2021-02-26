@@ -24,7 +24,8 @@ blank_screen = Boxed.replicate 32 (Vector.replicate 64 False)
 init :: [Word8] -> ChipState
 init code = ChipState {
   memory = Vector.generate 4096 (\x ->
-    if ((x - 0x200) >= 0 && (x - 0x200) < length code)
+    if (x - 0x200) >= 0
+    && (x - 0x200) < length code
     then code !! (x - 0x200)
     else 0),
   registers = Vector.replicate 16 0,
@@ -41,8 +42,8 @@ decode i =
 next_instruction :: ChipState -> (Int, Int, Int, Int)
 next_instruction cs =
   let pc = program_counter cs
-      (x, y) = decode $ (memory cs) Vector.! pc
-      (z, t) = decode $ (memory cs) Vector.! (pc + 1)
+      (x, y) = decode $ memory cs Vector.! pc
+      (z, t) = decode $ memory cs Vector.! (pc + 1)
   in (x, y, z, t)
 
 clear_screen :: ChipState -> ChipState
@@ -50,10 +51,10 @@ clear_screen cs = cs { screen = blank_screen }
 
 set_register :: ChipState -> Int -> Word8 -> ChipState
 set_register cs register value =
-  cs { registers = ((registers cs) Vector.// [(register, value)]) }
+  cs { registers = registers cs Vector.// [(register, value)] }
 
 get_register :: ChipState -> Int -> Word8
-get_register cs r = (registers cs) Vector.! r
+get_register cs r = registers cs Vector.! r
 
 set_address :: ChipState -> Int -> ChipState
 set_address cs addr = cs { address = addr }
@@ -68,7 +69,7 @@ byte a b =
   else fromIntegral $ a * 16 + b
 
 trunc_word :: Int -> Word8
-trunc_word i = fromIntegral $ (abs i) `rem` 256
+trunc_word i = fromIntegral $ abs i `rem` 256
 
 -- parameters taken from
 -- Saucier, R. (2000). Computer Generation of Statistical Distributions (1st
@@ -81,20 +82,20 @@ step :: ChipState -> State.State Int ChipState
 step cs = case next_instruction cs of
   (0x0, 0x0, 0xE, 0x0) -> return $ inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
-  (0x3,   r,  n1,  n2) -> return $ inc_pc $ if (get_register cs r) == (byte n1 n2) then inc_pc cs else cs
-  (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ (byte n1 n2)
-  (0xa,  n1,  n2,  n3) -> return $ inc_pc $ set_address cs $ fromIntegral (n1 * 256 + n2 * 16 + n3)
+  (0x3,   r,  n1,  n2) -> return $ inc_pc $ if get_register cs r == byte n1 n2 then inc_pc cs else cs
+  (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ byte n1 n2
+  (0xa,  n1,  n2,  n3) -> return $ inc_pc $ set_address cs $ fromIntegral $ n1 * 256 + n2 * 16 + n3
   (0xc,   r,  n1,  n2) -> do
     State.modify next_rand
     rnd <- State.get
-    return $ inc_pc $ set_register cs r $ (trunc_word rnd) .&. (get_register cs r)
+    return $ inc_pc $ set_register cs r $ trunc_word rnd .&. get_register cs r
   (0xd,  r1,  r2,   n) -> do
     let x_start = get_register cs r1
         y_start = get_register cs r2
         height = n
         current_screen = screen cs
         byte_to_bits b = [Bits.testBit b i | i <- [0..7]]
-        bits = concat [byte_to_bits b | b <- [(address cs)..(address cs + n - 1)]]
+        bits = concat [byte_to_bits b | b <- [address cs..address cs + n - 1]]
         positions a xs = h a xs 0
           where h a [] n = []
                 h a (x:xs) n | a == x = n : h a xs (n + 1)
@@ -104,11 +105,11 @@ step cs = case next_instruction cs of
                               $ positions True bits
         flip :: Boxed.Vector (Vector.Vector Bool) -> (Int, Int) -> Boxed.Vector (Vector.Vector Bool)
         flip s (i, j) = new_screen
-          where row = (s Boxed.! j)
+          where row = s Boxed.! j
                 new_screen = s Boxed.// [(j, row Vector.// [(i, not $ row Vector.! i)])]
         collision = False
     return cs{ screen = foldl flip (screen cs) indices_to_flip
-             , registers = (registers cs) Vector.// [(15, if collision then 1 else 0)]}
+             , registers = registers cs Vector.// [(15, if collision then 1 else 0)]}
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 step_n :: ChipState -> Int -> ChipState
@@ -125,16 +126,16 @@ print_screen :: ChipState -> String
 print_screen cs =
   List.intercalate "\n" lines
   where s = screen cs
-        lines = [line (s Boxed.! (i - 1) ) | i <- [1..(Boxed.length s)]]
-        line v = [if (v Vector.! (i - 1)) then '#' else ' ' | i <- [1..(Vector.length v)]]
+        lines = [line (s Boxed.! (i - 1)) | i <- [1..Boxed.length s]]
+        line v = [if v Vector.! (i - 1) then '#' else ' ' | i <- [1..Vector.length v]]
 
 print_memory cs =
   List.intercalate "\n" lines
   where m = memory cs
-        part n l = case l of {[] -> []; _ -> (take n l) : part n (drop n l)}
+        part n l = case l of {[] -> []; _ -> take n l : part n (drop n l)}
         mem_list = [m Vector.! (i - 1) | i <- [1..(Vector.length m)]]
         lines = [line r | r <- part 64 mem_list]
-        line r = concat [printf "%02x%02x " x y | (x:y:[]) <- part 2 r]
+        line r = concat [printf "%02x%02x " x y | [x, y] <- part 2 r]
 
 maze :: [Word8]
 maze = [0x60, 0x00, 0x61, 0x00, 0xa2, 0x22, 0xc2, 0x01, 0x32, 0x01, 0xa2, 0x1e, 0xd0, 0x14, 0x70, 0x04,
@@ -143,9 +144,9 @@ maze = [0x60, 0x00, 0x61, 0x00, 0xa2, 0x22, 0xc2, 0x01, 0x32, 0x01, 0xa2, 0x1e, 
 
 print_state :: ChipState -> IO ()
 print_state cs = do
-  putStrLn $ print_memory $ cs
-  putStrLn $ printf "PC: %8x, Rs: %sI: %8x" (program_counter cs) ((concatMap (\x -> printf "%02x, " x) $ Vector.toList (registers cs)) :: String) (address cs)
-  putStrLn $ print_screen $ cs
+  putStrLn $ print_memory cs
+  putStrLn $ printf "PC: %8x, Rs: %sI: %8x" (program_counter cs) ((concatMap (printf "%02x, ") $ Vector.toList (registers cs)) :: String) (address cs)
+  putStrLn $ print_screen cs
 
 main :: IO ()
 main = do
