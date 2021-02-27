@@ -3,7 +3,7 @@ module Main where
 import Lib
 import Data.Bits ((.&.))
 import qualified Data.Bits as Bits
-import Data.Word (Word8)
+import Data.Word (Word8, Word16)
 import Text.Printf (printf)
 import qualified Data.List as List
 import qualified Data.Vector as Boxed
@@ -22,8 +22,12 @@ data ChipState = ChipState {
 blank_screen :: Boxed.Vector (Vector Bool)
 blank_screen = Boxed.replicate 32 (Vector.replicate 64 False)
 
-init :: [Word8] -> ChipState
-init code = ChipState {
+-- Using Word16 for data entry for ntational convenience
+init :: [Word16] -> ChipState
+init code16 =
+  let code = code16 >>= (\w16 -> let (a, b) = quotRem w16 256
+                                 in [fromIntegral a, fromIntegral b])
+  in ChipState {
   memory = Vector.generate 4096 (\x ->
     if (x - 0x200) >= 0
     && (x - 0x200) < length code
@@ -144,10 +148,10 @@ print_memory cs =
         mem_list = [m Vector.! (i - 1) | i <- [1..Vector.length m]]
         m = memory cs
 
-maze :: [Word8]
-maze = [0x60, 0x00, 0x61, 0x00, 0xa2, 0x22, 0xc2, 0x01, 0x32, 0x01, 0xa2, 0x1e, 0xd0, 0x14, 0x70, 0x04,
-        0x30, 0x40, 0x12, 0x04, 0x60, 0x00, 0x71, 0x04, 0x31, 0x20, 0x12, 0x04, 0x12, 0x1c, 0x80, 0x40,
-        0x20, 0x10, 0x20, 0x40, 0x80, 0x10]
+maze :: [Word16]
+maze = [0x6000, 0x6100, 0xa222, 0xc201, 0x3201, 0xa21e, 0xd014, 0x7004,
+        0x3040, 0x1204, 0x6000, 0x7104, 0x3120, 0x1204, 0x121c, 0x8040,
+        0x2010, 0x2040, 0x8010]
 
 print_state :: ChipState -> IO ()
 print_state cs = do
