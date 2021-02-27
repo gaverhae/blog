@@ -153,6 +153,10 @@ maze = [0x6000, 0x6100, 0xa222, 0xc201, 0x3201, 0xa21e, 0xd014, 0x7004,
         0x3040, 0x1204, 0x6000, 0x7104, 0x3120, 0x1204, 0x121c, 0x8040,
         0x2010, 0x2040, 0x8010]
 
+-- https://archive.org/details/byte-magazine-1978-12/page/n113/mode/2up
+print_ship :: [Word16]
+print_ship = [0x6200, 0x6300, 0xa20a, 0xd236, 0x1208, 0x2070, 0x70f8, 0xd888]
+
 print_state :: ChipState -> IO ()
 print_state cs = do
   putStrLn $ print_memory cs
@@ -161,5 +165,5 @@ print_state cs = do
 
 main :: IO ()
 main = do
-  let state = step_n (Main.init maze) 7
+  let state = step_n (Main.init print_ship) 100
   print_state state
