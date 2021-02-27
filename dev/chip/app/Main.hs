@@ -8,17 +8,18 @@ import Text.Printf (printf)
 import qualified Data.List as List
 import qualified Data.Vector as Boxed
 import qualified Data.Vector.Unboxed as Vector
+import Data.Vector.Unboxed (Vector)
 import qualified Control.Monad.State.Lazy as State
 
 data ChipState = ChipState {
-  memory :: Vector.Vector Word8,
-  registers :: Vector.Vector Word8,
+  memory :: Vector Word8,
+  registers :: Vector Word8,
   address :: Int,
   program_counter :: Int,
-  screen :: Boxed.Vector (Vector.Vector Bool)
+  screen :: Boxed.Vector (Vector Bool)
 }
 
-blank_screen :: Boxed.Vector (Vector.Vector Bool)
+blank_screen :: Boxed.Vector (Vector Bool)
 blank_screen = Boxed.replicate 32 (Vector.replicate 64 False)
 
 init :: [Word8] -> ChipState
@@ -103,7 +104,7 @@ step cs = case next_instruction cs of
         indices_to_flip = map (\p -> (fromIntegral $ (p `rem` 8) + x_start,
                                       fromIntegral $ (p `quot` 8) + y_start))
                               $ positions True bits
-        flip :: Boxed.Vector (Vector.Vector Bool) -> (Int, Int) -> Boxed.Vector (Vector.Vector Bool)
+        flip :: Boxed.Vector (Vector Bool) -> (Int, Int) -> Boxed.Vector (Vector Bool)
         flip s (i, j) = new_screen
           where row = s Boxed.! j
                 new_screen = s Boxed.// [(j, row Vector.// [(i, not $ row Vector.! i)])]
