@@ -127,15 +127,21 @@ print_screen cs =
   List.intercalate "\n" lines
   where s = screen cs
         lines = [line (s Boxed.! (i - 1)) | i <- [1..Boxed.length s]]
-        line v = [if v Vector.! (i - 1) then '#' else ' ' | i <- [1..Vector.length v]]
+        line v = [if v Vector.! (i - 1) then '#' else ' '
+                 | i <- [1..Vector.length v]]
 
+print_memory :: ChipState -> String
 print_memory cs =
   List.intercalate "\n" lines
-  where m = memory cs
+  where lines = x_offsets : [line r idx
+                            | (r, idx) <- zip (part 16 mem_list) [0..]
+                            , not (all (== 0) r)]
+        x_offsets = "     " ++ concat [printf ".%x.%x " (x * 2) ((x * 2) + 1)
+                                      | x <- [0..7] :: [Word8]]
+        line r idx = concat $ printf "%03x. " (idx::Int) : [printf "%02x%02x " x y | [x, y] <- part 2 r]
         part n l = case l of {[] -> []; _ -> take n l : part n (drop n l)}
-        mem_list = [m Vector.! (i - 1) | i <- [1..(Vector.length m)]]
-        lines = [line r | r <- part 64 mem_list]
-        line r = concat [printf "%02x%02x " x y | [x, y] <- part 2 r]
+        mem_list = [m Vector.! (i - 1) | i <- [1..Vector.length m]]
+        m = memory cs
 
 maze :: [Word8]
 maze = [0x60, 0x00, 0x61, 0x00, 0xa2, 0x22, 0xc2, 0x01, 0x32, 0x01, 0xa2, 0x1e, 0xd0, 0x14, 0x70, 0x04,
