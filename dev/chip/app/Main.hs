@@ -93,6 +93,21 @@ display screen wx wy pattern =
                    line)
                 screen
 
+draw :: Int -> Int -> Int -> ChipState -> ChipState
+draw r1 r2 n cs =
+  let x = get_register cs r1
+      y = get_register cs r2
+      to_draw = [get_memory_at cs addr | addr <- [address cs..address cs + n - 1]]
+      on_screen = take n $ get_screen_at cs x y
+      collisions = [ td .&. os | (td, os) <- zip to_draw on_screen]
+      collision_happened = not (all (== 0) collisions)
+      new_screen = display (screen cs) x y to_draw
+  in if (x < 0 || x >= 64)
+     || (y < 0 || y >= 32)
+     then error $ "invalid coordinates: (" <> show x <> ", " <> show y <> ")"
+     else cs { screen = new_screen
+             , registers = registers cs Vector.// [(0xf, sum [1 | collision_happened])]}
+
 inc_pc :: ChipState -> ChipState
 inc_pc cs = cs { program_counter = program_counter cs + 2 }
 
@@ -123,17 +138,7 @@ step cs = case next_instruction cs of
     State.modify next_rand
     rnd <- State.get
     return $ inc_pc $ set_register cs r $ trunc_word rnd .&. get_register cs r
-  (0xd,  r1,  r2,   n) -> do
-    let x = get_register cs r1
-    Control.Monad.when (x < 0 || x >= 64) (error "invalid x")
-    let y = get_register cs r2
-    Control.Monad.when (y < 0 || y >= 32) (error "invalid y")
-    let to_draw = [get_memory_at cs addr | addr <- [address cs..address cs + n - 1]]
-    let on_screen = take n $ get_screen_at cs x y
-    let collisions = [ td .&. os | (td, os) <- zip to_draw on_screen]
-    let collision_happened = not (all (== 0) collisions)
-    return cs { screen = display (screen cs) x y to_draw
-              , registers = registers cs Vector.// [(0xf, sum [1 | collision_happened])]}
+  (0xd,  r1,  r2,   n) -> return $ inc_pc $ draw r1 r2 n cs
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 step_n :: ChipState -> Int -> ChipState
