@@ -17,6 +17,7 @@ dependencies:
 - base >= 4.7 && < 5
 - vector
 - mtl
+- containers
 
 library:
   source-dirs: src

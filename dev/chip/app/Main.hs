@@ -9,7 +9,10 @@ import qualified Data.List as List
 import qualified Data.Vector as Boxed
 import qualified Data.Vector.Unboxed as Vector
 import Data.Vector.Unboxed (Vector)
+import qualified Data.Set as Set
+import Data.Set (Set)
 import qualified Control.Monad.State.Lazy as State
+import qualified Control.Monad
 
 data ChipState = ChipState {
   memory :: Vector Word8,
@@ -64,6 +67,32 @@ get_register cs r = registers cs Vector.! r
 set_address :: ChipState -> Int -> ChipState
 set_address cs addr = cs { address = addr }
 
+get_memory_at :: ChipState -> Int -> Word8
+get_memory_at cs offset = memory cs Vector.! offset
+
+get_screen_at :: ChipState -> Word8 -> Word8 -> [Word8]
+get_screen_at cs wx wy =
+  let [x, y] = map fromIntegral [wx, wy]
+  in [byte | dy <- [0..5]
+           , let rbits = [(screen cs Boxed.! (y+dy)) Vector.! (x+dx) | dx <- [0..7]]
+           , let byte = sum [2 ^ exp | (b, exp) <- zip rbits [0..]
+                                     , b]]
+
+display :: Boxed.Vector (Vector Bool) -> Word8 -> Word8 -> [Word8] -> Boxed.Vector (Vector Bool)
+display screen wx wy pattern =
+  let [x, y] = map fromIntegral [wx, wy]
+      pattern_indices = Set.fromList [ (y+dy, x+dx) | dy <- [0..length pattern - 1]
+                                                    , let pattern_byte = pattern !! dy
+                                                    , dx <- [0..7]
+                                                    , Bits.testBit pattern_byte (7 - dx) ]
+  in Boxed.imap (\y line ->
+       Vector.imap (\x b ->
+                     if (y, x) `Set.member` pattern_indices
+                     then not b
+                     else b)
+                   line)
+                screen
+
 inc_pc :: ChipState -> ChipState
 inc_pc cs = cs { program_counter = program_counter cs + 2 }
 
@@ -95,26 +124,16 @@ step cs = case next_instruction cs of
     rnd <- State.get
     return $ inc_pc $ set_register cs r $ trunc_word rnd .&. get_register cs r
   (0xd,  r1,  r2,   n) -> do
-    let x_start = get_register cs r1
-        y_start = get_register cs r2
-        height = n
-        current_screen = screen cs
-        byte_to_bits b = [Bits.testBit b i | i <- [0..7]]
-        bits = concat [byte_to_bits b | b <- [address cs..address cs + n - 1]]
-        positions a xs = h a xs 0
-          where h a [] n = []
-                h a (x:xs) n | a == x = n : h a xs (n + 1)
-                             | otherwise = h a xs (n + 1)
-        indices_to_flip = map (\p -> (fromIntegral $ (p `rem` 8) + x_start,
-                                      fromIntegral $ (p `quot` 8) + y_start))
-                              $ positions True bits
-        flip :: Boxed.Vector (Vector Bool) -> (Int, Int) -> Boxed.Vector (Vector Bool)
-        flip s (i, j) = new_screen
-          where row = s Boxed.! j
-                new_screen = s Boxed.// [(j, row Vector.// [(i, not $ row Vector.! i)])]
-        collision = False
-    return cs{ screen = foldl flip (screen cs) indices_to_flip
-             , registers = registers cs Vector.// [(15, if collision then 1 else 0)]}
+    let x = get_register cs r1
+    Control.Monad.when (x < 0 || x >= 64) (error "invalid x")
+    let y = get_register cs r2
+    Control.Monad.when (y < 0 || y >= 32) (error "invalid y")
+    let to_draw = [get_memory_at cs addr | addr <- [address cs..address cs + n - 1]]
+    let on_screen = take n $ get_screen_at cs x y
+    let collisions = [ td .&. os | (td, os) <- zip to_draw on_screen]
+    let collision_happened = not (all (== 0) collisions)
+    return cs { screen = display (screen cs) x y to_draw
+              , registers = registers cs Vector.// [(0xf, sum [1 | collision_happened])]}
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 step_n :: ChipState -> Int -> ChipState
@@ -165,5 +184,5 @@ print_state cs = do
 
 main :: IO ()
 main = do
-  let state = step_n (Main.init print_ship) 100
+  let state = step_n (Main.init print_ship) 4
   print_state state
