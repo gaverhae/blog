@@ -133,6 +133,7 @@ step cs = case next_instruction cs of
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
   (0x3,   r,  n1,  n2) -> return $ inc_pc $ if get_register cs r == byte n1 n2 then inc_pc cs else cs
   (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ byte n1 n2
+  (0x7,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ (get_register cs r + byte n1 n2)
   (0xa,  n1,  n2,  n3) -> return $ inc_pc $ set_address cs $ fromIntegral $ n1 * 256 + n2 * 16 + n3
   (0xc,   r,  n1,  n2) -> do
     State.modify next_rand
@@ -189,5 +190,5 @@ print_state cs = do
 
 main :: IO ()
 main = do
-  let state = step_n (Main.init print_ship) 4
+  let state = step_n (Main.init maze) 100
   print_state state
