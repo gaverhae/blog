@@ -111,6 +111,9 @@ draw r1 r2 n cs =
 inc_pc :: ChipState -> ChipState
 inc_pc cs = cs { program_counter = program_counter cs + 2 }
 
+set_pc :: ChipState -> Int -> ChipState
+set_pc cs n = cs { program_counter = n }
+
 byte :: Int -> Int -> Word8
 byte a b =
   if a < 0 || a >= 16 || b < 0 || b >= 16
@@ -131,6 +134,7 @@ step :: ChipState -> State.State Int ChipState
 step cs = case next_instruction cs of
   (0x0, 0x0, 0xE, 0x0) -> return $ inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
+  (0x1,  m1,  m2,  m3) -> return $ set_pc cs (256 * m1 + 16 * m2 + m1)
   (0x3,   r,  n1,  n2) -> return $ inc_pc $ if get_register cs r == byte n1 n2 then inc_pc cs else cs
   (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ byte n1 n2
   (0x7,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ (get_register cs r + byte n1 n2)
