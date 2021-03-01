@@ -11,7 +11,7 @@ of the things I learned in the process.
 ### Fifos
 
 Because of the non-linear recursive structure of merge sort, it is not possible
-to express it using only anonymous pipes (the `|` operator presented in [my
+to express it using only [anonymous pipes] (the `|` operator presented in [my
 previous post]). We need one process writing to two pipes, and another process
 reading from the same two pipes.
 
@@ -19,24 +19,30 @@ The unix answer to this kind of use-case is known as a [named pipe]. A named
 pipe is created by the `mkfifo` command, which takes as argument the name (i.e.
 filesystem path) of the pipe to create. A named pipe can then be deleted using
 the usual `rm` command (it's just a file). As the name of the command to create
-them suggests, named pipes can also be referred to as fifos, for their "first
+them suggests, named pipes can also be referred to as [fifos], for their "first
 in first out" behaviour.
 
-Fifos are blocking: when one process tries to write a line to a fifo, it is
+Fifos are blocking: when one process tries to open a fifo for writing, it is
 blocked until there is another process ready to read from the fifo. Similarly,
-if a process tries to read from a fifo, it will block until either the fifo is
-closed or there is something to read.
+if a process tries to open a fifo for reading, it will block until another
+process opens it for writing.
 
-A fifo is closed for reading when there is no process that currently has the
-fifo open for writing. This will be important. Note that this means a fifo can
-be closed and then reopened.
+Once a fifo is opened, there is still some blocking behaviour going on: fifos
+hacve a limited buffer size, and once the buffer is full, attempts to write
+will block until another process reads on the other end. Similarly, attempts to
+read an empty fifo will block if the fifo is empty but there is a process
+connected for writing.
+
+A fifo is closed for reading when there is no more process that currently has
+the fifo open for writing. This will be important. Note that this means a fifo
+can be closed and then reopened.
 
 ### Bidirectional file descriptors
 
 In [my previous post], I mentioned the bidirectional file descriptor syntax,
 `<>`. For the recursive case of a merge sort, we need to create a child process
 that writes to two pipes, and then two child processes that read from those
-same pipes.[^1]  It would seem natural at first to create a bidirectional file
+same pipes.[^1] It would seem natural at first to create a bidirectional file
 descriptor for the fifo, which could then be passed down to all three
 subprocesses.
 
@@ -54,7 +60,7 @@ a subprocess. Those file descriptors are then visible to the subprocess.
 However, sometimes you may want to create file descriptors in the current
 process, especially when working with fifos.
 
-Recall that a fifo is closed when there is no (more) process with an open file
+Recall that a fifo is closed when there is no more process with an open file
 handle on it. So if you write something like this:
 
 ```bash
@@ -65,11 +71,11 @@ done
 ```
 
 you end up opening _and closing_ a file handle to `my_fifo` five times. This
-means that if you have a process reading on the other end, and it happens to be
-faster than you, it may observe a closed fifo in-between two of your writes.
-This will likely lead to the reading process declaring it's done and shutting
-down, and you will end up being blocked on your next iteration, waiting forever
-for a reader that has already moved on.
+means that if you have a process reading on the other end, for things to work
+out it would need to also specifically know to open the fifo for reading five
+times, and, crucially, not to try and open it a sixth time. If either process
+tries to open the fifo one more time than the other one, that process will be
+blocked forever.
 
 In this specific case, you can fix the issue by opening the file at the level
 of the `for` loop:
@@ -94,9 +100,13 @@ mkfifo my_fifo
 ) > my_fifo
 ```
 
-This can get a bit cumbersome, though, and sometimes you really just want to
-say "keep this open until the end of the current script, or until I explicitly
-close it". For these cases, you can use the `exec` syntax:
+Because in both cases we only open the fifo for writing once, we can code the
+reader part to only open it for reading once, and, crucially, we can rely on
+the assumption that once the fifo gets closed, we're done reading.
+
+This parenthesis-wrapping can get a bit cumbersome, though, and sometimes you
+really just want to say "keep this open until the end of the current script, or
+until I explicitly close it". For these cases, you can use the `exec` syntax:
 
 ```bash
 mkfifo my_fifo
@@ -106,6 +116,10 @@ for i in $(seq 1 5); do
 done
 echo finished >& 3
 ```
+
+Now, the fifo is open for writing once, on the `exec` line, and will remain
+open until the current Bash process finishes or we explicitly close it with an
+equivalent `exec 3>&-`.
 
 As it will obviously very quickly become very cumbersome to manage file
 descriptors as numbers manually, you can (if you're not stuck in the stone age,
@@ -124,7 +138,8 @@ At first glance it may seem equivalent to just doing `exec 3>my_fifo; var=3`,
 but the above syntax has the added benefit that Bash will pick a new, unused
 file descriptor for you.
 
-Note that this can also be used to replace the default file descriptors:
+Note that the `exec` syntax can also be used to replace the default file
+descriptors:
 
 ```bash
 exec 2>/var/log/my_program/$$/stderr
@@ -137,7 +152,7 @@ clobbering if you run multiple instances at the same time.)
 
 Note that because by default when you open a new shell you start with `stdin`,
 `stdout` and `stderr` all set to the terminal, using this in a live shell may
-lead to weird-looking behaviour.
+lead to weird-looking (or just plain weird) behaviour.
 
 ### Debugging subprocesses
 
@@ -374,7 +389,7 @@ nothing so in this case it does not matter, but in more complex scripts it
 could. You can print the current handler with `trap -p EXIT`, which you can use
 to add to the exit behaviour:
 
-```
+```bash
 trap "rm -f new_file; $(trap -p EXIT)" EXIT
 ```
 
@@ -458,20 +473,23 @@ outputs as the two inputs to a merge call.
 Note that when writing this code, I first wrote it as:
 
 ```bash
-    cat | (cat <(echo $first) <(echo $second) - | split 3> >(msort < $left_pipe) 4> >(msort < $right_pipe) &
+    cat | (cat <(echo $first) <(echo $second) - | split 3> >(msort > $left_pipe) 4> >(msort > $right_pipe)) &
     merge 3< $left_pipe 4< $right_pipe &
 ```
 
-At first glance, this may seem equivalent. However, this version does not work.
-The reason for that is the order of operations: in this version, the two
-`msort` subprocesses are created first, before `split` has had time to start
-writing on the pipes. This means that (subject to race condition, hence with
-some measure of flakiness) when the `msort` processes first try to read from
-their input, they may see it as closed and immediately assume that they are in
-the "empty list" base case. When, a fraction of a second later, the `split`
-process connects, it will then try to write to those pipes and hang forever.
+At first glance, this may seem equivalent. However, this version is much less
+reliable. To understand why, one needs to carefully consider the order of
+operations. In this version, we create the entire (recursive) sort pipeline
+"before" the fifo. Recall that all fifo operations are blocking until there is
+something else on the other side. In this alternative, we create two more
+_recursive_ processes before we start blocking on any fifo, which means that
+the runtime behaviour will require a lot more concurrent processes, consuming a
+lot more memory and increasing the chances of the OS giving up.
 
-When setting up a pipeline based on fifos, always setup the writers first.
+In the final version presented above (and in the complete file below),
+generating new recursive processes happens on the other side of the fifo, i.e.
+the generation of new processes is limited by the speed at which the parent
+process can split up its input.
 
 ### Main function: clean-up
 
@@ -694,3 +712,5 @@ $
 [the `-u` behaviour]: /posts/2021-01-24-bash-set-dash-u
 [Unix signals]: https://en.wikipedia.org/wiki/Signal_(IPC)
 [sort]: https://man7.org/linux/man-pages/man1/sort.1.html
+[anonymous pipes]: https://man7.org/linux/man-pages/man7/pipe.7.html
+[fifos]: https://man7.org/linux/man-pages/man7/fifo.7.html
