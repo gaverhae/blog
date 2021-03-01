@@ -4,6 +4,7 @@ import Lib
 import Data.Bits ((.&.))
 import qualified Data.Bits as Bits
 import Data.Word (Word8, Word16)
+import qualified Debug.Trace
 import Text.Printf (printf)
 import qualified Data.List as List
 import qualified Data.Vector as Boxed
@@ -156,7 +157,7 @@ step_n cs n =
         h cs 0 = return cs
         h cs n = do
           next_cs <- step cs
-          h next_cs (n - 1)
+          Debug.Trace.trace (show cs) (h next_cs (n - 1))
 
 print_screen :: ChipState -> String
 print_screen cs =
@@ -179,6 +180,15 @@ print_memory cs =
         mem_list = [m Vector.! (i - 1) | i <- [1..Vector.length m]]
         m = memory cs
 
+print_registers :: ChipState -> String
+print_registers cs = printf "PC: %8x, Rs: %sI: %8x"
+                            (program_counter cs)
+                            ((concatMap (printf "%02x, ") $ Vector.toList (registers cs)) :: String)
+                            (address cs)
+
+instance Show ChipState where
+  show cs = List.intercalate "\n" [print_memory cs, print_registers cs, print_screen cs]
+
 maze :: [Word16]
 maze = [0x6000, 0x6100, 0xa222, 0xc201, 0x3201, 0xa21e, 0xd014, 0x7004,
         0x3040, 0x1204, 0x6000, 0x7104, 0x3120, 0x1204, 0x121c, 0x8040,
@@ -188,13 +198,7 @@ maze = [0x6000, 0x6100, 0xa222, 0xc201, 0x3201, 0xa21e, 0xd014, 0x7004,
 print_ship :: [Word16]
 print_ship = [0x6200, 0x6300, 0xa20a, 0xd236, 0x1208, 0x2070, 0x70f8, 0xd888]
 
-print_state :: ChipState -> IO ()
-print_state cs = do
-  putStrLn $ print_memory cs
-  putStrLn $ printf "PC: %8x, Rs: %sI: %8x" (program_counter cs) ((concatMap (printf "%02x, ") $ Vector.toList (registers cs)) :: String) (address cs)
-  putStrLn $ print_screen cs
-
 main :: IO ()
 main = do
-  let state = step_n (Main.init maze) 100
-  print_state state
+  let state = step_n (Main.init maze) 200
+  putStrLn $ show state
