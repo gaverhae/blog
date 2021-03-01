@@ -73,8 +73,10 @@ get_memory_at cs offset = memory cs Vector.! offset
 get_screen_at :: ChipState -> Word8 -> Word8 -> [Word8]
 get_screen_at cs wx wy =
   let [x, y] = map fromIntegral [wx, wy]
-  in [byte | dy <- [0..5]
-           , let rbits = [(screen cs Boxed.! (y+dy)) Vector.! (x+dx) | dx <- [0..7]]
+      max_x = min 63 (x+7)
+      max_y = min 31 (y+5)
+  in [byte | dy <- [y..max_y]
+           , let rbits = [(screen cs Boxed.! (dy)) Vector.! (dx) | dx <- [x..max_x]]
            , let byte = sum [2 ^ exp | (b, exp) <- zip rbits [0..]
                                      , b]]
 
