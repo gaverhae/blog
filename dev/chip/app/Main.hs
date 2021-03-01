@@ -11,6 +11,7 @@ import qualified Data.Vector.Unboxed as Vector
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Set as Set
 import qualified Control.Monad.State.Lazy as State
+import Control.Monad.State.Lazy (State)
 
 data ChipState = ChipState {
   memory :: Vector Word8,
@@ -18,7 +19,7 @@ data ChipState = ChipState {
   address :: Int,
   program_counter :: Int,
   screen :: Boxed.Vector (Vector Bool)
-}
+} deriving (Eq)
 
 blank_screen :: Boxed.Vector (Vector Bool)
 blank_screen = Boxed.replicate 32 (Vector.replicate 64 False)
@@ -130,7 +131,7 @@ trunc_word i = fromIntegral $ abs i `rem` 256
 next_rand :: Int -> Int
 next_rand prev = (1103515245 * prev + 12345) `rem` ((2::Int) ^ (32::Int))
 
-step :: ChipState -> State.State Int ChipState
+step :: ChipState -> State Int ChipState
 step cs = case next_instruction cs of
   (0x0, 0x0, 0xE, 0x0) -> return $ inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
@@ -150,11 +151,21 @@ step_n :: ChipState -> Int -> ChipState
 step_n cs 0 = cs
 step_n cs n =
   State.evalState (h cs n) 0
-  where h :: ChipState -> Int -> State.State Int ChipState
+  where h :: ChipState -> Int -> State Int ChipState
         h cs 0 = return cs
         h cs n = do
           next_cs <- step cs
           Debug.Trace.trace (show cs) (h next_cs (n - 1))
+
+step_end :: ChipState -> Int -> ChipState
+step_end cs seed =
+  State.evalState (h cs) seed
+  where h :: ChipState -> State Int ChipState
+        h cs = do
+          next_cs <- step cs
+          if next_cs == cs
+          then return cs
+          else h next_cs
 
 print_screen :: ChipState -> String
 print_screen cs =
@@ -197,5 +208,8 @@ print_ship = [0x6200, 0x6300, 0xa20a, 0xd236, 0x1208, 0x2070, 0x70f8, 0xd888]
 
 main :: IO ()
 main = do
-  let state = step_n (Main.init maze) 200
+  let s0 = Main.init maze
+  let state = if False
+              then step_n s0 1000
+              else step_end s0 8
   putStrLn $ show state
