@@ -1,6 +1,5 @@
 module Main where
 
-import Lib
 import Data.Bits ((.&.))
 import qualified Data.Bits as Bits
 import Data.Word (Word8, Word16)
@@ -11,9 +10,7 @@ import qualified Data.Vector as Boxed
 import qualified Data.Vector.Unboxed as Vector
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Set as Set
-import Data.Set (Set)
 import qualified Control.Monad.State.Lazy as State
-import qualified Control.Monad
 
 data ChipState = ChipState {
   memory :: Vector Word8,
@@ -78,7 +75,7 @@ get_screen_at cs wx wy =
       max_y = min 31 (y+5)
   in [byte | dy <- [y..max_y]
            , let rbits = [(screen cs Boxed.! (dy)) Vector.! (dx) | dx <- [x..max_x]]
-           , let byte = sum [2 ^ exp | (b, exp) <- zip rbits [0..]
+           , let byte = sum [2 ^ exp | (b, exp) <- zip rbits [(0::Int)..]
                                      , b]]
 
 display :: Boxed.Vector (Vector Bool) -> Word8 -> Word8 -> [Word8] -> Boxed.Vector (Vector Bool)
@@ -131,7 +128,7 @@ trunc_word i = fromIntegral $ abs i `rem` 256
 -- ed.). Aberdeen, MD. Army Research Lab.
 -- via https://aaronschlegel.me/linear-congruential-generator-r.html
 next_rand :: Int -> Int
-next_rand prev = (1103515245 * prev + 12345) `rem` (2 ^ 32)
+next_rand prev = (1103515245 * prev + 12345) `rem` ((2::Int) ^ (32::Int))
 
 step :: ChipState -> State.State Int ChipState
 step cs = case next_instruction cs of
@@ -145,7 +142,7 @@ step cs = case next_instruction cs of
   (0xc,   r,  n1,  n2) -> do
     State.modify next_rand
     rnd <- State.get
-    return $ inc_pc $ set_register cs r $ trunc_word rnd .&. get_register cs r
+    return $ inc_pc $ set_register cs r $ trunc_word rnd .&. byte n1 n2
   (0xd,  r1,  r2,   n) -> return $ inc_pc $ draw r1 r2 n cs
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 

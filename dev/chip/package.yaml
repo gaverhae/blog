@@ -30,6 +30,8 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -Wno-name-shadowing
     dependencies:
     - chip
 
