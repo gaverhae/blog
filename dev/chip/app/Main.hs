@@ -121,8 +121,8 @@ byte a b =
   then error "should not happen"
   else fromIntegral $ a * 16 + b
 
-trunc_word :: Int -> Word8
-trunc_word i = fromIntegral $ abs i `rem` 256
+trunc_rand :: Int -> Word8
+trunc_rand i = fromIntegral $ Bits.shift i (-8)
 
 -- parameters taken from
 -- Saucier, R. (2000). Computer Generation of Statistical Distributions (1st
@@ -143,7 +143,7 @@ step cs = case next_instruction cs of
   (0xc,   r,  n1,  n2) -> do
     State.modify next_rand
     rnd <- State.get
-    return $ inc_pc $ set_register cs r $ trunc_word rnd .&. byte n1 n2
+    return $ inc_pc $ set_register cs r $ trunc_rand rnd .&. byte n1 n2
   (0xd,  r1,  r2,   n) -> return $ inc_pc $ draw r1 r2 n cs
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
@@ -211,5 +211,5 @@ main = do
   let s0 = Main.init maze
   let state = if False
               then step_n s0 1000
-              else step_end s0 8
+              else step_end s0 7
   putStrLn $ show state
