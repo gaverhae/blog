@@ -18,6 +18,7 @@ data ChipState = ChipState {
   registers :: Vector Word8,
   address :: Int,
   program_counter :: Int,
+  stack :: [Int],
   screen :: Boxed.Vector (Vector Bool)
 } deriving (Eq)
 
@@ -38,6 +39,7 @@ init code16 =
   registers = Vector.replicate 16 0,
   address = 0,
   program_counter = 0x200,
+  stack = [],
   screen = blank_screen
 }
 
@@ -121,6 +123,9 @@ byte a b =
   then error "should not happen"
   else fromIntegral $ a * 16 + b
 
+byte3 :: Int -> Int -> Int -> Int
+byte3 a b c = 256 * a + 16 * b + c
+
 trunc_rand :: Int -> Word8
 trunc_rand i = fromIntegral $ Bits.shift i (-8)
 
@@ -136,10 +141,11 @@ step cs = case next_instruction cs of
   (0x0, 0x0, 0xE, 0x0) -> return $ inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
   (0x1,  m1,  m2,  m3) -> return $ set_pc cs (256 * m1 + 16 * m2 + m3)
+  (0x2,  m1,  m2,  m3) -> return cs{ stack = program_counter cs: stack cs, program_counter = byte3 m1 m2 m3 }
   (0x3,   r,  n1,  n2) -> return $ inc_pc $ if get_register cs r == byte n1 n2 then inc_pc cs else cs
   (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ byte n1 n2
   (0x7,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ (get_register cs r + byte n1 n2)
-  (0xa,  n1,  n2,  n3) -> return $ inc_pc $ set_address cs $ fromIntegral $ n1 * 256 + n2 * 16 + n3
+  (0xa,  n1,  n2,  n3) -> return $ inc_pc $ set_address cs $ byte3 n1 n2 n3
   (0xc,   r,  n1,  n2) -> do
     State.modify next_rand
     rnd <- State.get
