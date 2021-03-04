@@ -68,6 +68,15 @@ get_register cs r = registers cs Vector.! r
 set_address :: ChipState -> Int -> ChipState
 set_address cs addr = cs { address = addr }
 
+bcd_register :: ChipState -> Int -> ChipState
+bcd_register cs x =
+  let r = get_register cs x
+      (h, r') = r `quotRem` 100
+      (d, u) = r' `quotRem` 10
+      ad = address cs
+      new_mem = memory cs Vector.// [(ad, h), (ad+1, d), (ad+2, u)]
+  in cs { memory = new_mem }
+
 get_memory_at :: ChipState -> Int -> Word8
 get_memory_at cs offset = memory cs Vector.! offset
 
@@ -138,9 +147,9 @@ next_rand prev = (1103515245 * prev + 12345) `rem` ((2::Int) ^ (32::Int))
 
 step :: ChipState -> State Int ChipState
 step cs = case next_instruction cs of
-  (0x0, 0x0, 0xE, 0x0) -> return $ inc_pc $ clear_screen cs
+  (0x0, 0x0, 0xe, 0x0) -> return $ inc_pc $ clear_screen cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
-  (0x1,  m1,  m2,  m3) -> return $ set_pc cs (256 * m1 + 16 * m2 + m3)
+  (0x1,  m1,  m2,  m3) -> return $ set_pc cs $ byte3 m1 m2 m3
   (0x2,  m1,  m2,  m3) -> return cs{ stack = program_counter cs: stack cs, program_counter = byte3 m1 m2 m3 }
   (0x3,   r,  n1,  n2) -> return $ inc_pc $ if get_register cs r == byte n1 n2 then inc_pc cs else cs
   (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ byte n1 n2
@@ -151,6 +160,7 @@ step cs = case next_instruction cs of
     rnd <- State.get
     return $ inc_pc $ set_register cs r $ trunc_rand rnd .&. byte n1 n2
   (0xd,  r1,  r2,   n) -> return $ inc_pc $ draw r1 r2 n cs
+  (0xf,   x, 0x3, 0x3) -> return $ inc_pc $ bcd_register cs x
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 step_n :: ChipState -> Int -> ChipState
