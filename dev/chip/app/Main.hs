@@ -145,6 +145,13 @@ trunc_rand i = fromIntegral $ Bits.shift i (-8)
 next_rand :: Int -> Int
 next_rand prev = (1103515245 * prev + 12345) `rem` ((2::Int) ^ (32::Int))
 
+load_registers :: ChipState -> Int -> ChipState
+load_registers cs max =
+  let regs = [ (idx, fromIntegral val) | idx <- [0..max]
+                                       , let val = get_memory_at cs (address cs + idx) ]
+  in cs { address = address cs + max + 1,
+          registers = registers cs Vector.// regs }
+
 step :: ChipState -> State Int ChipState
 step cs = case next_instruction cs of
   (0x0, 0x0, 0xe, 0x0) -> return $ inc_pc $ clear_screen cs
@@ -161,6 +168,7 @@ step cs = case next_instruction cs of
     return $ inc_pc $ set_register cs r $ trunc_rand rnd .&. byte n1 n2
   (0xd,  r1,  r2,   n) -> return $ inc_pc $ draw r1 r2 n cs
   (0xf,   x, 0x3, 0x3) -> return $ inc_pc $ bcd_register cs x
+  (0xf,   x, 0x6, 0x5) -> return $ inc_pc $ load_registers cs x
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
 
 step_n :: ChipState -> Int -> ChipState
