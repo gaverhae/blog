@@ -216,7 +216,7 @@ print_screen cs =
   List.intercalate "\n" lines
   where s = screen cs
         lines = [line (s Boxed.! (i - 1)) | i <- [1..Boxed.length s]]
-        line v = [if v Vector.! (i - 1) then '#' else ' '
+        line v = [if v Vector.! (i - 1) then '█' else ' '
                  | i <- [1..Vector.length v]]
 
 print_memory :: ChipState -> String
