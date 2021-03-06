@@ -171,12 +171,19 @@ load_registers cs max =
   in cs { address = address cs + max + 1,
           registers = registers cs Vector.// regs }
 
+call_sub :: ChipState -> Int -> ChipState
+call_sub cs at = cs  { stack = program_counter cs: stack cs, program_counter = at }
+
+return_from_sub :: ChipState -> ChipState
+return_from_sub cs@ChipState{stack} = cs { stack = tail stack, program_counter = head stack }
+
 step :: ChipState -> State Int ChipState
 step cs = case next_instruction cs of
   (0x0, 0x0, 0xe, 0x0) -> return $ inc_pc $ clear_screen cs
+  (0x0, 0x0, 0xe, 0xe) -> return $ return_from_sub cs
   (0x0,   _,   _,   _) -> error "jump to native not implemented"
   (0x1,  m1,  m2,  m3) -> return $ set_pc cs $ byte3 m1 m2 m3
-  (0x2,  m1,  m2,  m3) -> return cs{ stack = program_counter cs: stack cs, program_counter = byte3 m1 m2 m3 }
+  (0x2,  m1,  m2,  m3) -> return $ call_sub cs $ byte3 m1 m2 m3
   (0x3,   r,  n1,  n2) -> return $ inc_pc $ if get_register cs r == byte n1 n2 then inc_pc cs else cs
   (0x6,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ byte n1 n2
   (0x7,   r,  n1,  n2) -> return $ inc_pc $ set_register cs r $ (get_register cs r + byte n1 n2)

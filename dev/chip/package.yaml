@@ -22,6 +22,9 @@ dependencies:
 library:
   source-dirs: src
 
+default-extensions:
+  - NamedFieldPuns
+
 executables:
   chip-exe:
     main:                Main.hs
