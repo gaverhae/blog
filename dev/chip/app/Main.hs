@@ -32,10 +32,29 @@ init code16 =
                                  in [fromIntegral a, fromIntegral b])
   in ChipState {
   memory = Vector.generate 4096 (\x ->
-    if (x - 0x200) >= 0
-    && (x - 0x200) < length code
-    then code !! (x - 0x200)
-    else 0),
+    case x of
+      -- 0
+      0 -> 0x70; 1 -> 0x50; 2 -> 0x50; 3 -> 0x50; 4 -> 0x70
+      -- 1
+      5 -> 0x20; 6 -> 0x60; 7 -> 0x20; 8 -> 0x20; 9 -> 0x20
+      -- 2
+      10 -> 0x70; 11 -> 0x10; 12 -> 0x70; 13 -> 0x40; 14 -> 0x70
+      -- 3
+      15 -> 0x70; 16 -> 0x10; 17 -> 0x70; 18 -> 0x10; 19 -> 0x70
+      -- 4
+      20 -> 0x50; 21 -> 0x50; 22 -> 0x70; 23 -> 0x10; 24 -> 0x10
+      -- 5
+      25 -> 0x70; 26 -> 0x40; 27 -> 0x70; 28 -> 0x10; 29 -> 0x70
+      -- 6
+      30 -> 0x70; 31 -> 0x40; 32 -> 0x70; 33 -> 0x50; 34 -> 0x70
+      -- 7
+      35 -> 0x70; 36 -> 0x10; 37 -> 0x10; 38 -> 0x10; 39 -> 0x10
+      -- 8
+      40 -> 0x70; 41 -> 0x50; 42 -> 0x70; 43 -> 0x50; 44 -> 0x70
+      -- 9
+      45 -> 0x70; 46 -> 0x50; 47 -> 0x70; 48 -> 0x10; 49 -> 0x70
+      x | (x - 0x200) >= 0 && (x - 0x200) < length code -> code !! (x - 0x200)
+      _ -> 0),
   registers = Vector.replicate 16 0,
   address = 0,
   program_counter = 0x200,
@@ -167,6 +186,7 @@ step cs = case next_instruction cs of
     rnd <- State.get
     return $ inc_pc $ set_register cs r $ trunc_rand rnd .&. byte n1 n2
   (0xd,  r1,  r2,   n) -> return $ inc_pc $ draw r1 r2 n cs
+  (0xf,   x, 0x2, 0x9) -> return $ inc_pc $ set_address cs $ fromIntegral $ 5 * (get_register cs x `rem` 10)
   (0xf,   x, 0x3, 0x3) -> return $ inc_pc $ bcd_register cs x
   (0xf,   x, 0x6, 0x5) -> return $ inc_pc $ load_registers cs x
   (a, b, c, d) -> error $ "unknown bytecode: " <> printf "0x%x%x%x%x" a b c d
