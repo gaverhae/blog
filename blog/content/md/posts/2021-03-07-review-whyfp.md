@@ -127,7 +127,8 @@ The previously-mentioned `foldtree` function is interesting:
 
 ```
 foldtree f g a (Node label subtrees) = f label (foldtree f g a subtrees)
-foldtree f g a (Cons subtree rest) = g (foldtree f g a subtree) (foldtree f g a rest)
+foldtree f g a (Cons subtree rest) = g (foldtree f g a subtree)
+                                       (foldtree f g a rest)
 foldtree f g a Nil = a
 ```
 
