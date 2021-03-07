@@ -2,7 +2,7 @@
  :layout :post
  :tags ["papers" "fp"]}
 
-### Why Why FP Matters Matters
+### "Why Why FP Matters Matters"
 
 A few years ago, I came across the blog post [Why Why Functional Programming
 Matters Matters]. It was a major factor in my decision to invest heavily into
