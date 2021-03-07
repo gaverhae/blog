@@ -195,7 +195,7 @@
                             (integrate f mid b))))))
 
 ; integrate f a b = integ f a b (f a) (f b)
-; integ f a b fa fb = Cons ((fa + fb) * (b - &) / 2)
+; integ f a b fa fb = Cons ((fa + fb) * (b - a) / 2)
 ;                          map addpair (zip2 (integ f a m fa fm)
 ;                                            (integ f m b fm fb))) ;; yes, that's an unbalanced paren
 ; where m = (a + b) / 2
