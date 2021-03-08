@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-VERSION=$(git log -n1 --format=%cd-$(git rev-list --count HEAD)-%h --date=format:%Y%m%d --abbrev=8 .)
+SHA=$(git log -n1 --format=%H .)
+COUNT=$(git rev-list --count $SHA)
+VERSION=$(git show -s --format=%cd-$COUNT-%h --date=format:%Y%m%d --abbrev=8 $SHA)
 S3_FILE=s3://cuddly-octo-palm-tree/public/$VERSION.tar.gz
 
 if aws s3 ls $S3_FILE; then
