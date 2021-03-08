@@ -275,11 +275,9 @@ and translates fairly directly to Clojure as:
         (/ n 1.0 x))
      2.0))
 
-; (def repeat iterate)
 (defn repeat
   [f a]
   (cons a (lazy-seq (repeat f (f a)))))
-
 
 (defn relative
   [eps [a b & rs]]
