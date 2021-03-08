@@ -96,6 +96,76 @@
                    (let [[_ env] (f-body env)]
                      (recur env))
                    [nil env]))))))
+(def stack-code
+  [[:push 100]
+   [:push 1000]
+   [:push 0]
+   [:get 1]
+   [:not=]
+   [:jump-if-zero 25]
+   [:push 3]
+   [:get 0]
+   [:add]
+   [:push 4]
+   [:add]
+   [:get 0]
+   [:add]
+   [:set 0]
+   [:push 4]
+   [:push 2]
+   [:add]
+   [:get 0]
+   [:add]
+   [:set 0]
+   [:get 1]
+   [:push -1]
+   [:add]
+   [:set 1]
+   [:jump 2]
+   [:get 0]])
+
+(defn run-stack
+  [code]
+  (let [m {:code code
+           :pointer 0
+           :stack []}
+        finished? (fn [m] (== (count (:code m))
+                              (:pointer m)))
+        push (fn [m v] (update m :stack conj v))
+        pop (fn [m] [(-> m :stack peek)
+                     (update m :stack pop)])
+        inc-pointer (fn [m] (update m :pointer inc))]
+    (loop [m m]
+      (if (finished? m)
+        [(peek (:stack m)) (:stack m)]
+        (let [[op arg] (get-in m [:code (:pointer m)])]
+          (recur (case op
+                   :push (-> m
+                             (push arg)
+                             inc-pointer)
+                   :get (-> m
+                            (push (get-in m [:stack arg]))
+                            inc-pointer)
+                   :not= (let [[p1 m] (pop m)
+                               [p2 m] (pop m)]
+                           (-> m
+                               (push (if (== p1 p2) 0 1))
+                               inc-pointer))
+                   :add (let [[p1 m] (pop m)
+                              [p2 m] (pop m)]
+                          (-> m
+                              (push (unchecked-add p1 p2))
+                              inc-pointer))
+                   :set (let [[p m] (pop m)]
+                          (-> m
+                              (assoc-in [:stack arg] p)
+                              inc-pointer))
+                   :jump-if-zero
+                   (let [[p m] (pop m)]
+                     (if (zero? p)
+                       (assoc m :pointer arg)
+                       (update m :pointer inc)))
+                   :jump (assoc m :pointer arg))))))))
 
 (comment
 
@@ -114,5 +184,8 @@
   (def cc (compile-to-closure ast))
   (bench (cc [nil nil]))
 "1.63e-03"
+
+  (bench (run-stack stack-code))
+"2.86e-02"
 
   )
