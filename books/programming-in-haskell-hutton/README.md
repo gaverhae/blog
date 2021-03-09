@@ -594,7 +594,7 @@ last (x:xs) = last xs
 # Chapter 7
 
 > 1. Show how the list comprehension `[f x | x <- xs, p x]` can be re-expressed
->    using the higher-order `functions` map and `filter`.
+>    using the higher-order functions `map` and `filter`.
 
 ```haskell
 map f (filter p xs)
