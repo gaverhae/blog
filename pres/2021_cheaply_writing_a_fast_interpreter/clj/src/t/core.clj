@@ -96,33 +96,39 @@
                    (let [[_ env] (f-body env)]
                      (recur env))
                    [nil env]))))))
-(def stack-code
-  [[:push 100]
-   [:push 1000]
-   [:push 0]
-   [:get 1]
-   [:not=]
-   [:jump-if-zero 25]
-   [:push 3]
-   [:get 0]
-   [:add]
-   [:push 4]
-   [:add]
-   [:get 0]
-   [:add]
-   [:set 0]
-   [:push 4]
-   [:push 2]
-   [:add]
-   [:get 0]
-   [:add]
-   [:set 0]
-   [:get 1]
-   [:push -1]
-   [:add]
-   [:set 1]
-   [:jump 2]
-   [:get 0]])
+
+(defn compile-stack
+  [ast]
+  (let [h (fn h [cur [op & args]]
+            (case op
+              :do (->> args
+                       (reduce (fn [[cur so-far] el]
+                            (let [code (h cur el)]
+                              [(+ cur (count code))
+                               (concat so-far code)]))
+                          [0 []])
+                       second)
+              :lit [[:push (first args)]]
+              :set (concat (h cur (second args))
+                           [[:set (first args)]])
+              :add (let [left (h cur (first args))
+                         right (h (+ cur (count left)) (second args))]
+                     (concat left right [[:add]]))
+              :var [[:get (first args)]]
+              :not= (let [left (h cur (first args))
+                          right (h (+ cur (count left)) (second args))]
+                      (concat left right [[:not=]]))
+              :while (let [condition (h cur (first args))
+                           body (h (+ cur 1 (count condition)) (second args))]
+                       (concat condition
+                               [[:jump-if-zero (+ cur
+                                                  (count condition)
+                                                  1
+                                                  (count body)
+                                                  1)]]
+                               body
+                               [[:jump cur]]))))]
+    (vec (h 0 ast))))
 
 (defn run-stack
   [code]
@@ -176,16 +182,17 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.79e-06"
+"2.70e-06"
 
   (bench (naive-ast-walk ast [nil nil]))
-"5.50e-03"
+"5.32e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc [nil nil]))
-"1.63e-03"
+"1.59e-03"
 
-  (bench (run-stack stack-code))
-"2.86e-02"
+  (def sc (compile-stack ast))
+  (bench (run-stack sc))
+"2.92e-02"
 
   )
