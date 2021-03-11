@@ -1,15 +1,20 @@
 module Main (main)
 where
 
-import Prelude hiding (exp)
+import Prelude hiding (exp,lookup)
 --import Control.Monad (ap,liftM)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
+newtype Name = Name String
+  deriving (Eq, Ord, Show)
+newtype Value = Value Int
+  deriving (Eq, Show)
+
 data Exp where
-  Lit :: Int -> Exp
-  Var :: String -> Exp
-  Set :: String -> Exp -> Exp
+  Lit :: Value -> Exp
+  Var :: Name -> Exp
+  Set :: Name -> Exp -> Exp
   Add :: Exp -> Exp -> Exp
   Sub :: Exp -> Exp -> Exp
   Mul :: Exp -> Exp -> Exp
@@ -21,80 +26,108 @@ data Exp where
 
 neil :: Exp
 neil =
+  let x = Name "x"
+      i = Name "i"
+  in
   Do [
-    Set "x" (Lit 100),
-    Set "i" (Lit 1000),
-    While (NotEq (Lit 0) (Var "i"))
+    Set x (Lit (Value 100)),
+    Set i (Lit (Value 1000)),
+    While (NotEq (Lit (Value 0)) (Var i))
       (Do [
-        Set "x" (Add (Add (Add (Var "x") (Lit 4)) (Var "x")) (Lit 3)),
-        Set "x" (Add (Add (Var "x") (Lit 2)) (Lit 4)),
-        Set "i" (Add (Lit (-1)) (Var "i"))
+        Set x (Add (Add (Add (Var x) (Lit (Value 4))) (Var x)) (Lit (Value 3))),
+        Set x (Add (Add (Var x) (Lit (Value 2))) (Lit (Value 4))),
+        Set i (Add (Lit (Value (-1))) (Var i))
       ]),
-    Var "x"
+    Var x
     ]
 
 fact :: Int -> Exp
 fact x =
+  let acc = Name "acc"
+      i = Name "i"
+  in
   Do [
-    Set "acc" (Lit 1),
-    Set "i" (Lit x),
-    While (NotEq (Lit 0) (Var "i"))
+    Set acc (Lit (Value 1)),
+    Set i (Lit (Value x)),
+    While (NotEq (Lit (Value 0)) (Var i))
       (Do [
-        Set "acc" (Mul (Var "acc") (Var "i")),
-        Set "i" (Sub (Var "i") (Lit 1)),
-        Print (Var "acc"),
-        Print (Var "i")
+        Set acc (Mul (Var acc) (Var i)),
+        Set i (Sub (Var i) (Lit (Value 1))),
+        Print (Var acc),
+        Print (Var i)
       ]),
-    Print (Var "acc")
+    Print (Var acc)
   ]
 
 sam :: Exp
-sam = Do [
-  Set "x" (Lit 13),
-  Print (Var "x"),
-  Set "x" (Add (Var "x") (Var "x")),
-  Print (Var "x")
+sam =
+  let x = Name "x"
+  in
+  Do [
+    Set x (Lit (Value 13)),
+    Print (Var x),
+    Set x (Add (Var x) (Var x)),
+    Print (Var x)
   ]
 
-treeWalkEval :: Exp -> (Int, [Int], Map String Int)
-treeWalkEval ex =
-  loop ex [] env0
+newtype Env = Env (Map Name Value)
+  deriving Show
+newtype OutputStream = OutputStream [Int]
+  deriving Show
+
+lookup :: Env -> Name -> Value
+lookup (Env m) n = maybe undefined id (Map.lookup n m)
+
+insert :: Env -> Name -> Value -> Env
+insert (Env m) n v = Env $ Map.insert n v m
+
+put :: OutputStream -> Value -> OutputStream
+put (OutputStream os) (Value i) = OutputStream $ os ++ [i]
+
+mt_out :: OutputStream
+mt_out = OutputStream []
+
+mt_env :: Env
+mt_env = Env Map.empty
+
+tree_walk_eval :: Exp -> (Value, OutputStream, Env)
+tree_walk_eval ex =
+  loop ex mt_out mt_env
   where
-  env0 :: Map String Int
-  env0 = Map.empty
-  loop :: Exp -> [Int] -> Map String Int -> (Int, [Int], Map String Int)
-  loop exp pr env =
-    case exp of
-      Lit v -> (v, pr, env)
-      Var n -> (maybe undefined id (Map.lookup n env), pr, env)
-      Set n expr -> let (v, p, e) = loop expr pr env
-                    in (v, p, Map.insert n v e)
+  loop :: Exp -> OutputStream -> Env -> (Value, OutputStream, Env)
+  loop exp0 out0 env0 =
+    case exp0 of
+      Lit v -> (v, out0, env0)
+      Var n -> (lookup env0 n, out0, env0)
+      Set n exp1 -> let (v, out1, env1) = loop exp1 out0 env0
+                    in (v, out1, insert env1 n v)
       Add e1 e2 -> do
-        let (v1, p', e') = loop e1 pr env
-        let (v2, p'', e'') = loop e2 p' e'
-        ((v1 + v2), p'', e'')
+        let (Value v1, out1, env1) = loop e1 out0 env0
+        let (Value v2, out2, env2) = loop e2 out1 env1
+        (Value (v1 + v2), out2, env2)
       Sub e1 e2 -> do
-        let (v1, p', e') = loop e1 pr env
-        let (v2, p'', e'') = loop e2 p' e'
-        ((v1 - v2), p'', e'')
+        let (Value v1, out1, env1) = loop e1 out0 env0
+        let (Value v2, out2, env2) = loop e2 out1 env1
+        (Value (v1 - v2), out2, env2)
       Mul e1 e2 -> do
-        let (v1, p', e') = loop e1 pr env
-        let (v2, p'', e'') = loop e2 p' e'
-        ((v1 * v2), p'', e'')
+        let (Value v1, out1, env1) = loop e1 out0 env0
+        let (Value v2, out2, env2) = loop e2 out1 env1
+        (Value (v1 * v2), out2, env2)
       NotEq e1 e2 -> do
-        let (v1, p', e') = loop e1 pr env
-        let (v2, p'', e'') = loop e2 p' e'
-        (if (v1 /= v2) then 1 else 0, p'', e'')
-      Do (exps) -> foldl (\(_, p, e) expr -> loop expr p e) (undefined, pr, env) exps
+        let (Value v1, out1, env1) = loop e1 out0 env0
+        let (Value v2, out2, env2) = loop e2 out1 env1
+        (Value $ if (v1 /= v2) then 1 else 0, out2, env2)
+      Do (exps) -> foldl (\(_, out1, env1) exp1 -> loop exp1 out1 env1) (undefined, out0, env0) exps
       While condition body -> do
-        let (c, p', e') = loop condition pr env
+        let (Value c, out1, env1) = loop condition out0 env0
         if c == 1
         then do
-          let (_, p'', e'') = loop body p' e'
-          loop (While condition body) p'' e''
-        else (undefined, p', e')
-      Print expr -> let (v, p, e) = loop expr pr env
-                    in (v, v:p, e)
+          let (_, out2, env2) = loop body out1 env1
+          loop (While condition body) out2 env2
+        else (undefined, out1, env1)
+      Print exp1 -> let (v, out1, env1) = loop exp1 out0 env0
+                    in (v, put out1 v, env1)
+
 
 {-
 data EvalState = Map String Int
@@ -121,7 +154,7 @@ main = do
   putStrLn (show neil)
   putStrLn (show $ fact 3)
   putStrLn (show sam)
-  print $ treeWalkEval sam
-  print $ treeWalkEval $ fact 3
-  print $ treeWalkEval $ neil
+  print $ tree_walk_eval sam
+  print $ tree_walk_eval $ fact 3
+  print $ tree_walk_eval $ neil
   pure ()
