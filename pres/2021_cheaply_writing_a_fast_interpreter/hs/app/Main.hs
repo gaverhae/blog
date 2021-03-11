@@ -74,6 +74,9 @@ newtype Env = Env (Map Name Value)
 newtype OutputStream = OutputStream [Int]
   deriving Show
 
+instance Semigroup OutputStream where
+  (OutputStream a) <> (OutputStream b) = OutputStream (a <> b)
+
 lookup :: Env -> Name -> Value
 lookup (Env m) n = maybe undefined id (Map.lookup n m)
 
@@ -141,29 +144,34 @@ mul (Value a) (Value b) = Value $ a * b
 
 twe_cont :: Exp -> OutputStream
 twe_cont e =
-  loop e mt_env (\_ _ -> mt_out)
+  loop e mt_env (\_ _ out -> out)
   where
-  loop :: Exp -> Env -> (Env -> Value -> OutputStream) -> OutputStream
+  loop :: Exp -> Env -> (Env -> Value -> OutputStream -> OutputStream) -> OutputStream
   loop exp0 env0 cont =
-    let binop e1 e2 f = loop e1 env0 (\env1 v1 -> loop e2 env1 (\env2 v2 -> cont env2 (f v1 v2)))
+    let binop e1 e2 f = loop e1 env0 (\env1 v1 out1 ->
+          loop e2 env1 (\env2 v2 out2 ->
+            cont env2 (f v1 v2) (out1 <> out2)))
     in
     case exp0 of
-      Lit v -> cont env0 v
-      Var n -> cont env0 $ lookup env0 n
+      Lit v -> cont env0 v mt_out
+      Var n -> cont env0 (lookup env0 n) mt_out
       -- How can this work? :'(
-      Print exp1 -> loop exp1 env0 (\env1 v -> put (cont env1 v) v)
-      Set n exp1 -> loop exp1 env0 (\env1 v -> (cont (insert env1 n v) v))
+      Print exp1 -> loop exp1 env0 (\env1 v out1 -> cont env1 v (put out1 v))
+      Set n exp1 -> loop exp1 env0 (\env1 v out1 -> cont (insert env1 n v) v out1)
       Add e1 e2 -> binop e1 e2 add
       Sub e1 e2 -> binop e1 e2 sub
       Mul e1 e2 -> binop e1 e2 mul
       NotEq e1 e2 -> binop e1 e2 not_eq
-      Do ([]) -> cont env0 undefined
-      Do (exp1:[]) -> loop exp1 env0 (\env1 v -> cont env1 v)
-      Do (exp1:exps) -> loop exp1 env0 (\env1 _ -> loop (Do exps) env1 (\env2 v -> cont env2 v))
-      While condition body -> loop condition env0 (\env1 condition_value ->
+      Do ([]) -> cont env0 undefined mt_out
+      Do (exp1:[]) -> loop exp1 env0 (\env1 v out1 -> cont env1 v out1)
+      Do (exp1:exps) -> loop exp1 env0 (\env1 _ out1 ->
+        loop (Do exps) env1 (\env2 v out2 ->
+          cont env2 v (out1 <> out2)))
+      While condition body -> loop condition env0 (\env1 condition_value out1 ->
         if (Value 1 == condition_value)
-        then loop body env1 (\env2 _ -> loop (While condition body) env2 cont)
-        else cont env1 undefined)
+        then loop body env1 (\env2 _ out2 ->
+          loop (While condition body) env2 (\env3 v3 out3 -> cont env3 v3 (out1 <> out2 <> out3)))
+        else cont env1 undefined out1)
 
 {-
 data EvalState = Map String Int
