@@ -2,7 +2,7 @@ module Main (main)
 where
 
 import Prelude hiding (exp,lookup)
---import Control.Monad (ap,liftM)
+import Control.Monad (ap,liftM)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -74,8 +74,11 @@ newtype Env = Env (Map Name Value)
 data TweIO = Output Int TweIO | Halt
   deriving Show
 
+bottom :: Value
+bottom = undefined
+
 lookup :: Env -> Name -> Value
-lookup (Env m) n = maybe undefined id (Map.lookup n m)
+lookup (Env m) n = maybe bottom id (Map.lookup n m)
 
 insert :: Env -> Name -> Value -> Env
 insert (Env m) n v = Env $ Map.insert n v m
@@ -116,14 +119,14 @@ tree_walk_eval ex =
         let (Value v1, out1, env1) = loop e1 out0 env0
         let (Value v2, out2, env2) = loop e2 out1 env1
         (Value $ if (v1 /= v2) then 1 else 0, out2, env2)
-      Do (exps) -> foldl (\(_, out1, env1) exp1 -> loop exp1 out1 env1) (undefined, out0, env0) exps
+      Do (exps) -> foldl (\(_, out1, env1) exp1 -> loop exp1 out1 env1) (bottom, out0, env0) exps
       While condition body -> do
         let (Value c, out1, env1) = loop condition out0 env0
         if c == 1
         then do
           let (_, out2, env2) = loop body out1 env1
           loop (While condition body) out2 env2
-        else (undefined, out1, env1)
+        else (bottom, out1, env1)
       Print exp1 -> let (v, out1, env1) = loop exp1 out0 env0
                     in (v, append out1 v, env1)
 
@@ -157,34 +160,78 @@ twe_cont e =
       Sub e1 e2 -> binop e1 e2 sub
       Mul e1 e2 -> binop e1 e2 mul
       NotEq e1 e2 -> binop e1 e2 not_eq
-      Do ([]) -> cont env undefined
+      Do ([]) -> cont env bottom
       Do (exp:[]) -> loop exp env (\env v -> cont env v)
       Do (exp:exps) -> loop exp env (\env _ -> loop (Do exps) env (\env v -> cont env v))
       While condition body -> loop condition env (\env condition_value ->
         if (Value 1 == condition_value)
         then loop body env (\env _ ->
           loop (While condition body) env (\env v -> cont env v))
-        else cont env undefined)
-
-{-
-data EvalState = Map String Int
+        else cont env bottom)
 
 data EvalExec a where
   EvalBind :: EvalExec a -> (a -> EvalExec b) -> EvalExec b
   EvalReturn :: a -> EvalExec a
-  EvalLookup :: String -> EvalExec Int
-  EvalPrint :: Int -> EvalExec Int
+  EvalLookup :: Name -> EvalExec Value
+  EvalSet :: Name -> Value -> EvalExec ()
+  EvalPrint :: Value -> EvalExec ()
 
 instance Functor EvalExec where fmap = liftM
 instance Applicative EvalExec where pure = return; (<*>) = ap
 instance Monad EvalExec where return = EvalReturn; (>>=) = EvalBind
 
-runEvalExec ::
+twe_mon :: Exp -> TweIO
+twe_mon exp =
+  exec (eval exp) mt_env (\_ _ -> Halt)
+  where
+  binop :: Exp -> Exp -> (Value -> Value -> Value) -> EvalExec Value
+  binop e1 e2 f = do
+    v1 <- eval e1
+    v2 <- eval e2
+    return $ f v1 v2
+  eval :: Exp -> EvalExec Value
+  eval = \case
+    Lit v -> do
+      return v
+    Var n -> do
+      v <- EvalLookup n
+      return v
+    Set n exp -> do
+      v <- eval exp
+      EvalSet n v
+      return v
+    Add e1 e2 -> binop e1 e2 add
+    Sub e1 e2 -> binop e1 e2 sub
+    Mul e1 e2 -> binop e1 e2 mul
+    NotEq e1 e2 -> binop e1 e2 not_eq
+    Do [] -> do
+      return bottom
+    Do [exp] -> do
+      v <- eval exp
+      return v
+    Do (exp:exps) -> do
+      _ <- eval exp
+      eval (Do exps)
+    While condition body -> do
+      c <- eval condition
+      if (Value 1) == c
+      then do
+        _ <- eval body
+        eval (While condition body)
+      else return bottom
 
-treeWalkM :: Exp -> (Int, [Int], Map String Int)
-treeWalkM e = runEvalExec
+    Print exp -> do
+      v <- eval exp
+      EvalPrint v
+      return v
 
--}
+  exec :: EvalExec a -> Env -> (Env -> a -> TweIO) -> TweIO
+  exec m env cont = case m of
+    EvalBind prev step -> exec prev env (\env ret -> exec (step ret) env cont)
+    EvalReturn v -> cont env v
+    EvalLookup n -> cont env (lookup env n)
+    EvalPrint v -> put (cont env ()) v
+    EvalSet n v -> cont (insert env n v) ()
 
 main :: IO ()
 main = do
@@ -196,4 +243,8 @@ main = do
   print $ twe_cont sam
   print $ twe_cont $ fact 3
   print $ twe_cont neil
+  putStrLn "twe_mon"
+  print $ twe_mon sam
+  print $ twe_mon $ fact 3
+  print $ twe_mon neil
   pure ()

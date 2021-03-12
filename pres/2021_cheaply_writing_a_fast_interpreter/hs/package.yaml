@@ -33,3 +33,4 @@ executables:
     - t
     default-extensions:
     - GADTs
+    - LambdaCase
