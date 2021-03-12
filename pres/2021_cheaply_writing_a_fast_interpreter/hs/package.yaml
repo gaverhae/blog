@@ -28,6 +28,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
+    - -Wno-name-shadowing
     dependencies:
     - t
     default-extensions:

@@ -147,27 +147,27 @@ twe_cont e =
   loop e mt_env (\_ _ -> OutputStream [])
   where
   loop :: Exp -> Env -> (Env -> Value -> OutputStream) -> OutputStream
-  loop exp0 env0 cont =
-    let binop e1 e2 f = loop e1 env0 (\env1 v1 -> loop e2 env1 (\env2 v2 -> cont env2 (f v1 v2)))
+  loop exp env cont =
+    let binop e1 e2 f = loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env (f v1 v2)))
     in
-    case exp0 of
-      Lit v -> cont env0 v
-      Var n -> cont env0 (lookup env0 n)
+    case exp of
+      Lit v -> cont env v
+      Var n -> cont env (lookup env n)
       -- How can this work? :'(
-      Print exp1 -> loop exp1 env0 (\env1 v -> put mt_out v <> cont env1 v)
-      Set n exp1 -> loop exp1 env0 (\env1 v -> cont (insert env1 n v) v)
+      Print exp -> loop exp env (\env v -> put mt_out v <> cont env v)
+      Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
       Add e1 e2 -> binop e1 e2 add
       Sub e1 e2 -> binop e1 e2 sub
       Mul e1 e2 -> binop e1 e2 mul
       NotEq e1 e2 -> binop e1 e2 not_eq
-      Do ([]) -> cont env0 undefined
-      Do (exp1:[]) -> loop exp1 env0 (\env1 v -> cont env1 v)
-      Do (exp1:exps) -> loop exp1 env0 (\env1 _ -> loop (Do exps) env1 (\env2 v -> cont env2 v))
-      While condition body -> loop condition env0 (\env1 condition_value ->
+      Do ([]) -> cont env undefined
+      Do (exp:[]) -> loop exp env (\env v -> cont env v)
+      Do (exp:exps) -> loop exp env (\env _ -> loop (Do exps) env (\env v -> cont env v))
+      While condition body -> loop condition env (\env condition_value ->
         if (Value 1 == condition_value)
-        then loop body env1 (\env2 _ ->
-          loop (While condition body) env2 (\env3 v3 -> cont env3 v3))
-        else cont env1 undefined)
+        then loop body env (\env _ ->
+          loop (While condition body) env (\env v -> cont env v))
+        else cont env undefined)
 
 {-
 data EvalState = Map String Int
