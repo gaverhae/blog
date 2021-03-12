@@ -71,11 +71,8 @@ sam =
 
 newtype Env = Env (Map Name Value)
   deriving Show
-newtype OutputStream = OutputStream [Int]
+data TweIO = Output Int TweIO | Halt
   deriving Show
-
-instance Semigroup OutputStream where
-  (OutputStream a) <> (OutputStream b) = OutputStream (a <> b)
 
 lookup :: Env -> Name -> Value
 lookup (Env m) n = maybe undefined id (Map.lookup n m)
@@ -83,20 +80,20 @@ lookup (Env m) n = maybe undefined id (Map.lookup n m)
 insert :: Env -> Name -> Value -> Env
 insert (Env m) n v = Env $ Map.insert n v m
 
-put :: OutputStream -> Value -> OutputStream
-put (OutputStream os) (Value i) = OutputStream $ os ++ [i]
-
-mt_out :: OutputStream
-mt_out = OutputStream []
+put :: TweIO -> Value -> TweIO
+put io (Value v) = Output v io
 
 mt_env :: Env
 mt_env = Env Map.empty
 
-tree_walk_eval :: Exp -> (Value, OutputStream, Env)
+tree_walk_eval :: Exp -> (Value, TweIO, Env)
 tree_walk_eval ex =
-  loop ex mt_out mt_env
+  loop ex Halt mt_env
   where
-  loop :: Exp -> OutputStream -> Env -> (Value, OutputStream, Env)
+  append :: TweIO -> Value -> TweIO
+  append Halt (Value v) = Output v Halt
+  append (Output p io) v = Output p (append io v)
+  loop :: Exp -> TweIO -> Env -> (Value, TweIO, Env)
   loop exp0 out0 env0 =
     case exp0 of
       Lit v -> (v, out0, env0)
@@ -128,7 +125,7 @@ tree_walk_eval ex =
           loop (While condition body) out2 env2
         else (undefined, out1, env1)
       Print exp1 -> let (v, out1, env1) = loop exp1 out0 env0
-                    in (v, put out1 v, env1)
+                    in (v, append out1 v, env1)
 
 add :: Value -> Value -> Value
 add (Value a) (Value b) = Value (a + b)
@@ -142,11 +139,11 @@ not_eq (Value a) (Value b) = Value $ if a /= b then 1 else 0
 mul :: Value -> Value -> Value
 mul (Value a) (Value b) = Value $ a * b
 
-twe_cont :: Exp -> OutputStream
+twe_cont :: Exp -> TweIO
 twe_cont e =
-  loop e mt_env (\_ _ -> OutputStream [])
+  loop e mt_env (\_ _ -> Halt)
   where
-  loop :: Exp -> Env -> (Env -> Value -> OutputStream) -> OutputStream
+  loop :: Exp -> Env -> (Env -> Value -> TweIO) -> TweIO
   loop exp env cont =
     let binop e1 e2 f = loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env (f v1 v2)))
     in
@@ -154,7 +151,7 @@ twe_cont e =
       Lit v -> cont env v
       Var n -> cont env (lookup env n)
       -- How can this work? :'(
-      Print exp -> loop exp env (\env v -> put mt_out v <> cont env v)
+      Print exp -> loop exp env (\env v -> put (cont env v) v)
       Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
       Add e1 e2 -> binop e1 e2 add
       Sub e1 e2 -> binop e1 e2 sub
