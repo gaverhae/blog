@@ -15,21 +15,13 @@
   (:require [gorilla-plot.core :as plot]
             [gorilla-repl.table :as table]
             [gorilla-renderable.core :as render]))
-;; @@
 
-;; @@
 (defn roll
   "Rolls `dice` dice with `sides` sides each and sums the results."
   [sides dice]
   ; (rand-int n) is within [0, n-1] so we add `dice`
   (reduce + dice (repeatedly dice #(rand-int sides))))
-;; @@
 
-;; @@
-(repeatedly 10 #(roll 6 2))
-;; @@
-
-;; @@
 (defn reup-roll
   "Rolls `n` d6 dice according to SW:Reup rules, i.e. with a 'wild' die."
   [n]
@@ -46,32 +38,23 @@
       (- sum-norm max-norm)
       (+ wild sum-norm))))
 
-;; @@
-
-;; @@
-(repeatedly 10 #(reup-roll 1))
-;; @@
-
-;; @@
-(defn plot
+(defn sample
   [f]
-  (let [sample (repeatedly (* 1000 1000) f)
+  (repeatedly (* 1000 1000) f))
+
+(defn plot-values
+  [f]
+  (let [sample (sample f)
         freqs (frequencies sample)
         values (-> freqs keys sort)
         occurrences (->> freqs sort (map val))]
     occurrences
     (plot/bar-chart values occurrences)))
-;; @@
 
-;; @@
-(->> (range 1 7) (map (fn [i] [(plot #(roll 6 i)) (plot #(reup-roll i))])))
-;; @@
-
-;; @@
 (defn quantiles
   [f]
-  (let [n (* 1000 1000)
-        values (->> (repeatedly n f) sort vec)
+  (let [values (->> (sample f) sort vec)
+        n (count values)
         avg (/ (reduce + 0 values) 1.0 n)
         step (/ n 20)]
     [avg
@@ -80,12 +63,49 @@
      (get values (dec (* 10 step)))
      (get values (dec (* 15 step)))
      (get values (dec (* 19 step)))]))
-;; @@
 
-;; @@
+(def difficulties [1 6 11 16 21 31])
+
+(defn count-suc
+  [values]
+  (let [success (fn [threshold]
+                  (/ (->> values
+                          (filter #(>= % threshold))
+                          count)
+                     1.0
+                     (count values)))]
+    (map success difficulties)))
+
+(defn successes
+  [f]
+  (count-suc (sample f)))
+
+(defn plot-successes
+  [f]
+  (let [sample (sample f)]
+    (plot/bar-chart difficulties (count-suc sample))))
+
 (def space (reify render/Renderable (render [_] {:type :html :content "" :value ""})))
-(defn raw-string [s] (reify render/Renderable (render [_] {:type :html :content s :value s})))
 
+(defn raw-string
+  [s]
+  (reify render/Renderable
+    (render [_] {:type :html :content s :value s})))
+;; @@
+
+;; @@
+(repeatedly 10 #(roll 6 2))
+;; @@
+
+;; @@
+(repeatedly 10 #(reup-roll 1))
+;; @@
+
+;; @@
+(->> (range 1 7) (map (fn [i] [(plot-values #(roll 6 i)) (plot-values #(reup-roll i))])))
+;; @@
+
+;; @@
 (table/table-view (->>
                     (range 1 7)
                     (mapcat (fn [i]
@@ -94,4 +114,23 @@
                                (repeat 7 space)]))
                     (cons (repeat 7 space))
                     (cons (map raw-string ["" "avg" "5%" "25%" "50%" "75%" "95%"]))))
+;; @@
+
+;; @@
+(table/table-view (->>
+                    (range 1 9)
+                    (mapcat (fn [i]
+                              [(cons (raw-string (str i "d6"))
+                                     (map #(raw-string (format "%02.2f%%" (* 100 %)))
+                                          (successes #(roll 6 i))))
+                               (cons (raw-string (str i "d6 wild"))
+                                     (map #(raw-string (format "%02.2f%%" (* 100 %)))
+                                          (successes #(reup-roll i))))
+                               (repeat 7 space)]))
+                    (cons (repeat 7 space))
+                    (cons (map raw-string ["" "very easy (>=1)" "easy (>=6)" "moderate (>=11)" "difficult (>=16)" "very difficult (>=21)" "heroic (>=31)"]))))
+;; @@
+
+;; @@
+(->> (range 1 9) (map (fn [i] [(plot-successes #(roll 6 i)) (plot-successes #(reup-roll i))])))
 ;; @@
