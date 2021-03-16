@@ -86,6 +86,10 @@ insert (Env m) n v = Env $ Map.insert n v m
 put :: TweIO -> Value -> TweIO
 put io (Value v) = Output v io
 
+append :: TweIO -> Value -> TweIO
+append Halt (Value v) = Output v Halt
+append (Output p io) v = Output p (append io v)
+
 mt_env :: Env
 mt_env = Env Map.empty
 
@@ -93,9 +97,6 @@ tree_walk_eval :: Exp -> (Value, TweIO, Env)
 tree_walk_eval ex =
   loop ex Halt mt_env
   where
-  append :: TweIO -> Value -> TweIO
-  append Halt (Value v) = Output v Halt
-  append (Output p io) v = Output p (append io v)
   loop :: Exp -> TweIO -> Env -> (Value, TweIO, Env)
   loop exp0 out0 env0 =
     case exp0 of
@@ -233,6 +234,57 @@ twe_mon exp =
     EvalPrint v -> put (cont env ()) v
     EvalSet n v -> cont (insert env n v) ()
 
+closure_eval :: Exp -> TweIO
+closure_eval e =
+  let (_, _, io) = compile e (mt_env, Halt) in io
+  where
+  binop :: Exp -> Exp -> (Value -> Value -> Value) -> (Env, TweIO) -> (Value, Env, TweIO)
+  binop e1 e2 op =
+      let f1 = compile e1
+          f2 = compile e2
+      in \(env, io) ->
+        let (v1, env1, io1) = f1 (env, io)
+            (v2, env2, io2) = f2 (env1, io1)
+        in (op v1 v2, env2, io2)
+  compile :: Exp -> (Env, TweIO) -> (Value, Env, TweIO)
+  compile = \case
+    Lit v -> \(env, io) -> (v, env, io)
+    Var n -> \(env, io) -> (lookup env n, env, io)
+    Set n exp ->
+      let f = compile exp
+      in \(env, io) ->
+        let (v1, env1, io1) = f (env, io)
+        in (v1, insert env1 n v1, io1)
+    Add e1 e2 -> binop e1 e2 add
+    Sub e1 e2 -> binop e1 e2 sub
+    Mul e1 e2 -> binop e1 e2 mul
+    NotEq e1 e2 -> binop e1 e2 not_eq
+    Do [] -> \(env, io) -> (bottom, env, io)
+    Do [exp] -> let f = compile exp in \(env, io) -> f (env, io)
+    Do exps ->
+      let fs = foldr (\exp cont -> let f = compile exp
+                                   in \_ (env, io) ->
+                                     let (v1, env1, io1) = f (env, io)
+                                     in cont v1 (env1,io1))
+                     (\v (env, io) -> (v, env, io))
+                     exps
+      in \(env, io) -> fs bottom (env, io)
+    While condition body ->
+      let cond = compile condition
+          bod = compile body
+          loop = \(env, io) ->
+            let (c, env1, io1) = cond (env, io)
+            in if (Value 1) == c
+               then let (_, env2, io2) = bod (env1, io1)
+                    in loop (env2, io2)
+               else (bottom, env1, io1)
+      in loop
+    Print exp ->
+      let f = compile exp
+      in \(env, io) ->
+        let (v1, env1, io1) = f (env, io)
+        in (v1, env1, append io1 v1)
+
 main :: IO ()
 main = do
   putStrLn "tree_walk_eval"
@@ -247,4 +299,8 @@ main = do
   print $ twe_mon sam
   print $ twe_mon $ fact 3
   print $ twe_mon neil
+  putStrLn $ "closure_eval"
+  print $ closure_eval sam
+  print $ closure_eval $ fact 3
+  print $ closure_eval neil
   pure ()
