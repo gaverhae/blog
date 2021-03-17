@@ -5,6 +5,7 @@ import Prelude hiding (exp,lookup)
 import Control.Monad (ap,liftM)
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Traversable (for)
 
 newtype Name = Name String
   deriving (Eq, Ord, Show)
@@ -93,9 +94,9 @@ append (Output p io) v = Output p (append io v)
 mt_env :: Env
 mt_env = Env Map.empty
 
-tree_walk_eval :: Exp -> (Value, TweIO, Env)
+tree_walk_eval :: Exp -> TweIO
 tree_walk_eval ex =
-  loop ex Halt mt_env
+  let (_, io, _) = loop ex Halt mt_env in io
   where
   loop :: Exp -> TweIO -> Env -> (Value, TweIO, Env)
   loop exp0 out0 env0 =
@@ -287,20 +288,14 @@ closure_eval e =
 
 main :: IO ()
 main = do
-  putStrLn "tree_walk_eval"
-  print $ tree_walk_eval sam
-  print $ tree_walk_eval $ fact 3
-  print $ tree_walk_eval neil
-  putStrLn "twe_cont"
-  print $ twe_cont sam
-  print $ twe_cont $ fact 3
-  print $ twe_cont neil
-  putStrLn "twe_mon"
-  print $ twe_mon sam
-  print $ twe_mon $ fact 3
-  print $ twe_mon neil
-  putStrLn $ "closure_eval"
-  print $ closure_eval sam
-  print $ closure_eval $ fact 3
-  print $ closure_eval neil
+  _ <- for [("tree_walk_eval", tree_walk_eval),
+            ("twe_cont", twe_cont),
+            ("twe_mon", twe_mon),
+            ("closure_eval", closure_eval)
+            ]
+           (\(n, f) -> do
+    putStrLn n
+    print $ f sam
+    print $ f $ fact 3
+    print $ f neil)
   pure ()
