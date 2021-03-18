@@ -2,10 +2,16 @@ module Main (main)
 where
 
 import Prelude hiding (exp,lookup)
+import qualified Control.Exception
 import Control.Monad (ap,liftM)
 import Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.Text.Lazy.Builder
 import Data.Traversable (for)
+import qualified Formatting
+import qualified Formatting.Clock
+import qualified Formatting.Formatters
+import qualified System.Clock
 
 newtype Name = Name String
   deriving (Eq, Ord, Show)
@@ -41,6 +47,18 @@ neil =
       ]),
     Print $ Var x
     ]
+
+direct :: Int
+direct =
+  loop 100 1000
+  where
+  loop :: Int -> Int -> Int
+  loop x i = if (0 == i)
+             then x
+             else
+             let x1 = x + 4 + x +3
+             in let x2 = x1 + 2 + 4
+             in loop x2 (i - 1)
 
 fact :: Int -> Exp
 fact x =
@@ -312,15 +330,42 @@ closure_cont e =
 
 main :: IO ()
 main = do
-  _ <- for [("tree_walk_eval", tree_walk_eval)
-            ,("twe_cont", twe_cont)
-            ,("twe_mon", twe_mon)
-            ,("closure_eval", closure_eval)
-            --,("closure_cont", closure_cont)
-            ]
-           (\(n, f) -> do
-    putStrLn n
-    print $ f sam
-    print $ f $ fact 3
-    print $ f neil)
+  let switch = 1
+  if switch == (0::Int)
+  then do
+    _ <- for [("tree_walk_eval", tree_walk_eval)
+             ,("twe_cont", twe_cont)
+             ,("twe_mon", twe_mon)
+             ,("closure_eval", closure_eval)
+             --,("closure_cont", closure_cont)
+             ]
+             (\(n, f) -> do
+               putStrLn n
+               print $ f sam
+               print $ f $ fact 3
+               print $ f neil)
+    pure()
+  else do
+    let now = System.Clock.getTime System.Clock.Monotonic
+    let raw_string = Formatting.now . Data.Text.Lazy.Builder.fromString
+    let printDur = Formatting.fprint
+                     (Formatting.Formatters.string
+                      Formatting.%
+                      raw_string ": "
+                      Formatting.%
+                      Formatting.Clock.timeSpecs
+                      Formatting.%
+                      raw_string "\n")
+    let bench s f = do
+          start <- now
+          _ <- Control.Exception.evaluate f
+          end <- now
+          printDur s start end
+    bench "direct" (direct)
+    bench "direct" (direct)
+    bench "tree_walk_eval" (tree_walk_eval neil)
+    bench "twe_cont" (twe_cont neil)
+    bench "twe_mon" (twe_mon neil)
+    bench "closure_eval" (closure_eval neil)
+    pure ()
   pure ()
