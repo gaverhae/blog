@@ -286,12 +286,37 @@ closure_eval e =
         let (v1, env1, io1) = f (env, io)
         in (v1, env1, append io1 v1)
 
+{-
+closure_cont :: Exp -> TweIO
+closure_cont e =
+  (compile e (\_ _ -> Halt)) mt_env
+  where
+  binop :: Exp -> Exp -> (Value -> Value -> Value) -> ((Env -> Value) -> Env -> TweIO) -> Env -> TweIO
+  binop e1 e2 f cont = undefined e1 e2 f cont
+  compile :: Exp -> ((Env -> Value) -> Env -> TweIO) -> Env -> TweIO
+  compile exp cont = case exp of
+    Lit v -> cont (\_ -> v)
+    Var n -> cont (\env -> lookup env n)
+    Set n exp -> compile exp (\f -> \env -> k
+    Add e1 e2 -> binop e1 e2 add cont
+    Sub e1 e2 -> binop e1 e2 sub cont
+    Mul e1 e2 -> binop e1 e2 mul cont
+    NotEq e1 e2 -> binop e1 e2 not_eq cont
+    Do [] -> undefined
+    Do [exp] -> undefined exp
+    Do (exp:exps) -> undefined exp exps
+    While condition body -> undefined condition body
+    Print exp -> undefined exp
+-}
+
+
 main :: IO ()
 main = do
-  _ <- for [("tree_walk_eval", tree_walk_eval),
-            ("twe_cont", twe_cont),
-            ("twe_mon", twe_mon),
-            ("closure_eval", closure_eval)
+  _ <- for [("tree_walk_eval", tree_walk_eval)
+            ,("twe_cont", twe_cont)
+            ,("twe_mon", twe_mon)
+            ,("closure_eval", closure_eval)
+            --,("closure_cont", closure_cont)
             ]
            (\(n, f) -> do
     putStrLn n
