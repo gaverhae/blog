@@ -302,28 +302,54 @@ closure_eval e =
         let (v1, env1, io1) = f (env, io)
         in (v1, env1, append io1 v1)
 
-{-
-closure_cont :: Exp -> TweIO
+closure_cont :: Exp -> Env -> TweIO
 closure_cont e =
-  (compile e (\_ _ -> Halt)) mt_env
+  let f = compile e (\f (env, io) ->
+        let (_, env1, io1) = f (env, io)
+        in (env1, io1))
+  in \env ->
+    let (_, io) = f (env, Halt)
+    in io
   where
-  binop :: Exp -> Exp -> (Value -> Value -> Value) -> ((Env -> Value) -> Env -> TweIO) -> Env -> TweIO
-  binop e1 e2 f cont = undefined e1 e2 f cont
-  compile :: Exp -> ((Env -> Value) -> Env -> TweIO) -> Env -> TweIO
+  binop :: Exp -> Exp -> (Value -> Value -> Value) -> (((Env, TweIO) -> (Value, Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)
+  binop e1 e2 f cont =
+    compile e1 (\f1 ->
+      compile e2 (\f2 ->
+        cont (\(env, io) ->
+          let (v1, env1, io1) = f1 (env, io)
+              (v2, env2, io2) = f2 (env1, io1)
+          in (f v1 v2, env2, io2))))
+  compile :: Exp -> (((Env, TweIO) -> (Value, Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)
   compile exp cont = case exp of
-    Lit v -> cont (\_ -> v)
-    Var n -> cont (\env -> lookup env n)
-    Set n exp -> compile exp (\f -> \env -> k
+    Lit v -> cont (\(env, io) -> (v, env, io))
+    Var n -> cont (\(env, io) -> (lookup env n, env, io))
+    Set n exp -> compile exp (\f ->
+      cont (\(env, io) ->
+        let (v, env1, io1) = f (env, io)
+        in (v, insert env1 n v, io1)))
     Add e1 e2 -> binop e1 e2 add cont
     Sub e1 e2 -> binop e1 e2 sub cont
     Mul e1 e2 -> binop e1 e2 mul cont
     NotEq e1 e2 -> binop e1 e2 not_eq cont
     Do [] -> undefined
-    Do [exp] -> undefined exp
-    Do (exp:exps) -> undefined exp exps
-    While condition body -> undefined condition body
-    Print exp -> undefined exp
--}
+    Do [exp] -> compile exp (\f -> cont (\(env, io) -> f (env, io)))
+    Do (exp:exps) -> compile (Do exps) (\rest ->
+      compile exp (\f ->
+        cont (\(env, io) -> let (_, env1, io1) = f (env, io)
+                            in rest (env1, io1))))
+
+    While condition body ->
+      compile condition (\cond ->
+        compile body (\bod ->
+          cont (\(env, io) ->
+            let loop = \(env, io) -> let (c, env1, io1) = cond (env, io)
+                                   in if (Value 1) == c
+                                      then let (_, env2, io2) = bod (env1, io1)
+                                           in loop (env2, io2)
+                                      else (bottom, env1, io1)
+            in loop (env, io))))
+    Print exp -> compile exp (\f -> cont (\(env, io) -> let (v, env1, io1) = f (env, io)
+                                                        in (v, env1, put io1 v)))
 
 
 main :: IO ()
@@ -335,7 +361,7 @@ main = do
              ,("twe_cont", twe_cont)
              ,("twe_mon", twe_mon)
              ,("closure_eval", closure_eval)
-             --,("closure_cont", closure_cont)
+             ,("closure_cont", closure_cont)
              ]
              (\(n, f) -> do
                putStrLn n
@@ -373,5 +399,7 @@ main = do
     bench "twe_mon" (twe_mon neil)
     let ce = closure_eval neil
     bench "closure_eval" ce
+    let cc = closure_cont neil
+    bench "closure_cont" cc
     pure ()
   pure ()
