@@ -48,17 +48,19 @@ neil =
     Print $ Var x
     ]
 
-direct :: Int
-direct =
-  loop 100 1000
+direct :: Env -> TweIO
+direct env =
+  loop (insert (insert env (Name "x") (Value 100)) (Name "i") (Value 1000))
   where
-  loop :: Int -> Int -> Int
-  loop x i = if (0 == i)
-             then x
+  x = Name "x"
+  i = Name "i"
+  loop :: Env -> TweIO
+  loop env = if (Value 0 == (lookup env i))
+             then put Halt (lookup env x)
              else
-             let x1 = x + 4 + x +3
-             in let x2 = x1 + 2 + 4
-             in loop x2 (i - 1)
+             let env1 = insert env x (lookup env x `add` Value 4 `add` lookup env x `add` Value 3)
+                 env2 = insert env1 x (lookup env1 x `add` Value 2 `add` Value 4)
+             in loop (insert env2 i (lookup env2 i `sub` Value 1))
 
 fact :: Int -> Exp
 fact x =
@@ -112,9 +114,9 @@ append (Output p io) v = Output p (append io v)
 mt_env :: Env
 mt_env = Env Map.empty
 
-tree_walk_eval :: Exp -> TweIO
-tree_walk_eval ex =
-  let (_, io, _) = loop ex Halt mt_env in io
+tree_walk_eval :: Exp -> Env -> TweIO
+tree_walk_eval ex env =
+  let (_, io, _) = loop ex Halt env in io
   where
   loop :: Exp -> TweIO -> Env -> (Value, TweIO, Env)
   loop exp0 out0 env0 =
@@ -162,9 +164,9 @@ not_eq (Value a) (Value b) = Value $ if a /= b then 1 else 0
 mul :: Value -> Value -> Value
 mul (Value a) (Value b) = Value $ a * b
 
-twe_cont :: Exp -> TweIO
-twe_cont e =
-  loop e mt_env (\_ _ -> Halt)
+twe_cont :: Exp -> Env -> TweIO
+twe_cont e env =
+  loop e env (\_ _ -> Halt)
   where
   loop :: Exp -> Env -> (Env -> Value -> TweIO) -> TweIO
   loop exp env cont =
@@ -200,9 +202,9 @@ instance Functor EvalExec where fmap = liftM
 instance Applicative EvalExec where pure = return; (<*>) = ap
 instance Monad EvalExec where return = EvalReturn; (>>=) = EvalBind
 
-twe_mon :: Exp -> TweIO
-twe_mon exp =
-  exec (eval exp) mt_env (\_ _ -> Halt)
+twe_mon :: Exp -> Env -> TweIO
+twe_mon exp env =
+  exec (eval exp) env (\_ _ -> Halt)
   where
   binop :: Exp -> Exp -> (Value -> Value -> Value) -> EvalExec Value
   binop e1 e2 f = do
@@ -211,8 +213,7 @@ twe_mon exp =
     return $ f v1 v2
   eval :: Exp -> EvalExec Value
   eval = \case
-    Lit v -> do
-      return v
+    Lit v -> return v
     Var n -> do
       v <- EvalLookup n
       return v
@@ -224,11 +225,8 @@ twe_mon exp =
     Sub e1 e2 -> binop e1 e2 sub
     Mul e1 e2 -> binop e1 e2 mul
     NotEq e1 e2 -> binop e1 e2 not_eq
-    Do [] -> do
-      return bottom
-    Do [exp] -> do
-      v <- eval exp
-      return v
+    Do [] -> return bottom
+    Do [exp] -> eval exp
     Do (exp:exps) -> do
       _ <- eval exp
       eval (Do exps)
@@ -253,9 +251,9 @@ twe_mon exp =
     EvalPrint v -> put (cont env ()) v
     EvalSet n v -> cont (insert env n v) ()
 
-closure_eval :: Exp -> TweIO
+closure_eval :: Exp -> Env -> TweIO
 closure_eval e =
-  let (_, _, io) = compile e (mt_env, Halt) in io
+  let c = compile e in \env -> let (_, _, io) = c (env, Halt) in io
   where
   binop :: Exp -> Exp -> (Value -> Value -> Value) -> (Env, TweIO) -> (Value, Env, TweIO)
   binop e1 e2 op =
@@ -341,9 +339,9 @@ main = do
              ]
              (\(n, f) -> do
                putStrLn n
-               print $ f sam
-               print $ f $ fact 3
-               print $ f neil)
+               print $ f sam mt_env
+               print $ f (fact 3) mt_env
+               print $ f neil mt_env)
     pure()
   else do
     let now = System.Clock.getTime System.Clock.Monotonic
@@ -361,11 +359,11 @@ main = do
           _ <- Control.Exception.evaluate f
           end <- now
           printDur s start end
-    bench "direct" (direct)
-    bench "direct" (direct)
+    bench "direct" direct
     bench "tree_walk_eval" (tree_walk_eval neil)
     bench "twe_cont" (twe_cont neil)
     bench "twe_mon" (twe_mon neil)
-    bench "closure_eval" (closure_eval neil)
+    let ce = closure_eval neil
+    bench "closure_eval" ce
     pure ()
   pure ()
