@@ -3,7 +3,7 @@ where
 
 import Prelude hiding (exp,lookup)
 import qualified Control.Exception
-import Control.Monad (ap,liftM)
+import Control.Monad (ap,liftM,void)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Text.Lazy.Builder
@@ -354,9 +354,17 @@ main = do
                       Formatting.Clock.timeSpecs
                       Formatting.%
                       raw_string "\n")
+    let ntimes :: (Env -> TweIO) -> Int -> IO ()
+        ntimes f n =
+          if n == 0
+          then return ()
+          else do
+            void $ Control.Exception.evaluate (f mt_env)
+            ntimes f (n - 1)
     let bench s f = do
+          ntimes f 3
           start <- now
-          _ <- Control.Exception.evaluate f
+          ntimes f 10
           end <- now
           printDur s start end
     bench "direct" direct
