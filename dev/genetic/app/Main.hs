@@ -29,27 +29,27 @@ genetic_search :: forall solution.
                -> [Double]
                -> [(solution, Double)]
 genetic_search fitness mutate crossover make_solution rnd =
-  exec_random go rnd (\_ generations -> map head generations)
+  map head $ exec_random init rnd (\rnd prev -> loop prev rnd)
   where
+  loop :: [(solution, Double)] -> [Double] -> [[(solution, Double)]]
+  loop prev rnd = prev : exec_random (step prev) rnd (\rnd next -> loop next rnd)
   rep :: Int -> WithRandom a -> WithRandom [a]
   rep n f = Control.Monad.forM [1..n] (\_ -> f)
   fit :: solution -> (solution, Double)
   fit s = (s, fitness s)
   srt :: [(solution, Double)] -> [(solution, Double)]
   srt = Data.Sort.sortOn snd
-  go :: WithRandom [[(solution, Double)]]
-  go = (srt <$> map fit <$> rep 100 make_solution) >>= loop
-  loop :: [(solution, Double)] -> WithRandom [[(solution, Double)]]
-  loop prev = do
+  init :: WithRandom [(solution, Double)]
+  init = (srt <$> map fit <$> rep 100 make_solution)
+  step :: [(solution, Double)] -> WithRandom [(solution, Double)]
+  step prev = do
     let survivors = take 10 prev ++ take 3 (reverse prev)
     children <- rep 87 (do
-          parent1 <- carousel prev
-          parent2 <- carousel (parent1 `Data.List.delete` prev)
-          child <- crossover (fst parent1) (fst parent2)
-          fit <$> mutate child)
-    let next = srt $ survivors <> children
-    tl <- loop next
-    return $ next : tl
+      parent1 <- carousel prev
+      parent2 <- carousel (parent1 `Data.List.delete` prev)
+      child <- crossover (fst parent1) (fst parent2)
+      fit <$> mutate child)
+    return $ srt $ survivors <> children
   carousel :: [(solution, Double)] -> WithRandom (solution, Double)
   carousel gen = do
     let inverted = map (\(s, f) -> (s, 1  / f)) gen
@@ -83,4 +83,4 @@ main = do
       return (rand_x * 10, rand_y * 10)
   let rng = System.Random.mkStdGen 0
   let rands = tail $ map fst $ iterate (\(_, rng) -> System.Random.randomR (0::Double, 1) rng) (0, rng)
-  print $ take 1 $ genetic_search fitness mutate crossover mk_sol rands
+  print $ map snd $ take 40 $ genetic_search fitness mutate crossover mk_sol rands
