@@ -317,3 +317,296 @@ we'll explain much later.
 
 (def safe-root-reciprocal (cmoposition safe-root safe-reciprocal))
 ```
+
+### Chapter 5 - Products and Coproducts
+
+Because category theory only deals with opaque objects and labeled but still
+opaque morphisms, the only thing we can really comment on is the shapes, or
+patterns, of morphisms and objects.
+
+The simplest such pattern is called the _initial object_ and is an object that
+has exactly one morphism to every other object in the categiry. Not all
+categories have an initial object. There may be more than one such object, but
+in that case they are all _isomorphic_ to each other. Therefore, we say that
+when there is an initial object, it is _unique up to isomorphisms_.
+
+In the category defined by less-than-or-equal over the naturals, 0 would be an
+initial object. In a category defined by less-than-or-equal over the integers,
+there is no initial object. In Set, the initial object is the empty set.
+
+The reciproqual pattern is called the _terminal object_: an object such that
+there is a single morphism to it from every other object. Here again not every
+category has a terminal object, and some categories may have more than one, but
+if so they are all isomorphic so the terminal object is unique up to
+isomorphisms.
+
+In a partially ordered set, the terminal object would be the biggest object. In
+Set, the terminal object is the singleton set (`()` in Haskell).
+
+For any category $C$, one can define a _dual_ category $C^{op}$ by keeping all
+the objects but reversing all the arrows, and redefining composition to also
+reverse it. Constructions in the dual category are usually called co-something.
+
+An isomorphism is a pair of morphisms such that their composition is the
+identity (on both ends). Because of composition, in a proper category this
+means that they have the same shape (same set of incoming/outgoing arrows).
+
+A _product_ of two objects $a$ and $b$ is an object $c$ such that there is a
+morphism $f$ from $c$ to $a$, and a morphism $g$ from $c$ to $b$, and there is
+no object $c'$ such that there is a morphism $f'$ from $c'$ to $a$ and a
+morphism $g'$ from $c'$ to $b$ such that there exists a morphism $m$ from $c$
+to $c'$ such that $f = f' \dot m$ and $g = g' \dot m$.
+
+A _coproduct_ is the dual of a product: $c$ is a coproduct of $a$ and $b$ if
+there exist two morphisms $f$ from $a$ to $c$ and $g$ from $b$ to $c$ such that
+there is no $c'$ with $f'$ from $c'$ to $a$ and $g'$ from $c'$ to $b$ such that
+$f = m \dot f'$ and $g = m \dot g'$, where $m$ goes from $c$ to $c'$.
+
+In Set, products are pairs and coproducts are (tagged/disjoint) unions.
+
+Because functions are, in general, not invertible, there is an asymmetry
+between products and coproducts in Set.
+
+A function whose image is its entire codomain is called _surjective_; a
+function that is defined on its whole domain is called _injective_; a function
+that is both at the same time is called _bijective_ (and is invertible), or,
+from a category perspective, an isomorphism. Note that it does mean two
+isomorphic sets have to have the same size.
+
+#### Challenges
+
+> 1. Show that the terminal object is unique up to unique isomorphism.
+
+Let $t_1$, $t_2$ be two terminal objects. By definition, a terminal object has
+a single incoming morphism from every object, which means that there can be
+only one morphism from the object to itself and that morphism is the identity.
+Because $t_1$ is terminal, there must be a morphism from $t_2$ to $t_1$, and
+because $t_2$ is terminal, there must be a morphism from $t_1$ to $t_2$. If we
+assume that we are in a category, the composition of these two morphisms must
+be the identities for $t_1$ and $t_2$ and therefore these two morphisms form an
+isomorphism. Furthermore, as these two morphisms are the only ones between
+these two object, the isomorphism itself is unique.
+
+> 2. What is a product of two objects in a poset? Hint: Use the universal
+>    construction.
+
+It's the minimum of the two objects.
+
+> 3. What is a coproduct of two objects in a poset?
+
+Maximum of the two objects.
+
+> 4. Implement the equivalent of Haskell `Either` as a generic type in your
+>    favorite language (other than Haskell).
+
+```clojure
+(defn left [v] [:left v])
+(defn right [v] [:right v])
+```
+
+> 5. Show that `Either` is a "better" coproduct than `int` equipped with two
+>    injections:
+>    ```
+>    int i(int n) { return n; }
+>    int j(bool b) { return b ? 0 : 1; }
+>    ```
+>    Hint: Define a function
+>    ```
+>    int m(Either const & e);
+>    ```
+>    that factorizes `i` and `j`.
+
+I don't actually know enough C++ to implement that, but in Haskell:
+
+```haskell
+m :: Either Int Bool -> Int
+m Left i = i
+m Right True = 0
+m Right False = 1
+```
+
+So `Either` is better because it can do everything `i` and `j` can do.
+
+> 6. Continuing the previous problem: how would you argue that `int` with the
+>    two injections `i` and `j` cannot be "better" than `Either`?
+
+The problem here is that the conversion is lossy: we don't know if we started
+with `false` or `1` (or `true` vs. `0`), whereas `Either` registers that
+information. In other words the union is not tagged.
+
+> 7. Still continuing: what about these injections?
+>    ```
+>    int i(int n) {
+>        if (n < 0) return n;
+>        return (n + 2);
+>    }
+>
+>    int j(bool b) { return b ? 0 : 1; }
+>    ```
+
+If `int` were real (pun?) integers, that would work, but as it stands it's
+still lossy because of the overflow issue: we're not mapping the entire domain.
+
+> 8. Come up with an inferior candidate for a coproduct of `int` and `bool`
+>    that cannot be better than `Either` because it allows multiple acceptable
+>    morphisms from it to `Either`.
+
+I don't understand the question.
+
+### Chapter 6 - Simple Algebraic Data Types
+
+Because pairs `(a, b)` and `(b, a)` are isomorphic (`swap` function), nested
+pairs can be represented as tuples. Products (of sets) look like
+multiplication, with the singleton set playing the role of `1` (which is why
+it's called `Unit`).
+
+Set is a _monoidal category_, i.e. a category that is also a monoid as you can
+define a product between any two of its objects.
+
+It is also a mpnoid with respect to addition of types with `Void` playing the
+role of `0`. In fact, because addition and multiplication of types compose, Set
+forms a _semiring_, i.e. types have the same properties as natural numbers over
+addition and multiplication (a full _ring_ would require support for
+subtraction). Booleans with `||` and `&&` also form a semiring, which will be
+important later on.
+
+> The rest of the chapter explains `data` declarations: named constructors,
+> types with multiple type variables, records. This is Haskell syntax and not
+> category theory.
+
+#### Challenges
+
+> 1. Show the isomorphism between `Maybe a` and `Either () a`.
+
+```haskell
+m_to_e :: Maybe a -> Either () a
+m_to_e Nothing = Left ()
+m_to_e (Just a) = Right a
+
+e_to_m :: Either () a -> Maybe a
+e_to_m (Left _) = Nothing
+e_to_m (Right a) = Just a
+```
+
+> 2. Here's a sum type defined in Haskell:
+>    ```
+>    data Shape = Circle Float | Rect Float Float
+>    ```
+>    When we want to define a function like `area` that acts on a `Shape`, we
+>    do it by pattern matching on the two constructors:
+>    ```
+>    area :: Shape -> Float
+>    area (Circle r) = pi * r * r
+>    area (Rect d h) = d * h
+>    ```
+>    Implement `Shape` in C++ or Java as an interface and create two classes
+>    `Circle` and `Rect`. Implement `area` as a virtual function.
+
+I choose Java.
+
+```java
+public interface Shape {
+  double area();
+
+  static class Circle(double r) implements Shape {
+    public final double r;
+    public Circle(double r) {
+      this.r = r;
+    }
+    public double area() {
+      return Math.PI * r * r;
+    }
+    // equal & hashcode left as an exercise
+  }
+
+  static class Rect(double d, double h) implements Shape {
+    public final double h;
+    public final double d;
+    public Rect(double d, double h) {
+      this.d = d;
+      this.h = h;
+    }
+    public double area() {
+      return d * h;
+    }
+    // equal & hashcode left as an exercise
+  }
+}
+```
+
+> 3. Continuing with the previous example: We can easily add a new function
+>    `circ` that calculates the circumference of a `Shape`. We can do it
+>    without touching the definition of `Shape`:
+>    ```
+>    circ :: Shape -> Float
+>    circ (Circle r) = 2.0 * pi * r
+>    circ (Rect d h) = 2.0 * (d + h)
+>    ```
+>    Add `circ` to your C++ or Java implementation. What parts of the original
+>    code did you have to touch?
+
+None:
+
+```java
+public interface ShapeUtils {
+  static circ(Shape s) {
+    if (s instanceof Rect) {
+      Rect r = (Rect) s;
+      return 2 * (r.d + r.h);
+    } else if (s instanceof Circle) {
+      Circle c = (Circle) s;
+      return 2 * c.r * Math.PI;
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+}
+```
+
+> 4. Continuing further: Add a new shape, Square, to Shape and make all the
+>    necessary updates. What code did you have to touch in Haskell vs. C++ or
+>    Java? (Even if you’re not a Haskell programmer, the modifications should
+>    be pretty obvious.)
+
+Let's see. In Haskell, pretty much all of it: we need to change the type _and_
+both functions.
+
+```haskell
+data Shape = Circle c | Rect d h | Square s
+
+area :: Shape -> Float
+area (Circle r) = pi * r * r
+area (Rect d h) = d * h
+area (Square s) = s * s
+
+circ :: Shape -> Float
+circ (Circle r) = 2.0 * pi * r
+circ (Rect d h) = 2 * (d + h)
+circ (Square s) = 4 * s
+```
+
+In Java, none of it, we can just add some new code:
+
+```java
+public class Square(double c) extends Rect {
+  public Square(double c) {
+    super(c, c);
+  }
+}
+```
+
+> 5. Show that $a + a = 2 * a$ holds for types (up to isomorphism). Remember that
+>    2 corresponds to Bool, according to our translation table.
+
+Using Haskell notation, `a + a` is `Either a a`, whereas `2 * a` is `(Bool,
+a)`. We can make an isomorphism with the two following functions:
+
+```haskell
+s_to_p :: Either a a -> (Bool, a)
+s_to_p (Right a) = (True, a)
+s_to_p (Left a) = (False, a)
+
+p_to_s :: (Bool, a) -> Either a a
+p_to_s (True, a) = Right a
+p_to_s (False, a) = Left a
+```
