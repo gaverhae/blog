@@ -6,7 +6,9 @@ import qualified Data.Sort
 import qualified System.Random
 
 instance Functor WithRandom where fmap = Control.Monad.liftM
-instance Applicative WithRandom where pure = return; (<*>) = Control.Monad.ap
+instance Applicative WithRandom where
+  pure = return
+  (<*>) = Control.Monad.ap
 instance Monad WithRandom where return = Return; (>>=) = Bind
 
 data WithRandom a where
@@ -29,10 +31,14 @@ genetic_search :: forall solution.
                -> [Double]
                -> [(solution, Double)]
 genetic_search fitness mutate crossover make_solution rnd =
-  map head $ exec_random init rnd (\rnd prev -> loop prev rnd)
+  map head $ exec_random init
+                         rnd
+                         (\rnd prev -> loop prev rnd)
   where
   loop :: [(solution, Double)] -> [Double] -> [[(solution, Double)]]
-  loop prev rnd = prev : exec_random (step prev) rnd (\rnd next -> loop next rnd)
+  loop prev rnd = prev : exec_random (step prev)
+                                     rnd
+                                     (\rnd next -> loop next rnd)
   rep :: Int -> WithRandom a -> WithRandom [a]
   rep n f = Control.Monad.forM [1..n] (\_ -> f)
   fit :: solution -> (solution, Double)
@@ -40,7 +46,7 @@ genetic_search fitness mutate crossover make_solution rnd =
   srt :: [(solution, Double)] -> [(solution, Double)]
   srt = Data.Sort.sortOn snd
   init :: WithRandom [(solution, Double)]
-  init = (srt <$> map fit <$> rep 100 make_solution)
+  init = srt <$> map fit <$> rep 100 make_solution
   step :: [(solution, Double)] -> WithRandom [(solution, Double)]
   step prev = do
     let survivors = take 10 prev ++ take 3 (reverse prev)
@@ -75,12 +81,22 @@ main = do
       roll_y <- GetRand
       let mean_x = (x1 + x2) / 2
       let mean_y = (y1 + y2) / 2
-      return (if roll_x < 0.05 then x1 else if roll_x > 0.95 then x2 else mean_x,
-              if roll_y < 0.05 then y1 else if roll_y > 0.95 then y2 else mean_y)
+      return (if roll_x < 0.05 then x1
+              else if roll_x > 0.95 then x2
+              else mean_x,
+              if roll_y < 0.05 then y1
+              else if roll_y > 0.95 then y2
+              else mean_y)
   let mk_sol = do
       rand_x <- GetRand
       rand_y <- GetRand
       return (rand_x * 10, rand_y * 10)
   let rng = System.Random.mkStdGen 0
-  let rands = tail $ map fst $ iterate (\(_, rng) -> System.Random.randomR (0::Double, 1) rng) (0, rng)
-  print $ map snd $ take 40 $ genetic_search fitness mutate crossover mk_sol rands
+  let rands = tail
+              $ map fst
+              $ iterate (\(_, rng) ->
+                          System.Random.randomR (0::Double, 1) rng)
+                        (0, rng)
+  print $ map snd
+        $ take 40
+        $ genetic_search fitness mutate crossover mk_sol rands
