@@ -13,7 +13,7 @@ silently ignore errors. It's great that Bash supports that; it's unfortunate
 that it's turned off by default. In most installations, the following runs to
 completion:
 
-```plaintext
+```shell
 $ cat script.sh
 does-not-exist
 echo "hello"
@@ -41,7 +41,7 @@ Believing you have backups when you actually don't can be a Very Bad Thing™.
 There is a simple fix for this issue. It's far from covering all of the Bash
 safety issues, but it does go a long way: the `-e` flag. Behold:
 
-```plaintext
+```shell
 $ cat script.sh
 does-not-exist
 echo "hello"
@@ -61,7 +61,7 @@ Fortunately, Bash has a solution for this too: you can set such flags at any
 point from the Bash script itself, and it will turn the flag on from that point
 on. So this should really be the first thing you do in every Bash script.
 
-```plaintext
+```shell
 $ cat script.sh
 set -e
 does-not-exist

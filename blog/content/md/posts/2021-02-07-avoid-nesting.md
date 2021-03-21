@@ -18,7 +18,7 @@ most issues with your script to stop the script with an error.
 There is, however, a common Bash pattern that can still result in uncaught
 errors. Let's start with an example:
 
-```plaintext
+```shell
 $ cat subshell_failure.sh
 set -euo pipefail
 
@@ -47,7 +47,7 @@ than you absolutely need to.
 A subshell substitution on its own will correctly report an error (and thus
 trigger `errexit` if it is set):
 
-```plaintext
+```shell
 $ cat subshell_caught.sh
 set -euo pipefail
 

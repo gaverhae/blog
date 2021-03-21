@@ -58,7 +58,7 @@ listof * ::= Nil | Cons * (listof *)
 treeof * ::= Node * (listof (treeof *))
 ```
 
-which would roughly corresponf to the Haskell type definitions:
+which would roughly correspond to the Haskell type definitions:
 
 ```haskell
 data List a = Nil | Cons a (List a)
@@ -134,7 +134,7 @@ foldtree f g a Nil = a
 
 A direct implementation of this in Clojure would read:
 
-```
+```clojure
 (defn foldtree
   [node-fn list-fn zero [node children]]
   (node-fn node
@@ -327,7 +327,7 @@ where m = (a + b) / 2
 While translating that into Clojure poses no particular issue, the resulting
 computation actually diverges almost immediately:
 
-```
+```clojure-repl
 whyfp.core=> (take 10 (super (integrate2 #(Math/sin %) 0 4)))
 (1.0617923583434352
  1.5780150025674877

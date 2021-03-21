@@ -382,7 +382,7 @@ import qualified System.Random
 
 Here is the complete code for reference (also on [github]).
 
-```
+```haskell
 module Main where
 
 import qualified Control.Monad
@@ -489,7 +489,7 @@ main = do
 
 Running this, we get:
 
-```
+```haskell
 [3.5982987289689534,
  3.474893005959019,
  3.474893005959019,

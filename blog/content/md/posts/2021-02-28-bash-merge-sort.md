@@ -621,7 +621,7 @@ nonetheless.
 
 And here is how you can test it:
 
-```plaintext
+```shell
 $ echo hello | ./msort.sh
 hello
 $ cat /usr/share/dict/words| shuf | head -10 | ./msort.sh
@@ -649,7 +649,7 @@ way.
 
 And, finally, a run with `DEBUG` output enabled:
 
-```plaintext
+```shell
 $ cat /usr/share/dict/words | shuf | head -4 | DEBUG=1 ./msort.sh
 [71104] - 71103 - recursive case
 [71104] - 71103 - waiting on 71108

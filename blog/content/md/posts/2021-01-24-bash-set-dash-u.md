@@ -25,7 +25,7 @@ With this caveat out of the way, let's move on to our topic of the week. By
 default, Bash, being a dynamic language, essentially behaves as if unknown
 variables were set to the empty string. So, for example:
 
-```plaintext
+```shell
 $ cat hello.sh
 set -e
 
@@ -73,7 +73,7 @@ The solution to this is another flag we can set to tell Bash to stop on
 encountering any unset variable. The flag is `-u`, and just like the `-e` flag,
 it can be set both when starting the executable and from within a script:
 
-```plaintext
+```shell
 $ cat unset.sh
 set -e
 

@@ -11,7 +11,7 @@ interesting? Wondering how hard that can be? Read on.
 On the face of it, this is not a difficult assignment: `rm -r` _should_ do the
 trick. So I started there, and got:
 
-```plaintext
+```shell
 $ rm -r folder
 rm: Cannot remove 'folder/file': Permission denied
 $
@@ -19,7 +19,7 @@ $
 
 Right, fine. There's a flag for that: `-f`. Let's try again:
 
-```plaintext
+```shell
 $ rm -rf folder
 rm: Cannot remove 'folder/file': Permission denied
 $
@@ -29,7 +29,7 @@ Uh? Ultimately this will be running on our CI servers, under an unprivileged
 user. However, as this is a local test machine (set up to mirror our CI nodes),
 I can try the most violent approach I know of: `sudo`.
 
-```plaintext
+```shell
 $ sudo rm -rf folder
 rm: Cannot remove 'folder/file': Permission denied
 $
@@ -37,7 +37,7 @@ $
 
 This is getting interesting. Let's take a look:
 
-```plaintext
+```shell
 $ ls -l folder
 total 0
 -rw-rw-r-- 1 vagrant vagrant 0 Mar 14 14:21 file
@@ -47,7 +47,7 @@ $
 Uh? The file is not even readonly? This took me a while to figure out. Here's a
 hint:
 
-```plaintext
+```shell
 $ ls -la folder
 total 8
 dr-x------ 2 vagrant vagrant 4096 Mar 14 14:21 .
@@ -129,7 +129,7 @@ How did we know the disk was filled by the Bazel cache and not something else?
 Essentially connecting to the CI machines that had reached that state and
 recursively running:
 
-```bash
+```shell
 sudo du -hs * 2>/dev/null | sort -h
 ```
 
@@ -325,14 +325,14 @@ the owner of the file (rather than the user running the command). So, for
 example, if we have the above script as `remount.sh`, and it had the correct
 permissions:
 
-```plaintext
+```shell
 # chown root remount.sh
 # chmod 4775 remount.sh
 ```
 
 we could use run it as a normal user:
 
-```bash
+```shell
 $ ./remount.sh
 ```
 

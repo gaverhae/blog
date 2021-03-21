@@ -35,7 +35,7 @@ input. Note that the `stderr` of `proc_a` is not redirected, which means it is
 the same as the parent's (the Bash process that runs this command). For
 example:
 
-```plaintext
+```shell
 $ (echo "this goes to stdout"; echo "this goes to stderr" >&2) | tr [:lower:] [:upper:]
 this goes to stderr
 THIS GOES TO STDOUT
@@ -59,7 +59,7 @@ form, respectively redirect `stdout` and `stdin` to/from the given file. We can
 illustrate this with the `rev` program, which reads its standard input one line
 at a time and prints it to its standard output in reverse:
 
-```plaintext
+```shell
 $ rev
 hello
 olleh
@@ -125,7 +125,7 @@ written to file descriptor 2 through to file descriptor 1.
 This is important because it means that further modifications of file
 descriptor 1 are not propagated to file descriptor 2. Witness:
 
-```plaintext
+```shell
 $ (echo "stdout"; echo "stderr" >&2) >out_first 2>&1
 $ (echo "stdout"; echo "stderr" >&2) 2>&1 >out_second
 stderr
@@ -147,7 +147,7 @@ read-only), but I have never had a need for that. Also, if using a `-` instead
 of a number to indicate which file descriptor to copy, this will close the file
 descriptor to the left (such that accessing it is an error):
 
-```plaintext
+```shell
 $ echo hello 1>&-
 bash: echo: write error: Bad file descriptor
 $ echo hello 2>&-
@@ -166,7 +166,7 @@ until the end of life of that process. (Remember, file descriptors are a
 precious resource.) This can be used, for example, to swap `stdout` and
 `stderr`:
 
-```plaintext
+```shell
 $ (echo stdout; echo stderr >&2) 3>&1 1>&2 2>&3 | sed 's/std//'
 stdout
 err
@@ -198,7 +198,7 @@ descriptor 1 of another process.
 Many programs use other files than the three default ones. As a very simple
 example, the `cat` command takes a file name and displays its contents:
 
-```plaintext
+```shell
 $ cat out
 line 1
 line2
@@ -209,7 +209,7 @@ $
 In any situation where you need a file to pass into a program for reading, you
 can substitute a subshell using the syntax `<()`:
 
-```plaintext
+```shell
 $ cat <(echo "hello" | tr e z)
 hzllo
 $
@@ -222,7 +222,7 @@ to any number of file names given as arguments. This is very useful for
 extracting intermediate logs from long pipe expressions. Here is an example of
 using `tee` to illustrate the `>()` syntax:
 
-```plaintext
+```shell
 $ echo "hello" | tee >(cat) >(cat | tr [:lower:] [:upper:]) log > out
 hello
 HELLO
@@ -244,7 +244,7 @@ argument of `tee` instruct it to write to the `log` file, while the `stdout` of
 Bash can also turn plain strings into input files. The `<<<` notation will pipe
 a string through to `stdin`; for example:
 
-```plaintext
+```shell
 $ bc
 bc 1.06
 Copyright 1991-1994, 1997, 1998, 2000 Free Software Foundation, Inc.
@@ -269,7 +269,7 @@ The syntax starts with the symbol `<<` followed by a word, and ends with the
 same word alone on a single line. The word used is arbitrary, but `HERE` and
 `EOF` are the most common ones I've seen.
 
-```plaintext
+```shell
 $ tr [:lower:] [:upper:] <<HERE
 > first line
 > second line
@@ -285,7 +285,7 @@ There are a couple things to note about HERE documents. First, the document
 actually starts on the next line. So you can have more content on the original
 line:
 
-```plaintext
+```shell
 $ tr [:lower:] [:upper:] <<HERE | sed 's/I/A/g'
 > first line
 > second line
@@ -301,7 +301,7 @@ Second, by default, the HERE document behaves like a double-quoted string,
 meaning you can use Bash variables and subshells within it. If that is not what
 you want, you can surround the end word with single quotes:
 
-```plaintext
+```shell
 $ var="replace me"
 $ cat <<HERE
 > var: $var
@@ -322,8 +322,8 @@ file calle `/dev/null` that will accept any write and just discard it
 immediately. This is useful when you are running a program and only care about
 a subset of its (possibly many) output streams. For example:
 
-```plaintext
-du -hs /* 2>/dev/null | sort -h
+```shell
+$ du -hs /* 2>/dev/null | sort -h
 ```
 
 In this case, because we are trying to collect information about `/`, it is
@@ -335,8 +335,10 @@ due to such errors.
 If you had a program that requires multiple files to write to, you could also
 use it in combination with the subshell redirection feature:
 
-```plaintext
-./annoying-program --info-logs /var/log/keep-this --debug-logs >(cat > /dev/null) --trace-logs >(cat > /dev/null)
+```shell
+$ ./annoying-program --info-logs /var/log/keep-this \
+                     --debug-logs >(cat > /dev/null) \
+                     --trace-logs >(cat > /dev/null)
 ```
 
 Other useful devices are `/dev/random` and `/dev/zero`, which will both accept

@@ -46,7 +46,7 @@ an interactive user session.
 
 For example, the `bc` program is a simple interactive calculator:
 
-```plaintext
+```shell
 $ bc
 bc 1.06
 Copyright 1991-1994, 1997, 1998, 2000 Free Software Foundation, Inc.
@@ -65,7 +65,7 @@ user. But because everything is a file, we can also _redirect_ the "standard
 input" file reading operations of the `bc` program to read from a file. In
 Bash, this is done using the `<` character. For example:
 
-```plaintext
+```shell
 $ cat input_file
 1 + 1
 6 * 32
@@ -108,7 +108,7 @@ their size).
 Unfortunately, the default behaviour of Bash is to ignore failures in pipe
 chains:
 
-```plaintext
+```shell
 $ cat failed_pipe.sh
 set -eu
 
@@ -140,7 +140,7 @@ To prevent this, we need to set the `pipefail` flag. This will use the return
 code of the first failed command in a chain of pipes as the return code for
 the entire chain.
 
-```plaintext
+```shell
 $ cat pipe_failing.sh
 set -euo pipefail
 

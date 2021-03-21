@@ -118,6 +118,7 @@ blockquote footer {
 
 pre {
     overflow-x: auto;
+    background-color: #002b36;
 }
 pre code {
     display: block;
@@ -128,10 +129,6 @@ pre code {
 
 code {
     color: #428bca;
-}
-
-pre, code, .hljs {
-    background-color: #f7f9fd;
 }
 
 @media (min-width: 768px) {
