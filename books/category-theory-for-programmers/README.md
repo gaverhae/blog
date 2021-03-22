@@ -390,11 +390,15 @@ these two object, the isomorphism itself is unique.
 > 2. What is a product of two objects in a poset? Hint: Use the universal
 >    construction.
 
-It's the minimum of the two objects.
+If there is a direct morphism between the two object, the minimum of the two.
+Otherwise, if such an object exists, it is the largest object that is smaller
+than both of the objects. If no such object exists (disjoint DAG), there is no
+product for these two objects in this poset.
 
 > 3. What is a coproduct of two objects in a poset?
 
-Maximum of the two objects.
+Maximum of the two objects, modulo same cases as product (smallest one that's
+largest than both etc.).
 
 > 4. Implement the equivalent of Haskell `Either` as a generic type in your
 >    favorite language (other than Haskell).
@@ -451,7 +455,9 @@ still lossy because of the overflow issue: we're not mapping the entire domain.
 >    that cannot be better than `Either` because it allows multiple acceptable
 >    morphisms from it to `Either`.
 
-I don't understand the question.
+```haskell
+data Either2 a b b = Either2 a b b
+```
 
 ### Chapter 6 - Simple Algebraic Data Types
 
@@ -508,7 +514,7 @@ I choose Java.
 public interface Shape {
   double area();
 
-  static class Circle(double r) implements Shape {
+  static class Circle implements Shape {
     public final double r;
     public Circle(double r) {
       this.r = r;
@@ -519,7 +525,7 @@ public interface Shape {
     // equal & hashcode left as an exercise
   }
 
-  static class Rect(double d, double h) implements Shape {
+  static class Rect implements Shape {
     public final double h;
     public final double d;
     public Rect(double d, double h) {
@@ -550,11 +556,11 @@ None:
 ```java
 public interface ShapeUtils {
   static circ(Shape s) {
-    if (s instanceof Rect) {
-      Rect r = (Rect) s;
+    if (s instanceof Shape.Rect) {
+      Shape.Rect r = (Shape.Rect) s;
       return 2 * (r.d + r.h);
-    } else if (s instanceof Circle) {
-      Circle c = (Circle) s;
+    } else if (s instanceof Shape.Circle) {
+      Shape.Circle c = (Shape.Circle) s;
       return 2 * c.r * Math.PI;
     } else {
       throw new UnsupportedOperationException();
@@ -588,7 +594,7 @@ circ (Square s) = 4 * s
 In Java, none of it, we can just add some new code:
 
 ```java
-public class Square(double c) extends Rect {
+public class Square extends Shape.Rect {
   public Square(double c) {
     super(c, c);
   }
