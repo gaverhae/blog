@@ -2,6 +2,8 @@ module Main (main)
 where
 
 import Prelude hiding (exp,lookup)
+import Control.DeepSeq (NFData)
+import qualified Control.DeepSeq
 import qualified Control.Exception
 import Control.Monad (ap,liftM,void)
 import Data.Map (Map)
@@ -11,6 +13,7 @@ import Data.Traversable (for)
 import qualified Formatting
 import qualified Formatting.Clock
 import qualified Formatting.Formatters
+import GHC.Generics (Generic)
 import qualified System.Clock
 
 newtype Name = Name String
@@ -93,7 +96,7 @@ sam =
 newtype Env = Env (Map Name Value)
   deriving Show
 data TweIO = Output Int TweIO | Halt
-  deriving Show
+  deriving (Show, Generic, NFData)
 
 bottom :: Value
 bottom = undefined
@@ -337,7 +340,6 @@ closure_cont e =
       compile exp (\f ->
         cont (\(env, io) -> let (_, env1, io1) = f (env, io)
                             in rest (env1, io1))))
-
     While condition body ->
       compile condition (\cond ->
         compile body (\bod ->
@@ -350,7 +352,6 @@ closure_cont e =
             in loop (env, io))))
     Print exp -> compile exp (\f -> cont (\(env, io) -> let (v, env1, io1) = f (env, io)
                                                         in (v, env1, put io1 v)))
-
 
 main :: IO ()
 main = do
@@ -385,7 +386,7 @@ main = do
           if n == 0
           then return ()
           else do
-            void $ Control.Exception.evaluate (f mt_env)
+            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f mt_env
             ntimes f (n - 1)
     let bench s f = do
           ntimes f 3
