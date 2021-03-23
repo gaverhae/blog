@@ -38,6 +38,7 @@ neil :: Exp
 neil =
   let x = Name "x"
       i = Name "i"
+      t = Name "t"
   in
   Do [
     Set x (Lit (Value 100)),
@@ -48,7 +49,8 @@ neil =
         Set x (Add (Add (Var x) (Lit (Value 2))) (Lit (Value 4))),
         Set i (Add (Lit (Value (-1))) (Var i))
       ]),
-    Print $ Var x
+    Print $ Var x,
+    Print $ Var t
     ]
 
 direct :: Env -> TweIO
@@ -358,6 +360,7 @@ main = do
   let switch = 1
   if switch == (0::Int)
   then do
+    let env = insert mt_env (Name "t") (Value 0)
     _ <- for [("tree_walk_eval", tree_walk_eval)
              ,("twe_cont", twe_cont)
              ,("twe_mon", twe_mon)
@@ -366,9 +369,9 @@ main = do
              ]
              (\(n, f) -> do
                putStrLn n
-               print $ f sam mt_env
-               print $ f (fact 3) mt_env
-               print $ f neil mt_env)
+               print $ f sam env
+               print $ f (fact 3) env
+               print $ f neil env)
     pure()
   else do
     let now = System.Clock.getTime System.Clock.Monotonic
@@ -386,7 +389,7 @@ main = do
           if n == 0
           then return ()
           else do
-            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f mt_env
+            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f (insert mt_env (Name "t") (Value n))
             ntimes f (n - 1)
     let bench s f = do
           ntimes f 3
