@@ -157,6 +157,13 @@ tree_walk_eval ex env =
       Print exp1 -> let (v, out1, env1) = loop exp1 out0 env0
                     in (v, append out1 v, env1)
 
+data BinOp
+  = BinAdd
+  | BinSub
+  | BinMul
+  | BinNotEq
+  deriving (Show)
+
 add :: Value -> Value -> Value
 add (Value a) (Value b) = Value (a + b)
 
@@ -355,10 +362,63 @@ closure_cont e =
     Print exp -> compile exp (\f -> cont (\(env, io) -> let (v, env1, io1) = f (env, io)
                                                         in (v, env1, put io1 v)))
 
+data StackOp
+  = StackPush Value
+  | StackSet Name
+  | StackGet Name
+  | StackBin BinOp
+  | StackJump Int
+  | StackJumpIfZero Int
+  | StackPrint
+  deriving (Show)
+
+stack_compile :: Exp -> [StackOp]
+stack_compile exp =
+  loop 0 exp
+  where
+  loop :: Int -> Exp -> [StackOp]
+  loop count = \case
+    Lit v -> [StackPush v]
+    Var n -> [StackGet n]
+    Set n e -> loop count e <> [StackSet n]
+    Add e1 e2 ->
+      let c1 = loop count e1
+          c2 = loop (count + length c1) e2
+      in c1 <> c2 <> [StackBin BinAdd]
+    Sub e1 e2 ->
+      let c1 = loop count e1
+          c2 = loop (count + length c1) e2
+      in c1 <> c2 <> [StackBin BinSub]
+    Mul e1 e2 ->
+      let c1 = loop count e1
+          c2 = loop (count + length c1) e2
+      in c1 <> c2 <> [StackBin BinMul]
+    NotEq e1 e2 ->
+      let c1 = loop count e1
+          c2 = loop (count + length c1) e2
+      in c1 <> c2 <> [StackBin BinNotEq]
+    Do exps -> snd $ foldl (\(count, code) exp ->
+                              let c = loop count exp
+                              in (count + length c, code <> c))
+                           (count, [])
+                           exps
+    While cond body ->
+      let cc = loop count cond
+          cb = loop (count + length cc + 1) body
+      in cc <> [StackJumpIfZero (count + length cc + 1 + length cb + 1)]
+            <> cb
+            <> [StackJump count]
+    Print exp -> loop count exp <> [StackPrint]
+
 main :: IO ()
 main = do
-  let switch = 1
-  if switch == (0::Int)
+  let switch = 2
+  if switch == 2
+  then do
+    print $ stack_compile sam
+    print $ stack_compile (fact 3)
+    print $ stack_compile neil
+  else if switch == (0::Int)
   then do
     let env = insert mt_env (Name "t") (Value 0)
     _ <- for [("tree_walk_eval", tree_walk_eval)

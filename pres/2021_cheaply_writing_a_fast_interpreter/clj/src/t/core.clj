@@ -192,6 +192,7 @@
 "1.59e-03"
 
   (def sc (compile-stack ast))
+[[:push 100] [:set 0] [:push 1000] [:set 1] [:push 0] [:get 1] [:not=] [:jump-if-zero 27] [:get 0] [:push 4] [:add] [:get 0] [:add] [:push 3] [:add] [:set 0] [:get 0] [:push 2] [:add] [:push 4] [:add] [:set 0] [:push -1] [:get 1] [:add] [:set 1] [:jump 4] [:get 0]]
   (bench (run-stack sc))
 "2.92e-02"
 
