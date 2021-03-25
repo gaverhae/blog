@@ -21,18 +21,34 @@ newtype Name = Name String
 newtype Value = Value Int
   deriving (Eq, Show)
 
+data Op
+  = Add
+  | Sub
+  | Mul
+  | NotEq
+  deriving (Show)
+
 data Exp where
   Lit :: Value -> Exp
   Var :: Name -> Exp
   Set :: Name -> Exp -> Exp
-  Add :: Exp -> Exp -> Exp
-  Sub :: Exp -> Exp -> Exp
-  Mul :: Exp -> Exp -> Exp
-  NotEq :: Exp -> Exp -> Exp
+  Bin :: Op -> Exp -> Exp -> Exp
   Do :: [Exp] -> Exp
   While :: Exp -> Exp -> Exp
   Print :: Exp -> Exp
   deriving Show
+
+add :: Value -> Value -> Value
+add (Value a) (Value b) = Value (a + b)
+
+sub :: Value -> Value -> Value
+sub (Value a) (Value b) = Value (a - b)
+
+not_eq :: Value -> Value -> Value
+not_eq (Value a) (Value b) = Value $ if a /= b then 1 else 0
+
+mul :: Value -> Value -> Value
+mul (Value a) (Value b) = Value $ a * b
 
 neil :: Exp
 neil =
@@ -43,11 +59,11 @@ neil =
   Do [
     Set x (Lit (Value 100)),
     Set i (Lit (Value 1000)),
-    While (NotEq (Lit (Value 0)) (Var i))
+    While (Bin NotEq (Lit (Value 0)) (Var i))
       (Do [
-        Set x (Add (Add (Add (Var x) (Lit (Value 4))) (Var x)) (Lit (Value 3))),
-        Set x (Add (Add (Var x) (Lit (Value 2))) (Lit (Value 4))),
-        Set i (Add (Lit (Value (-1))) (Var i))
+        Set x (Bin Add (Bin Add (Bin Add (Var x) (Lit (Value 4))) (Var x)) (Lit (Value 3))),
+        Set x (Bin Add (Bin Add (Var x) (Lit (Value 2))) (Lit (Value 4))),
+        Set i (Bin Add (Lit (Value (-1))) (Var i))
       ]),
     Print $ Var x,
     Print $ Var t
@@ -75,10 +91,10 @@ fact x =
   Do [
     Set acc (Lit (Value 1)),
     Set i (Lit (Value x)),
-    While (NotEq (Lit (Value 0)) (Var i))
+    While (Bin NotEq (Lit (Value 0)) (Var i))
       (Do [
-        Set acc (Mul (Var acc) (Var i)),
-        Set i (Sub (Var i) (Lit (Value 1))),
+        Set acc (Bin Mul (Var acc) (Var i)),
+        Set i (Bin Sub (Var i) (Lit (Value 1))),
         Print (Var acc)
       ]),
     Print (Var acc)
@@ -91,7 +107,7 @@ sam =
   Do [
     Set x (Lit (Value 13)),
     Print (Var x),
-    Set x (Add (Var x) (Var x)),
+    Set x (Bin Add (Var x) (Var x)),
     Print (Var x)
   ]
 
@@ -130,19 +146,19 @@ tree_walk_eval ex env =
       Var n -> (lookup env0 n, out0, env0)
       Set n exp1 -> let (v, out1, env1) = loop exp1 out0 env0
                     in (v, out1, insert env1 n v)
-      Add e1 e2 -> do
+      Bin Add e1 e2 -> do
         let (Value v1, out1, env1) = loop e1 out0 env0
         let (Value v2, out2, env2) = loop e2 out1 env1
         (Value (v1 + v2), out2, env2)
-      Sub e1 e2 -> do
+      Bin Sub e1 e2 -> do
         let (Value v1, out1, env1) = loop e1 out0 env0
         let (Value v2, out2, env2) = loop e2 out1 env1
         (Value (v1 - v2), out2, env2)
-      Mul e1 e2 -> do
+      Bin Mul e1 e2 -> do
         let (Value v1, out1, env1) = loop e1 out0 env0
         let (Value v2, out2, env2) = loop e2 out1 env1
         (Value (v1 * v2), out2, env2)
-      NotEq e1 e2 -> do
+      Bin NotEq e1 e2 -> do
         let (Value v1, out1, env1) = loop e1 out0 env0
         let (Value v2, out2, env2) = loop e2 out1 env1
         (Value $ if (v1 /= v2) then 1 else 0, out2, env2)
@@ -156,25 +172,6 @@ tree_walk_eval ex env =
         else (bottom, out1, env1)
       Print exp1 -> let (v, out1, env1) = loop exp1 out0 env0
                     in (v, append out1 v, env1)
-
-data BinOp
-  = BinAdd
-  | BinSub
-  | BinMul
-  | BinNotEq
-  deriving (Show)
-
-add :: Value -> Value -> Value
-add (Value a) (Value b) = Value (a + b)
-
-sub :: Value -> Value -> Value
-sub (Value a) (Value b) = Value (a - b)
-
-not_eq :: Value -> Value -> Value
-not_eq (Value a) (Value b) = Value $ if a /= b then 1 else 0
-
-mul :: Value -> Value -> Value
-mul (Value a) (Value b) = Value $ a * b
 
 twe_cont :: Exp -> Env -> TweIO
 twe_cont e env =
@@ -190,10 +187,10 @@ twe_cont e env =
       -- How can this work? :'(
       Print exp -> loop exp env (\env v -> put (cont env v) v)
       Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
-      Add e1 e2 -> binop e1 e2 add
-      Sub e1 e2 -> binop e1 e2 sub
-      Mul e1 e2 -> binop e1 e2 mul
-      NotEq e1 e2 -> binop e1 e2 not_eq
+      Bin Add e1 e2 -> binop e1 e2 add
+      Bin Sub e1 e2 -> binop e1 e2 sub
+      Bin Mul e1 e2 -> binop e1 e2 mul
+      Bin NotEq e1 e2 -> binop e1 e2 not_eq
       Do ([]) -> cont env bottom
       Do (exp:[]) -> loop exp env (\env v -> cont env v)
       Do (exp:exps) -> loop exp env (\env _ -> loop (Do exps) env (\env v -> cont env v))
@@ -233,10 +230,10 @@ twe_mon exp env =
       v <- eval exp
       EvalSet n v
       return v
-    Add e1 e2 -> binop e1 e2 add
-    Sub e1 e2 -> binop e1 e2 sub
-    Mul e1 e2 -> binop e1 e2 mul
-    NotEq e1 e2 -> binop e1 e2 not_eq
+    Bin Add e1 e2 -> binop e1 e2 add
+    Bin Sub e1 e2 -> binop e1 e2 sub
+    Bin Mul e1 e2 -> binop e1 e2 mul
+    Bin NotEq e1 e2 -> binop e1 e2 not_eq
     Do [] -> return bottom
     Do [exp] -> eval exp
     Do (exp:exps) -> do
@@ -284,10 +281,10 @@ closure_eval e =
       in \(env, io) ->
         let (v1, env1, io1) = f (env, io)
         in (v1, insert env1 n v1, io1)
-    Add e1 e2 -> binop e1 e2 add
-    Sub e1 e2 -> binop e1 e2 sub
-    Mul e1 e2 -> binop e1 e2 mul
-    NotEq e1 e2 -> binop e1 e2 not_eq
+    Bin Add e1 e2 -> binop e1 e2 add
+    Bin Sub e1 e2 -> binop e1 e2 sub
+    Bin Mul e1 e2 -> binop e1 e2 mul
+    Bin NotEq e1 e2 -> binop e1 e2 not_eq
     Do [] -> \(env, io) -> (bottom, env, io)
     Do [exp] -> let f = compile exp in \(env, io) -> f (env, io)
     Do exps ->
@@ -339,10 +336,10 @@ closure_cont e =
       cont (\(env, io) ->
         let (v, env1, io1) = f (env, io)
         in (v, insert env1 n v, io1)))
-    Add e1 e2 -> binop e1 e2 add cont
-    Sub e1 e2 -> binop e1 e2 sub cont
-    Mul e1 e2 -> binop e1 e2 mul cont
-    NotEq e1 e2 -> binop e1 e2 not_eq cont
+    Bin Add e1 e2 -> binop e1 e2 add cont
+    Bin Sub e1 e2 -> binop e1 e2 sub cont
+    Bin Mul e1 e2 -> binop e1 e2 mul cont
+    Bin NotEq e1 e2 -> binop e1 e2 not_eq cont
     Do [] -> undefined
     Do [exp] -> compile exp (\f -> cont (\(env, io) -> f (env, io)))
     Do (exp:exps) -> compile (Do exps) (\rest ->
@@ -366,7 +363,7 @@ data StackOp
   = StackPush Value
   | StackSet Name
   | StackGet Name
-  | StackBin BinOp
+  | StackBin Op
   | StackJump Int
   | StackJumpIfZero Int
   | StackPrint
@@ -381,22 +378,22 @@ stack_compile exp =
     Lit v -> [StackPush v]
     Var n -> [StackGet n]
     Set n e -> loop count e <> [StackSet n]
-    Add e1 e2 ->
+    Bin Add e1 e2 ->
       let c1 = loop count e1
           c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin BinAdd]
-    Sub e1 e2 ->
+      in c1 <> c2 <> [StackBin Add]
+    Bin Sub e1 e2 ->
       let c1 = loop count e1
           c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin BinSub]
-    Mul e1 e2 ->
+      in c1 <> c2 <> [StackBin Sub]
+    Bin Mul e1 e2 ->
       let c1 = loop count e1
           c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin BinMul]
-    NotEq e1 e2 ->
+      in c1 <> c2 <> [StackBin Mul]
+    Bin NotEq e1 e2 ->
       let c1 = loop count e1
           c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin BinNotEq]
+      in c1 <> c2 <> [StackBin NotEq]
     Do exps -> snd $ foldl (\(count, code) exp ->
                               let c = loop count exp
                               in (count + length c, code <> c))
