@@ -40,3 +40,5 @@ executables:
     - LambdaCase
     - DeriveAnyClass
     - DeriveGeneric
+    - GeneralizedNewtypeDeriving
+    - DerivingStrategies

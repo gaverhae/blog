@@ -20,6 +20,7 @@ newtype Name = Name String
   deriving (Eq, Ord, Show)
 newtype Value = Value Int
   deriving (Eq, Show)
+  deriving newtype Num
 
 data Op
   = Add
@@ -38,17 +39,12 @@ data Exp where
   Print :: Exp -> Exp
   deriving Show
 
-add :: Value -> Value -> Value
-add (Value a) (Value b) = Value (a + b)
-
-sub :: Value -> Value -> Value
-sub (Value a) (Value b) = Value (a - b)
-
-not_eq :: Value -> Value -> Value
-not_eq (Value a) (Value b) = Value $ if a /= b then 1 else 0
-
-mul :: Value -> Value -> Value
-mul (Value a) (Value b) = Value $ a * b
+bin :: Op -> Value -> Value -> Value
+bin = \case
+  Add -> (+)
+  Sub -> (-)
+  Mul -> (*)
+  NotEq -> \v1 v2 -> if v1 /= v2 then 1 else 0
 
 neil :: Exp
 neil =
@@ -79,9 +75,9 @@ direct env =
   loop env = if (Value 0 == (lookup env i))
              then put Halt (lookup env x)
              else
-             let env1 = insert env x (lookup env x `add` Value 4 `add` lookup env x `add` Value 3)
-                 env2 = insert env1 x (lookup env1 x `add` Value 2 `add` Value 4)
-             in loop (insert env2 i (lookup env2 i `sub` Value 1))
+             let env1 = insert env x (lookup env x + Value 4 + lookup env x + Value 3)
+                 env2 = insert env1 x (lookup env1 x + Value 2 + Value 4)
+             in loop (insert env2 i (lookup env2 i - Value 1))
 
 fact :: Int -> Exp
 fact x =
@@ -146,22 +142,10 @@ tree_walk_eval ex env =
       Var n -> (lookup env0 n, out0, env0)
       Set n exp1 -> let (v, out1, env1) = loop exp1 out0 env0
                     in (v, out1, insert env1 n v)
-      Bin Add e1 e2 -> do
-        let (Value v1, out1, env1) = loop e1 out0 env0
-        let (Value v2, out2, env2) = loop e2 out1 env1
-        (Value (v1 + v2), out2, env2)
-      Bin Sub e1 e2 -> do
-        let (Value v1, out1, env1) = loop e1 out0 env0
-        let (Value v2, out2, env2) = loop e2 out1 env1
-        (Value (v1 - v2), out2, env2)
-      Bin Mul e1 e2 -> do
-        let (Value v1, out1, env1) = loop e1 out0 env0
-        let (Value v2, out2, env2) = loop e2 out1 env1
-        (Value (v1 * v2), out2, env2)
-      Bin NotEq e1 e2 -> do
-        let (Value v1, out1, env1) = loop e1 out0 env0
-        let (Value v2, out2, env2) = loop e2 out1 env1
-        (Value $ if (v1 /= v2) then 1 else 0, out2, env2)
+      Bin op e1 e2 -> do
+        let (v1, out1, env1) = loop e1 out0 env0
+        let (v2, out2, env2) = loop e2 out1 env1
+        ((bin op) v1 v2, out2, env2)
       Do (exps) -> foldl (\(_, out1, env1) exp1 -> loop exp1 out1 env1) (bottom, out0, env0) exps
       While condition body -> do
         let (Value c, out1, env1) = loop condition out0 env0
@@ -179,18 +163,13 @@ twe_cont e env =
   where
   loop :: Exp -> Env -> (Env -> Value -> TweIO) -> TweIO
   loop exp env cont =
-    let binop e1 e2 f = loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env (f v1 v2)))
-    in
     case exp of
       Lit v -> cont env v
       Var n -> cont env (lookup env n)
       -- How can this work? :'(
       Print exp -> loop exp env (\env v -> put (cont env v) v)
       Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
-      Bin Add e1 e2 -> binop e1 e2 add
-      Bin Sub e1 e2 -> binop e1 e2 sub
-      Bin Mul e1 e2 -> binop e1 e2 mul
-      Bin NotEq e1 e2 -> binop e1 e2 not_eq
+      Bin op e1 e2 -> loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env ((bin op) v1 v2)))
       Do ([]) -> cont env bottom
       Do (exp:[]) -> loop exp env (\env v -> cont env v)
       Do (exp:exps) -> loop exp env (\env _ -> loop (Do exps) env (\env v -> cont env v))
@@ -215,11 +194,6 @@ twe_mon :: Exp -> Env -> TweIO
 twe_mon exp env =
   exec (eval exp) env (\_ _ -> Halt)
   where
-  binop :: Exp -> Exp -> (Value -> Value -> Value) -> EvalExec Value
-  binop e1 e2 f = do
-    v1 <- eval e1
-    v2 <- eval e2
-    return $ f v1 v2
   eval :: Exp -> EvalExec Value
   eval = \case
     Lit v -> return v
@@ -230,10 +204,10 @@ twe_mon exp env =
       v <- eval exp
       EvalSet n v
       return v
-    Bin Add e1 e2 -> binop e1 e2 add
-    Bin Sub e1 e2 -> binop e1 e2 sub
-    Bin Mul e1 e2 -> binop e1 e2 mul
-    Bin NotEq e1 e2 -> binop e1 e2 not_eq
+    Bin op e1 e2 -> do
+      v1 <- eval e1
+      v2 <- eval e2
+      return $ (bin op) v1 v2
     Do [] -> return bottom
     Do [exp] -> eval exp
     Do (exp:exps) -> do
@@ -264,14 +238,6 @@ closure_eval :: Exp -> Env -> TweIO
 closure_eval e =
   let c = compile e in \env -> let (_, _, io) = c (env, Halt) in io
   where
-  binop :: Exp -> Exp -> (Value -> Value -> Value) -> (Env, TweIO) -> (Value, Env, TweIO)
-  binop e1 e2 op =
-      let f1 = compile e1
-          f2 = compile e2
-      in \(env, io) ->
-        let (v1, env1, io1) = f1 (env, io)
-            (v2, env2, io2) = f2 (env1, io1)
-        in (op v1 v2, env2, io2)
   compile :: Exp -> (Env, TweIO) -> (Value, Env, TweIO)
   compile = \case
     Lit v -> \(env, io) -> (v, env, io)
@@ -281,10 +247,13 @@ closure_eval e =
       in \(env, io) ->
         let (v1, env1, io1) = f (env, io)
         in (v1, insert env1 n v1, io1)
-    Bin Add e1 e2 -> binop e1 e2 add
-    Bin Sub e1 e2 -> binop e1 e2 sub
-    Bin Mul e1 e2 -> binop e1 e2 mul
-    Bin NotEq e1 e2 -> binop e1 e2 not_eq
+    Bin op e1 e2 ->
+      let f1 = compile e1
+          f2 = compile e2
+      in \(env, io) ->
+        let (v1, env1, io1) = f1 (env, io)
+            (v2, env2, io2) = f2 (env1, io1)
+        in ((bin op) v1 v2, env2, io2)
     Do [] -> \(env, io) -> (bottom, env, io)
     Do [exp] -> let f = compile exp in \(env, io) -> f (env, io)
     Do exps ->
@@ -320,14 +289,6 @@ closure_cont e =
     let (_, io) = f (env, Halt)
     in io
   where
-  binop :: Exp -> Exp -> (Value -> Value -> Value) -> (((Env, TweIO) -> (Value, Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)
-  binop e1 e2 f cont =
-    compile e1 (\f1 ->
-      compile e2 (\f2 ->
-        cont (\(env, io) ->
-          let (v1, env1, io1) = f1 (env, io)
-              (v2, env2, io2) = f2 (env1, io1)
-          in (f v1 v2, env2, io2))))
   compile :: Exp -> (((Env, TweIO) -> (Value, Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)
   compile exp cont = case exp of
     Lit v -> cont (\(env, io) -> (v, env, io))
@@ -336,10 +297,13 @@ closure_cont e =
       cont (\(env, io) ->
         let (v, env1, io1) = f (env, io)
         in (v, insert env1 n v, io1)))
-    Bin Add e1 e2 -> binop e1 e2 add cont
-    Bin Sub e1 e2 -> binop e1 e2 sub cont
-    Bin Mul e1 e2 -> binop e1 e2 mul cont
-    Bin NotEq e1 e2 -> binop e1 e2 not_eq cont
+    Bin op e1 e2 ->
+      compile e1 (\f1 ->
+        compile e2 (\f2 ->
+          cont (\(env, io) ->
+            let (v1, env1, io1) = f1 (env, io)
+                (v2, env2, io2) = f2 (env1, io1)
+            in ((bin op) v1 v2, env2, io2))))
     Do [] -> undefined
     Do [exp] -> compile exp (\f -> cont (\(env, io) -> f (env, io)))
     Do (exp:exps) -> compile (Do exps) (\rest ->
@@ -378,22 +342,10 @@ stack_compile exp =
     Lit v -> [StackPush v]
     Var n -> [StackGet n]
     Set n e -> loop count e <> [StackSet n]
-    Bin Add e1 e2 ->
+    Bin op e1 e2 ->
       let c1 = loop count e1
           c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin Add]
-    Bin Sub e1 e2 ->
-      let c1 = loop count e1
-          c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin Sub]
-    Bin Mul e1 e2 ->
-      let c1 = loop count e1
-          c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin Mul]
-    Bin NotEq e1 e2 ->
-      let c1 = loop count e1
-          c2 = loop (count + length c1) e2
-      in c1 <> c2 <> [StackBin NotEq]
+      in c1 <> c2 <> [StackBin op]
     Do exps -> snd $ foldl (\(count, code) exp ->
                               let c = loop count exp
                               in (count + length c, code <> c))
