@@ -53,13 +53,13 @@ neil =
       t = Name "t"
   in
   Do [
-    Set x (Lit (Value 100)),
-    Set i (Lit (Value 1000)),
-    While (Bin NotEq (Lit (Value 0)) (Var i))
+    Set x (Lit 100),
+    Set i (Lit 1000),
+    While (Bin NotEq (Lit 0) (Var i))
       (Do [
-        Set x (Bin Add (Bin Add (Bin Add (Var x) (Lit (Value 4))) (Var x)) (Lit (Value 3))),
-        Set x (Bin Add (Bin Add (Var x) (Lit (Value 2))) (Lit (Value 4))),
-        Set i (Bin Add (Lit (Value (-1))) (Var i))
+        Set x (Bin Add (Bin Add (Bin Add (Var x) (Lit 4)) (Var x)) (Lit 3)),
+        Set x (Bin Add (Bin Add (Var x) (Lit 2)) (Lit 4)),
+        Set i (Bin Add (Lit (-1)) (Var i))
       ]),
     Print $ Var x,
     Print $ Var t
@@ -67,17 +67,17 @@ neil =
 
 direct :: Env -> TweIO
 direct env =
-  loop (insert (insert env (Name "x") (Value 100)) (Name "i") (Value 1000))
+  loop (insert (insert env (Name "x") 100) (Name "i") 1000)
   where
   x = Name "x"
   i = Name "i"
   loop :: Env -> TweIO
-  loop env = if (Value 0 == (lookup env i))
+  loop env = if (0 == (lookup env i))
              then put Halt (lookup env x)
              else
-             let env1 = insert env x (lookup env x + Value 4 + lookup env x + Value 3)
-                 env2 = insert env1 x (lookup env1 x + Value 2 + Value 4)
-             in loop (insert env2 i (lookup env2 i - Value 1))
+             let env1 = insert env x (lookup env x + 4 + lookup env x + 3)
+                 env2 = insert env1 x (lookup env1 x + 2 + 4)
+             in loop (insert env2 i (lookup env2 i - 1))
 
 fact :: Int -> Exp
 fact x =
@@ -85,12 +85,12 @@ fact x =
       i = Name "i"
   in
   Do [
-    Set acc (Lit (Value 1)),
+    Set acc (Lit 1),
     Set i (Lit (Value x)),
-    While (Bin NotEq (Lit (Value 0)) (Var i))
+    While (Bin NotEq (Lit 0) (Var i))
       (Do [
         Set acc (Bin Mul (Var acc) (Var i)),
-        Set i (Bin Sub (Var i) (Lit (Value 1))),
+        Set i (Bin Sub (Var i) (Lit 1)),
         Print (Var acc)
       ]),
     Print (Var acc)
@@ -101,7 +101,7 @@ sam =
   let x = Name "x"
   in
   Do [
-    Set x (Lit (Value 13)),
+    Set x (Lit 13),
     Print (Var x),
     Set x (Bin Add (Var x) (Var x)),
     Print (Var x)
@@ -174,7 +174,7 @@ twe_cont e env =
       Do (exp:[]) -> loop exp env (\env v -> cont env v)
       Do (exp:exps) -> loop exp env (\env _ -> loop (Do exps) env (\env v -> cont env v))
       While condition body -> loop condition env (\env condition_value ->
-        if (Value 1 == condition_value)
+        if (1 == condition_value)
         then loop body env (\env _ ->
           loop (While condition body) env (\env v -> cont env v))
         else cont env bottom)
@@ -215,7 +215,7 @@ twe_mon exp env =
       eval (Do exps)
     While condition body -> do
       c <- eval condition
-      if (Value 1) == c
+      if 1 == c
       then do
         _ <- eval body
         eval (While condition body)
@@ -269,7 +269,7 @@ closure_eval e =
           bod = compile body
           loop = \(env, io) ->
             let (c, env1, io1) = cond (env, io)
-            in if (Value 1) == c
+            in if 1 == c
                then let (_, env2, io2) = bod (env1, io1)
                     in loop (env2, io2)
                else (bottom, env1, io1)
@@ -315,7 +315,7 @@ closure_cont e =
         compile body (\bod ->
           cont (\(env, io) ->
             let loop = \(env, io) -> let (c, env1, io1) = cond (env, io)
-                                   in if (Value 1) == c
+                                   in if 1 == c
                                       then let (_, env2, io2) = bod (env1, io1)
                                            in loop (env2, io2)
                                       else (bottom, env1, io1)
@@ -369,7 +369,7 @@ main = do
     print $ stack_compile neil
   else if switch == (0::Int)
   then do
-    let env = insert mt_env (Name "t") (Value 0)
+    let env = insert mt_env (Name "t") 0
     _ <- for [("tree_walk_eval", tree_walk_eval)
              ,("twe_cont", twe_cont)
              ,("twe_mon", twe_mon)
