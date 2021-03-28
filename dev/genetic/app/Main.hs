@@ -5,6 +5,11 @@ import qualified Data.List
 import qualified Data.Sort
 import qualified System.Random
 
+data OnDemand a b
+  = Halt
+  | Out b (OnDemand a b)
+  | In (a -> OnDemand a b)
+
 instance Functor WithRandom where fmap = Control.Monad.liftM
 instance Applicative WithRandom where
   pure = return
@@ -16,11 +21,11 @@ data WithRandom a where
   Return :: a -> WithRandom a
   GetRand :: WithRandom Double
 
-exec_random :: WithRandom a -> [Double] -> ([Double] -> a -> b) -> b
-exec_random m s cont = case m of
-  Bind ma f -> exec_random ma s (\s a -> exec_random (f a) s cont)
-  Return a -> cont s a
-  GetRand -> cont (tail s) (head s)
+exec_random :: WithRandom a -> (a -> OnDemand Double b) -> OnDemand Double b
+exec_random m cont = case m of
+  Bind ma f -> exec_random ma (\a -> exec_random (f a) cont)
+  Return a -> cont a
+  GetRand -> In (\r -> cont r)
 
 genetic_search :: forall solution.
                   Eq solution
@@ -28,17 +33,12 @@ genetic_search :: forall solution.
                -> (solution -> WithRandom solution)
                -> (solution -> solution -> WithRandom solution)
                -> WithRandom solution
-               -> [Double]
-               -> [(solution, Double)]
-genetic_search fitness mutate crossover make_solution rnd =
-  map head $ exec_random init
-                         rnd
-                         (\rnd prev -> loop prev rnd)
+               -> OnDemand Double (solution, Double)
+genetic_search fitness mutate crossover make_solution =
+  exec_random init (\prev -> Out (head prev) (loop prev))
   where
-  loop :: [(solution, Double)] -> [Double] -> [[(solution, Double)]]
-  loop prev rnd = prev : exec_random (step prev)
-                                     rnd
-                                     (\rnd next -> loop next rnd)
+  loop :: [(solution, Double)] -> OnDemand Double (solution, Double)
+  loop prev = exec_random (step prev) (\next -> Out (head next) (loop next))
   rep :: Int -> WithRandom a -> WithRandom [a]
   rep n f = Control.Monad.forM [1..n] (\_ -> f)
   fit :: solution -> (solution, Double)
@@ -97,6 +97,17 @@ main = do
               $ iterate (\(_, rng) ->
                           System.Random.randomR (0::Double, 1) rng)
                         (0, rng)
-  print $ map snd
-        $ take 40
-        $ genetic_search fitness mutate crossover mk_sol rands
+  loop rands 40 $ genetic_search fitness mutate crossover mk_sol
+  where
+  loop :: [Double] -> Int -> OnDemand Double ((Double, Double), Double) -> IO ()
+  loop rs n od =
+    if n == 0
+    then return ()
+    else case od of
+      Halt -> return ()
+      In f -> do
+        next_rand <- pure (head rs)
+        loop (tail rs) n (f next_rand)
+      Out v k -> do
+        print v
+        loop rs (n - 1) k

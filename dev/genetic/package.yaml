@@ -22,3 +22,4 @@ executables:
     default-extensions:
     - GADTs
     - ScopedTypeVariables
+    - LambdaCase
