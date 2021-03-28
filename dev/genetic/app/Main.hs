@@ -69,28 +69,28 @@ main :: IO ()
 main = do
   let fitness (x, y) = 2 * (x ** 2) + (y ** 2) + 1
   let mutate (x, y) = do
-      change_x <- GetRand
-      dx <- GetRand
-      change_y <- GetRand
-      dy <- GetRand
-      let new_x = if change_x < 0.1 then x + dx - 0.5 else x
-      let new_y = if change_y < 0.1 then y + dy - 0.5 else y
-      return (new_x, new_y)
+        change_x <- GetRand
+        dx <- GetRand
+        change_y <- GetRand
+        dy <- GetRand
+        let new_x = if change_x < 0.1 then x + dx - 0.5 else x
+        let new_y = if change_y < 0.1 then y + dy - 0.5 else y
+        return (new_x, new_y)
   let crossover (x1, y1) (x2, y2) = do
-      roll_x <- GetRand
-      roll_y <- GetRand
-      let mean_x = (x1 + x2) / 2
-      let mean_y = (y1 + y2) / 2
-      return (if roll_x < 0.05 then x1
-              else if roll_x > 0.95 then x2
-              else mean_x,
-              if roll_y < 0.05 then y1
-              else if roll_y > 0.95 then y2
-              else mean_y)
+        roll_x <- GetRand
+        roll_y <- GetRand
+        let mean_x = (x1 + x2) / 2
+        let mean_y = (y1 + y2) / 2
+        return (if roll_x < 0.05 then x1
+                else if roll_x > 0.95 then x2
+                else mean_x,
+                if roll_y < 0.05 then y1
+                else if roll_y > 0.95 then y2
+                else mean_y)
   let mk_sol = do
-      rand_x <- GetRand
-      rand_y <- GetRand
-      return (rand_x * 10, rand_y * 10)
+        rand_x <- GetRand
+        rand_y <- GetRand
+        return (rand_x * 10, rand_y * 10)
   let rng = System.Random.mkStdGen 0
   let rands = tail
               $ map fst
