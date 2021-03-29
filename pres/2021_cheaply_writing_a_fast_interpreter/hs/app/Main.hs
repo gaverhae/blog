@@ -321,7 +321,7 @@ closure_cont e =
                                       else (bottom, env1, io1)
             in loop (env, io))))
     Print exp -> compile exp (\f -> cont (\(env, io) -> let (v, env1, io1) = f (env, io)
-                                                        in (v, env1, put io1 v)))
+                                                        in (v, env1, append io1 v)))
 
 data StackOp
   = StackPush Value
