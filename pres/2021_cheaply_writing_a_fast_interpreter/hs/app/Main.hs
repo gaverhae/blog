@@ -6,10 +6,12 @@ import Control.DeepSeq (NFData)
 import qualified Control.DeepSeq
 import qualified Control.Exception
 import Control.Monad (ap,liftM,void)
-import Data.Map (Map)
-import qualified Data.Map as Map
+import qualified Data.Map as Data (Map)
+import qualified Data.Map
 import qualified Data.Text.Lazy.Builder
 import Data.Traversable (for)
+import qualified Data.Vector as Data (Vector)
+import qualified Data.Vector
 import qualified Formatting
 import qualified Formatting.Clock
 import qualified Formatting.Formatters
@@ -107,7 +109,7 @@ sam =
     Print (Var x)
   ]
 
-newtype Env = Env (Map Name Value)
+newtype Env = Env (Data.Map Name Value)
   deriving Show
 data TweIO = Output Int TweIO | Halt
   deriving (Show, Generic, NFData)
@@ -116,10 +118,10 @@ bottom :: Value
 bottom = undefined
 
 lookup :: Env -> Name -> Value
-lookup (Env m) n = maybe bottom id (Map.lookup n m)
+lookup (Env m) n = maybe bottom id (Data.Map.lookup n m)
 
 insert :: Env -> Name -> Value -> Env
-insert (Env m) n v = Env $ Map.insert n v m
+insert (Env m) n v = Env $ Data.Map.insert n v m
 
 put :: TweIO -> Value -> TweIO
 put io (Value v) = Output v io
@@ -129,7 +131,7 @@ append Halt (Value v) = Output v Halt
 append (Output p io) v = Output p (append io v)
 
 mt_env :: Env
-mt_env = Env Map.empty
+mt_env = Env Data.Map.empty
 
 tree_walk_eval :: Exp -> Env -> TweIO
 tree_walk_eval ex env =
@@ -359,10 +361,34 @@ stack_compile exp =
             <> [StackJump count]
     Print exp -> loop count exp <> [StackPrint]
 
+stack_exec :: [StackOp] -> Env -> TweIO
+stack_exec code env =
+  loop 0 [] env Halt
+  where
+  code' :: Data.Vector StackOp
+  code' = Data.Vector.fromList code
+  end :: Int
+  end = Data.Vector.length code'
+  loop :: Int -> [Value] -> Env -> TweIO -> TweIO
+  loop ip stack env io = if ip == end then io else case (Data.Vector.!) code' ip of
+    StackPush v -> loop (ip + 1) (v:stack) env io
+    StackSet n -> loop (ip + 1) (tail stack) (insert env n (head stack)) io
+    StackGet n -> loop (ip + 1) (lookup env n : stack) env io
+    StackBin op -> loop (ip + 1) ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack) env io
+    StackJump i -> loop i stack env io
+    StackJumpIfZero i -> if (stack !! 0) == 0
+                         then loop i stack env io
+                         else loop (ip + 1) stack env io
+    StackPrint -> loop (ip + 1) (tail stack) env (append io (head stack))
+
 main :: IO ()
 main = do
-  let switch = 2
-  if switch == 2
+  let switch = 1
+  if switch == 3
+  then do
+    let run e = stack_exec (stack_compile e) mt_env
+    print $ run sam
+  else if switch == 2
   then do
     print $ stack_compile sam
     print $ stack_compile (fact 3)
@@ -375,6 +401,7 @@ main = do
              ,("twe_mon", twe_mon)
              ,("closure_eval", closure_eval)
              ,("closure_cont", closure_cont)
+             ,("stack_exec", \e -> stack_exec (stack_compile e))
              ]
              (\(n, f) -> do
                putStrLn n
@@ -414,5 +441,7 @@ main = do
     bench "closure_eval" ce
     let cc = closure_cont neil
     bench "closure_cont" cc
+    let se = let ops = (stack_compile neil) in stack_exec ops
+    bench "stack_exec" se
     pure ()
   pure ()

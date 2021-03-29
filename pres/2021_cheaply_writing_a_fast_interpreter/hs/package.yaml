@@ -19,6 +19,7 @@ dependencies:
 - formatting
 - text
 - deepseq
+- vector
 
 library:
   source-dirs: src
