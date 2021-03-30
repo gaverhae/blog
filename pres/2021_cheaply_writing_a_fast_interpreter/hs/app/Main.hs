@@ -168,7 +168,6 @@ twe_cont e env =
     case exp of
       Lit v -> cont env v
       Var n -> cont env (lookup env n)
-      -- How can this work? :'(
       Print exp -> loop exp env (\env v -> put (cont env v) v)
       Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
       Bin op e1 e2 -> loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env ((bin op) v1 v2)))
