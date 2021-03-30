@@ -332,11 +332,12 @@ data StackOp
   | StackJump Int
   | StackJumpIfZero Int
   | StackPrint
+  | StackEnd
   deriving (Show)
 
 stack_compile :: Exp -> [StackOp]
 stack_compile exp =
-  loop 0 exp
+  loop 0 exp <> [StackEnd]
   where
   loop :: Int -> Exp -> [StackOp]
   loop count = \case
@@ -366,10 +367,8 @@ stack_exec code env =
   where
   code' :: Data.Vector StackOp
   code' = Data.Vector.fromList code
-  end :: Int
-  end = Data.Vector.length code'
   loop :: Int -> [Value] -> Env -> TweIO -> TweIO
-  loop ip stack env io = if ip == end then io else case (Data.Vector.!) code' ip of
+  loop ip stack env io = case (Data.Vector.!) code' ip of
     StackPush v -> loop (ip + 1) (v:stack) env io
     StackSet n -> loop (ip + 1) (tail stack) (insert env n (head stack)) io
     StackGet n -> loop (ip + 1) (lookup env n : stack) env io
@@ -379,6 +378,8 @@ stack_exec code env =
                          then loop i stack env io
                          else loop (ip + 1) stack env io
     StackPrint -> loop (ip + 1) (tail stack) env (append io (head stack))
+    StackEnd -> io
+
 data Switch
   = Perf
   | Vals
