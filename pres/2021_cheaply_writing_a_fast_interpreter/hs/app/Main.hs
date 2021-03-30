@@ -379,21 +379,22 @@ stack_exec code env =
                          then loop i stack env io
                          else loop (ip + 1) stack env io
     StackPrint -> loop (ip + 1) (tail stack) env (append io (head stack))
+data Switch
+  = Perf
+  | Vals
+  | Test
+
+switch :: Switch
+switch = Perf
 
 main :: IO ()
-main = do
-  let switch = 1
-  if switch == 3
-  then do
+main = case switch of
+  Test -> do
     let run e = stack_exec (stack_compile e) mt_env
     print $ run sam
-  else if switch == 2
-  then do
-    print $ stack_compile sam
-    print $ stack_compile (fact 3)
-    print $ stack_compile neil
-  else if switch == (0::Int)
-  then do
+    print $ run $ fact 3
+    print $ neil
+  Vals -> do
     let env = insert mt_env (Name "t") 0
     _ <- for [("tree_walk_eval", tree_walk_eval)
              ,("twe_cont", twe_cont)
@@ -408,7 +409,7 @@ main = do
                print $ f (fact 3) env
                print $ f neil env)
     pure()
-  else do
+  Perf -> do
     let now = System.Clock.getTime System.Clock.Monotonic
     let raw_string = Formatting.now . Data.Text.Lazy.Builder.fromString
     let printDur = Formatting.fprint
@@ -443,4 +444,3 @@ main = do
     let se = let ops = (stack_compile neil) in stack_exec ops
     bench "stack_exec" se
     pure ()
-  pure ()
