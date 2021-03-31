@@ -173,6 +173,47 @@
                        (update m :pointer inc)))
                    :jump (assoc m :pointer arg))))))))
 
+(defn stack-exec-cont
+  [ops]
+  (let [compile-stack-op
+        (fn [[op arg]]
+          (case op
+            :push (fn [^long ip stack]
+                    [(inc ip) (conj stack arg)])
+            :get (fn [^long ip stack]
+                   [(inc ip) (conj stack (get stack arg))])
+            :set (fn [^long ip stack]
+                   (let [p (peek stack)
+                         stack (pop stack)]
+                     [(inc ip) (assoc stack arg p)]))
+            :add (fn [^long ip stack]
+                   (let [p1 (peek stack)
+                         stack (pop stack)
+                         p2 (peek stack)
+                         stack (pop stack)]
+                     [(inc ip) (conj stack (unchecked-add p2 p1))]))
+            :not= (fn [^long ip stack]
+                   (let [p1 (peek stack)
+                         stack (pop stack)
+                         p2 (peek stack)
+                         stack (pop stack)]
+                     [(inc ip) (conj stack (if (== p1 p2) 0 1))]))
+            :jump-if-zero (fn [^long ip stack]
+                            (let [p ^long (peek stack)
+                                  stack (pop stack)
+                                  nip (if (zero? p) arg (inc ip))]
+                              [nip stack]))
+            :jump (fn [^long _ stack]
+                    [arg stack])
+            :stop (fn [^long _ stack]
+                    [nil stack])))
+        tape (vec (map compile-stack-op (concat ops [[:stop]])))]
+  (fn []
+    (loop [[ip? stack] ((tape 0) 0 [])]
+      (if ip?
+        (recur ((tape ip?) ip? stack))
+        stack)))))
+
 (comment
 
   (require '[criterium.core :as crit])
@@ -192,8 +233,12 @@
 "1.59e-03"
 
   (def sc (compile-stack ast))
-[[:push 100] [:set 0] [:push 1000] [:set 1] [:push 0] [:get 1] [:not=] [:jump-if-zero 27] [:get 0] [:push 4] [:add] [:get 0] [:add] [:push 3] [:add] [:set 0] [:get 0] [:push 2] [:add] [:push 4] [:add] [:set 0] [:push -1] [:get 1] [:add] [:set 1] [:jump 4] [:get 0]]
+  (= sc [[:push 100] [:set 0] [:push 1000] [:set 1] [:push 0] [:get 1] [:not=] [:jump-if-zero 27] [:get 0] [:push 4] [:add] [:get 0] [:add] [:push 3] [:add] [:set 0] [:get 0] [:push 2] [:add] [:push 4] [:add] [:set 0] [:push -1] [:get 1] [:add] [:set 1] [:jump 4] [:get 0]])
   (bench (run-stack sc))
 "2.92e-02"
+
+  (def scc (stack-exec-cont sc))
+  (bench (scc))
+"5.12e-03"
 
   )
