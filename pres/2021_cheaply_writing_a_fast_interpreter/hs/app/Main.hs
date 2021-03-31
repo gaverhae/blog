@@ -375,10 +375,27 @@ stack_exec code env =
     StackBin op -> loop (ip + 1) ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack) env io
     StackJump i -> loop i stack env io
     StackJumpIfZero i -> if (stack !! 0) == 0
-                         then loop i stack env io
-                         else loop (ip + 1) stack env io
+                         then loop i (tail stack) env io
+                         else loop (ip + 1) (tail stack) env io
     StackPrint -> loop (ip + 1) (tail stack) env (append io (head stack))
     StackEnd -> io
+
+stack_exec_cont :: [StackOp] -> Env -> TweIO
+stack_exec_cont code =
+  \env -> (code' Data.Vector.! 0) 0 env []
+  where
+  code' :: Data.Vector (Int -> Env -> [Value] -> TweIO)
+  code' = Data.Vector.fromList $ (flip map) code $ \case
+    StackPush v -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env (v:stack)
+    StackSet n -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) (insert env n (head stack)) (tail stack)
+    StackGet n -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env (lookup env n : stack)
+    StackBin op -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack)
+    StackJump i -> \_ env stack -> (code' Data.Vector.! i) i env stack
+    StackJumpIfZero i -> \ip env stack ->
+      let next = if (head stack) == 0 then i else ip+1
+      in (code' Data.Vector.! next) next env (tail stack)
+    StackPrint -> \ip env stack -> put ((code' Data.Vector.! (ip+1)) (ip+1) env (tail stack)) (head stack)
+    StackEnd -> \_ _ _ -> Halt
 
 data Switch
   = Perf
@@ -391,10 +408,10 @@ switch = Perf
 main :: IO ()
 main = case switch of
   Test -> do
-    let run e = stack_exec (stack_compile e) mt_env
+    let run e = stack_exec_cont (stack_compile e) (insert mt_env (Name "t") 0)
     print $ run sam
     print $ run $ fact 3
-    print $ neil
+    print $ run neil
   Vals -> do
     let env = insert mt_env (Name "t") 0
     _ <- for [("tree_walk_eval", tree_walk_eval)
@@ -442,6 +459,8 @@ main = case switch of
     bench "closure_eval" ce
     let cc = closure_cont neil
     bench "closure_cont" cc
-    let se = let ops = (stack_compile neil) in stack_exec ops
+    let se = let ops = stack_compile neil in stack_exec ops
     bench "stack_exec" se
+    let sec = let ops = stack_compile neil in stack_exec_cont ops
+    bench "stack_exec_cont" sec
     pure ()
