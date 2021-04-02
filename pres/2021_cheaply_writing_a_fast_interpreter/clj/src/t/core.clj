@@ -255,6 +255,38 @@
           (into [] stack)
           (recur (long ((aget tape ip) (long ip) stack)))))))))
 
+(defn stack-exec-case
+  [ops]
+  (let [ip (gensym)
+        stack (gensym)]
+    (eval
+      `(fn []
+       (let [~stack (java.util.Stack.)]
+         (.push ~stack 0)
+         (.push ~stack 0)
+         (loop [~ip (long 0)]
+           ~(->> (concat ops [[:stop]])
+                 (mapcat
+                   (fn [idx [op arg]]
+                     [idx (case op
+                            :push `(do (.push ~stack ~arg)
+                                       (recur ~(inc idx)))
+                            :get `(do (.push ~stack (.get ~stack ~arg))
+                                      (recur ~(inc idx)))
+                            :set `(do (.set ~stack ~arg (.pop ~stack))
+                                      (recur ~(inc idx)))
+                            :add `(do (.push ~stack (unchecked-add (.pop ~stack) (.pop ~stack)))
+                                      (recur ~(inc idx)))
+                            :not= `(do (.push ~stack (if (== (.pop ~stack) (.pop ~stack)) 0 1))
+                                       (recur ~(inc idx)))
+                            :jump-if-zero `(do (if (zero? (.pop ~stack))
+                                                 (recur ~arg)
+                                                 (recur ~(inc idx))))
+                            :jump `(recur ~arg)
+                            :stop `(into [] ~stack))])
+                   (range))
+                 (concat ['case ip]))))))))
+
 (comment
 
   (require '[criterium.core :as crit])
@@ -264,26 +296,31 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.70e-06"
+"2.66e-06"
 
   (bench (naive-ast-walk ast [nil nil]))
-"5.32e-03"
+"5.33e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc [nil nil]))
-"1.59e-03"
+"1.58e-03"
 
   (def sc (compile-stack ast))
   (= sc [[:push 100] [:set 0] [:push 1000] [:set 1] [:push 0] [:get 1] [:not=] [:jump-if-zero 27] [:get 0] [:push 4] [:add] [:get 0] [:add] [:push 3] [:add] [:set 0] [:get 0] [:push 2] [:add] [:push 4] [:add] [:set 0] [:push -1] [:get 1] [:add] [:set 1] [:jump 4] [:get 0]])
   (bench (run-stack sc))
-"2.92e-02"
+"2.82e-02"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.12e-03"
+"5.10e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
 "1.39e-03"
+
+  (def sca (stack-exec-case sc))
+  (bench (sca))
+"7.01e-04"
+
 
   )
