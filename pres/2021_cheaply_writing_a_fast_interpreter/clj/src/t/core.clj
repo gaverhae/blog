@@ -253,7 +253,7 @@
       (loop [ip (long 0)]
         (if (== (long -1) ip)
           (into [] stack)
-          (recur ((aget tape ip) (long ip) stack))))))))
+          (recur (long ((aget tape ip) (long ip) stack)))))))))
 
 (comment
 
@@ -284,6 +284,6 @@
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"2.08e-03"
+"1.39e-03"
 
   )
