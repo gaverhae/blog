@@ -214,6 +214,47 @@
         (recur ((tape ip?) ip? stack))
         stack)))))
 
+(defn stack-exec-mut
+  [ops]
+  (let [compile-stack-op
+        (fn [[op arg]]
+          (case op
+            :push (fn ^long [^long ip ^java.util.Stack stack]
+                    (.push stack arg)
+                    (unchecked-inc ip))
+            :get (let [idx (int arg)]
+                   (fn ^long [^long ip ^java.util.Stack stack]
+                     (.push stack (.get stack idx))
+                     (unchecked-inc ip)))
+            :set (let [idx (int arg)]
+                   (fn ^long [^long ip ^java.util.Stack stack]
+                     (.set stack idx (.pop stack))
+                     (unchecked-inc ip)))
+            :add (fn ^long [^long ip ^java.util.Stack stack]
+                   (.push stack (unchecked-add (.pop stack) (.pop stack)))
+                   (unchecked-inc ip))
+            :not= (fn ^long [^long ip ^java.util.Stack stack]
+                    (.push stack (if (== (.pop stack) (.pop stack)) 0 1))
+                    (unchecked-inc ip))
+            :jump-if-zero (fn ^long [^long ip ^java.util.Stack stack]
+                            (if (zero? (.pop stack))
+                              (long arg)
+                              (unchecked-inc ip)))
+            :jump (let [idx (long arg)]
+                    (fn ^long [^long _ ^java.util.Stack _]
+                      arg))
+            :stop (fn ^long [^long _ ^java.util.Stack _]
+                    (long -1))))
+        tape ^"[Ljava.lang.Object;" (into-array Object (map compile-stack-op (concat ops [[:stop]])))]
+  (fn []
+    (let [stack (java.util.Stack.)]
+      (.push stack 0)
+      (.push stack 0)
+      (loop [ip (long 0)]
+        (if (== (long -1) ip)
+          (into [] stack)
+          (recur ((aget tape ip) (long ip) stack))))))))
+
 (comment
 
   (require '[criterium.core :as crit])
@@ -240,5 +281,9 @@
   (def scc (stack-exec-cont sc))
   (bench (scc))
 "5.12e-03"
+
+  (def scm (stack-exec-mut sc))
+  (bench (scm))
+"2.08e-03"
 
   )
