@@ -287,6 +287,55 @@
                    (range))
                  (concat ['case ip]))))))))
 
+(defn stack-exec-case-jump
+  [ops]
+  (let [ops (concat ops [[:stop]])
+        stack (gensym)
+        ip (gensym)
+        segments (->> ops
+                      (filter (comp #{:jump :jump-if-zero} first))
+                      (map second)
+                      (cons 0)
+                      set
+                      (mapcat
+                        (fn [ep]
+                          [ep (->> (drop ep ops)
+                                   (reduce (fn [acc [op :as code]]
+                                             (if (= :jump op)
+                                               (reduced (conj acc code))
+                                               (conj acc code)))
+                                           [])
+                                   ((fn nest-jiz [[[op :as code] & tail ]]
+                                      (cond
+                                        (empty? tail) [code]
+                                        (= :jump-if-zero op) [(conj code (nest-jiz tail))]
+                                        :else (cons code (nest-jiz tail)))))
+                                   (map (fn compile-op [[op arg tail]]
+                                          (case op
+                                            :push `(.push ~stack ~arg)
+                                            :get `(.push ~stack (.get ~stack ~arg))
+                                            :set `(.set ~stack ~arg (.pop ~stack))
+                                            :add `(.push ~stack
+                                                         (unchecked-add (.pop ~stack)
+                                                                        (.pop ~stack)))
+                                            :not= `(.push ~stack
+                                                          (if (== (.pop ~stack)
+                                                                  (.pop ~stack))
+                                                            0
+                                                            1))
+                                            :jump-if-zero `(if (zero? (.pop ~stack))
+                                                             (recur ~arg)
+                                                             (do ~@(map compile-op tail)))
+                                            :jump `(recur ~arg)
+                                            :stop `(into [] ~stack))))
+                                   (cons 'do))])))]
+    (eval `(fn []
+             (let [~stack (java.util.Stack.)]
+               (.push ~stack 0)
+               (.push ~stack 0)
+               (loop [~ip (long 0)]
+                 ~(concat ['case ip] segments)))))))
+
 (comment
 
   (require '[criterium.core :as crit])
@@ -321,6 +370,9 @@
   (def sca (stack-exec-case sc))
   (bench (sca))
 "7.01e-04"
+
+  (def scj (stack-exec-case-jump sc))
+  (bench (scj))
 
 
   )
