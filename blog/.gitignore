@@ -16,3 +16,4 @@ pom.xml.asc
 .envrc.private
 logs
 report.html
+/content/img
