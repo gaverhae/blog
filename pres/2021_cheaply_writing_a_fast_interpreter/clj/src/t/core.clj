@@ -373,6 +373,7 @@
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
+"5.92e-04"
 
 
   )
