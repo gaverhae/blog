@@ -68,18 +68,17 @@ neil =
     ]
 
 direct :: Env -> TweIO
-direct env =
-  loop (insert (insert env (Name "x") 100) (Name "i") 1000)
+direct _ =
+  loop 100 1000
   where
-  x = Name "x"
-  i = Name "i"
-  loop :: Env -> TweIO
-  loop env = if (0 == (lookup env i))
-             then put Halt (lookup env x)
-             else
-             let env1 = insert env x (lookup env x + 4 + lookup env x + 3)
-                 env2 = insert env1 x (lookup env1 x + 2 + 4)
-             in loop (insert env2 i (lookup env2 i - 1))
+  loop :: Int -> Int -> TweIO
+  loop x0 i =
+    if (0 == i)
+    then put Halt (Value x0)
+    else
+    let x1 = x0 + 4 + x0 + 3
+        x2 = x1 + 2 + 4
+    in loop x2 (i - 1)
 
 fact :: Int -> Exp
 fact x =
@@ -396,6 +395,7 @@ stack_exec_cont code =
       in (code' Data.Vector.! next) next env (tail stack)
     StackPrint -> \ip env stack -> put ((code' Data.Vector.! (ip+1)) (ip+1) env (tail stack)) (head stack)
     StackEnd -> \_ _ _ -> Halt
+
 
 data Switch
   = Perf
