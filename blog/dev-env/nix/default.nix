@@ -26,6 +26,7 @@ in rec {
     terraform = pkgs.terraform_0_14.withPlugins (p: with p; [
     ]);
     goaccess = pkgs.goaccess;
+    lnav = pkgs.lnav;
 
     # Java
     #jdk    = pkgs.jdk8;
