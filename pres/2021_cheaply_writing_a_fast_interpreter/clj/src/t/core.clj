@@ -336,6 +336,25 @@
                (loop [~ip (long 0)]
                  ~(concat ['case ip] segments)))))))
 
+(def registers
+  [[:load 0 100]
+   [:load 1 1000]
+   [:jump-if-zero 1 16]
+   [:loadr 2 0]
+   [:add 2 4]
+   [:addr 2 0]
+   [:add 2 3]
+   [:loadr 0 2]
+   [:loadr 2 0]
+   [:add 2 2]
+   [:add 2 4]
+   [:loadr 0 2]
+   [:loadr 2 1]
+   [:add 2 -1]
+   [:loadr 1 2]
+   [:jump 2]
+   [:r 0]])
+
 (comment
 
   (require '[criterium.core :as crit])
