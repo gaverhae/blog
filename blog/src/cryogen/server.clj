@@ -1,32 +1,35 @@
 (ns cryogen.server
-  (:require 
-   [clojure.string :as string]
-   [compojure.core :refer [GET defroutes]]
-   [compojure.route :as route]
-   [ring.util.response :refer [redirect file-response]]
-   [ring.util.codec :refer [url-decode]]
-   [ring.server.standalone :as ring-server]
-   [cryogen-core.watcher :refer [start-watcher! start-watcher-for-changes!]]
-   [cryogen-core.plugins :refer [load-plugins]]
-   [cryogen-core.compiler :refer [compile-assets-timed]]
-   [cryogen-core.config :refer [resolve-config]]
-   [cryogen-core.io :refer [path]]))
+  (:require
+    [clojure.edn :as edn]
+    [clojure.string :as string]
+    [compojure.core :as cj]
+    [compojure.route :as route]
+    [ring.util.response :refer [redirect file-response]]
+    [ring.util.codec :refer [url-decode]]
+    [ring.server.standalone :as ring-server]
+    [cryogen-core.watcher :refer [start-watcher! start-watcher-for-changes!]]
+    [cryogen-core.plugins :refer [load-plugins]]
+    [cryogen-core.compiler :refer [compile-assets-timed]]
+    [cryogen-core.config :refer [resolve-config]]
+    [cryogen-core.io :refer [path]]))
 
-(defn init [fast?]
+(defn init
+  [{:as config, fast? :fast}]
   (println "Init: fast compile enabled = " (boolean fast?))
   (load-plugins)
-  (compile-assets-timed)
-  (let [ignored-files (-> (resolve-config) :ignored-files)]
+  (compile-assets-timed config)
+  (let [ignored-files (-> config :ignored-files)
+        recompile (fn [] (compile-assets-timed config))]
     (run!
       #(if fast?
-         (start-watcher-for-changes! % ignored-files compile-assets-timed {})
-         (start-watcher! % ignored-files compile-assets-timed))
+         (start-watcher-for-changes! % ignored-files recompile {})
+         (start-watcher! % ignored-files recompile))
       ["content" "themes"])))
 
 (defn wrap-subdirectories
-  [handler]
+  [handler config]
   (fn [request]
-    (let [{:keys [clean-urls blog-prefix public-dest]} (resolve-config)
+    (let [{:keys [clean-urls blog-prefix public-dest]} config
           req-uri (.substring (url-decode (:uri request)) 1)
           res-path (if (or (.endsWith req-uri "/")
                            (.endsWith req-uri ".html")
@@ -49,22 +52,25 @@
       (or (file-response res-path {:root public-dest})
           (handler request)))))
 
-(defroutes routes
-  (GET "/" [] (redirect (let [config (resolve-config)]
-                          (path (:blog-prefix config)
-                                (when (= (:clean-urls config) :dirty)
-                                  "index.html")))))
-  (route/files "/")
-  (route/not-found "Page not found"))
-
-(def handler (wrap-subdirectories routes))
+(defn routes
+  [config]
+  (cj/routes
+    (cj/GET "/" [] (redirect (path (:blog-prefix config)
+                                   (when (= (:clean-urls config) :dirty)
+                                     "index.html"))))
+    (route/files "/")
+    (route/not-found "Page not found")))
 
 (defn serve
-  "Entrypoint for running via tools-deps (clojure)"
-  [{:keys [fast] :as opts}]
+  [config]
   (ring-server/serve
-    handler
-    (merge {:init (partial init fast)} opts)))
+    (wrap-subdirectories (routes config) config)
+    (assoc config
+           :init (partial init config))))
 
 (defn -main [& args]
-  (serve {:port 3000, :fast ((set args) "fast")}))
+  (let [cli-args (edn/read-string (first args))
+        file-config (resolve-config)]
+    (serve (merge file-config
+                  {:port 3000}
+                  cli-args))))
