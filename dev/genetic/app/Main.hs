@@ -10,6 +10,29 @@ data OnDemand a b
   | Out b (OnDemand a b)
   | In (a -> OnDemand a b)
 
+-- BEGIN exercise, unrelated
+
+filterI :: (a -> Bool) -> OnDemand a a
+filterI f =
+  In (\a -> case f a of
+    True -> Out a (filterI f)
+    False -> (filterI f))
+
+mapI :: (a -> b) -> OnDemand a b
+mapI f = In (\a -> Out (f a) (mapI f))
+
+compI :: OnDemand a b -> OnDemand b c -> OnDemand a c
+compI i1 i2 =
+  case i2 of
+    Halt -> Halt
+    Out c i2 -> Out c (compI i1 i2)
+    In f -> case i1 of
+      Halt -> Halt
+      Out b i1 -> compI i1 (f b)
+      In g -> In (\a -> compI (g a) i2)
+
+-- END
+
 instance Functor WithRandom where fmap = Control.Monad.liftM
 instance Applicative WithRandom where
   pure = return
