@@ -336,6 +336,90 @@
                (loop [~ip (long 0)]
                  ~(concat ['case ip] segments)))))))
 
+(defn compile-register-ssa
+  [ast]
+  (let [max-var (fn max-var [[op & [arg1 arg2 :as args]]]
+                  (case op
+                    :lit 0
+                    :not= (max (max-var arg1)
+                               (max-var arg2))
+                    :add (max (max-var arg1)
+                              (max-var arg2))
+                    :var arg1
+                    :set (max arg1 (max-var arg2))
+                    :do (reduce max (map max-var args))
+                    :while (max (max-var arg1)
+                                (max-var arg2))))
+        r (let [m (max-var ast)]
+            (fn [i] (+ i m 1)))
+        h (fn h [cur [op & [arg1 arg2 :as args]]]
+            (case op
+              :lit [(r cur) [[:load (r cur) arg1]]]
+              :set (let [[r right] (h cur arg2)]
+                     [nil (concat right
+                                  [[:loadr arg1 r]])])
+              :do [nil (->> args
+                            (reduce (fn [[cur so-far] el]
+                                      (let [[_ code] (h cur el)]
+                                        [(+ cur (count code))
+                                         (concat so-far code)]))
+                                    [cur []])
+                            second)]
+              :while (let [[rcond condition] (h cur arg1)
+                           [_ body] (h (+ cur 1 (count condition)) arg2)]
+                       [nil (concat condition
+                                    [[:jump-if-zero rcond (+ cur (count condition) 1 (count body) 1)]]
+                                    body
+                                    [[:jump cur]])])
+              :var [(r cur) [[:loadr (r cur) arg1]]]
+              :add (let [[rleft left] (h cur arg1)
+                         [rright right] (h (+ cur (count left)) arg2)
+                         rresult (+ cur (count left) (count right))]
+                     [(r rresult) (concat
+                                    left
+                                    right
+                                    [[:add (r rresult) rleft rright]])])
+              :not= (let [[rleft left] (h cur arg1)
+                          [rright right] (h (+ cur (count left)) arg2)
+                          rresult (+ cur (count left) (count right))]
+                      [(r rresult) (concat
+                                     left
+                                     right
+                                     [[:not= (r rresult) rleft rright]])])))]
+    (second (h 0 ast))))
+
+(comment
+(compile-register-ssa ast)
+([:load 2 100]
+ [:loadr 0 2]
+ [:load 4 1000]
+ [:loadr 1 4]
+ [:load 6 0]
+ [:loadr 7 1]
+ [:not= 8 6 7]
+ [:jump-if-zero 8 27]
+ [:loadr 10 0]
+ [:load 11 4]
+ [:add 12 10 11]
+ [:loadr 13 0]
+ [:add 14 12 13]
+ [:load 15 3]
+ [:add 16 14 15]
+ [:loadr 0 16]
+ [:loadr 18 0]
+ [:load 19 2]
+ [:add 20 18 19]
+ [:load 21 4]
+ [:add 22 20 21]
+ [:loadr 0 22]
+ [:load 24 -1]
+ [:loadr 25 1]
+ [:add 26 24 25]
+ [:loadr 1 26]
+ [:jump 4]
+ [:loadr 29 0])
+)
+
 (def registers
   [[:load 0 100]
    [:load 1 1000]
