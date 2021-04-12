@@ -1,5 +1,5 @@
 {% extends "/html/base.html" %}
-{%block subtitle %}: {{post.title}}{% endblock %}
+{%block subtitle %}: {{post.title|remove-tags:strike}}{% endblock %}
 {% block meta %}
 <meta name="keywords" content="{% for tag in tags %}{{tag.name}}{% if not forloop.last %},{% endif %}{% endfor %}">
 {% if post.description %}
@@ -8,7 +8,7 @@
 <meta property="og:description" content="{{post.description}}">
 {% endif %}
 <meta property="og:url" content="{{site-url}}{{uri}}" />
-<meta property="og:title" content="{{post.title}}" />
+<meta property="og:title" content="{{post.title|remove-tags:strike}}" />
 <meta property="og:type" content="article" />
 {% endblock %}
 {% block content %}
@@ -16,10 +16,10 @@
     {% include "/html/post-content.html" %}
     <div id="prev-next">
         {% if post.next %}
-        <a href="{{post.next.uri}}">&laquo; {{post.next.title}}</a>
+        <a href="{{post.next.uri}}">&laquo; {{post.next.title|safe}}</a>
         {% endif %}
         {% if post.prev %}
-        <a class="right" href="{{post.prev.uri}}">{{post.prev.title}} &raquo;</a>
+        <a class="right" href="{{post.prev.uri}}">{{post.prev.title|safe}} &raquo;</a>
         {% endif %}
     </div>
 
@@ -28,7 +28,7 @@
     <script type="text/javascript">
         var disqus_config = function () {
             this.page.url = "{{site-url}}{{uri}}";
-            this.page.identifier = "{{post.title}}";
+            this.page.identifier = "{{post.title|hash}}";
         };
         (function() {
             var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

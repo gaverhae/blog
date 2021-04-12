@@ -28,7 +28,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="{{index-uri}}">{{title}}</a>
+            <a class="navbar-brand" href="{{index-uri}}">{{title|safe}}</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
@@ -38,7 +38,7 @@
                 {% for nav-page in navbar-pages %}
                 <li
                 {%ifequal page.uri nav-page.uri %} class="active" {% endifequal %}>
-                <a href="{{nav-page.uri}}">{{nav-page.title}}</a>
+                <a href="{{nav-page.uri}}">{{nav-page.title|safe}}</a>
                 </li>
                 {% endfor %}
                 <li><a href="{{rss-uri}}">RSS</a></li>
@@ -64,7 +64,7 @@
                 <h3>Links</h3>
                 <ul id="links">
                     {% for page in sidebar-pages %}
-                    <li><a href="{{page.uri}}">{{page.title}}</a></li>
+                    <li><a href="{{page.uri}}">{{page.title|safe}}</a></li>
                     {% endfor %}
                     <li><a href="https://carmen.la/blog/archives">Carmen's Blog</a></li>
                 </ul>
@@ -73,7 +73,7 @@
                     <h3>Recent Posts</h3>
                     <ul>
                         {% for post in latest-posts %}
-                        <li><a href="{{post.uri}}">{{post.title}}</a></li>
+                        <li><a href="{{post.uri}}">{{post.title|safe}}</a></li>
                         {% endfor %}
                     </ul>
                 </div>

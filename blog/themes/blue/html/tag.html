@@ -8,7 +8,7 @@
     <ul>
     {% for post in posts %}
         <li>
-            <a href="{{post.uri}}">{{post.title}}</a>
+            <a href="{{post.uri}}">{{post.title|safe}}</a>
         </li>
     {% endfor %}
     </ul>
