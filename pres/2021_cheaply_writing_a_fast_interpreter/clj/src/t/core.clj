@@ -388,56 +388,27 @@
                                      [[:not= (r rresult) rleft rright]])])))]
     (second (h 0 ast))))
 
-(comment
-(compile-register-ssa ast)
-([:load 2 100]
- [:loadr 0 2]
- [:load 4 1000]
- [:loadr 1 4]
- [:load 6 0]
- [:loadr 7 1]
- [:not= 8 6 7]
- [:jump-if-zero 8 27]
- [:loadr 10 0]
- [:load 11 4]
- [:add 12 10 11]
- [:loadr 13 0]
- [:add 14 12 13]
- [:load 15 3]
- [:add 16 14 15]
- [:loadr 0 16]
- [:loadr 18 0]
- [:load 19 2]
- [:add 20 18 19]
- [:load 21 4]
- [:add 22 20 21]
- [:loadr 0 22]
- [:load 24 -1]
- [:loadr 25 1]
- [:add 26 24 25]
- [:loadr 1 26]
- [:jump 4]
- [:loadr 29 0])
-)
-
-(def registers
-  [[:load 0 100]
-   [:load 1 1000]
-   [:jump-if-zero 1 16]
-   [:loadr 2 0]
-   [:add 2 4]
-   [:addr 2 0]
-   [:add 2 3]
-   [:loadr 0 2]
-   [:loadr 2 0]
-   [:add 2 2]
-   [:add 2 4]
-   [:loadr 0 2]
-   [:loadr 2 1]
-   [:add 2 -1]
-   [:loadr 1 2]
-   [:jump 2]
-   [:r 0]])
+(defn run-registers
+  [code]
+  (let [tape (vec code)]
+    (loop [i 0
+           regs {}]
+      (if (= i (count tape))
+        (sort regs)
+        (let [[ins arg1 arg2 arg3] (tape i)]
+          (case ins
+            :load (recur (inc i) (assoc regs arg1 arg2))
+            :loadr (recur (inc i) (assoc regs arg1 (get regs arg2)))
+            :jump-if-zero (if (zero? (get regs arg1))
+                            (recur (long arg2) regs)
+                            (recur (inc i) regs))
+            :jump (recur (long arg1) regs)
+            :add (recur (inc i)
+                        (assoc regs arg1 (unchecked-add (get regs arg2)
+                                                        (get regs arg3))))
+            :not= (recur (inc i)
+                         (assoc regs arg1 (if (== (get regs arg2) (get regs arg3))
+                                            0 1)))))))))
 
 (comment
 
@@ -478,5 +449,8 @@
   (bench (scj))
 "5.92e-04"
 
+  (def rc (compile-register-ssa ast))
+  (bench (run-registers rc))
+"9.15e-03"
 
   )
