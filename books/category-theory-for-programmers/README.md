@@ -288,7 +288,13 @@ we'll explain much later.
 (defn identity
   [x]
   [x])
+```
 
+Note that _identity_ here is to be understood in the context of morphisms: the
+identity morphism is the one that leaves a morphism unchanged through
+composition. It is **not** the function that leaves its argument unchanged.
+
+```clojure
 (defn composition
   [f g]
   (fn [x]
@@ -615,4 +621,141 @@ s_to_p (Left a) = (False, a)
 p_to_s :: (Bool, a) -> Either a a
 p_to_s (True, a) = Right a
 p_to_s (False, a) = Left a
+```
+
+### Chapter 7 - Functor
+
+A functor is a mapping between categories that maps every morphism $f \dblcolon
+a \to b$ in the source category to $Ff \dblcolon Fa \to Fb$ in the target
+category, every composition $g \cdot f$ to the composition $Fg \cdot Ff$, and
+every identity morphism $\textrm{id}_{a}$ such that $F\textrm{id}_{a} =
+\textrm{id}_{Fa}$.
+
+According to these rules, functors can collapse and embed, but not tear apart.
+The particular functor that reduces everything to a single object and morphism
+(the identity for that object in the target category) is caled $\Delta_c$.
+
+An _endofunctor_ is a functor from one category to itself. A common example in
+programming languages are _type constructors_ (or parametric types) such as
+`Maybe`, which can be endofunctors in Set (or Hask).
+
+Functors have to transform morphisms, so for a type constructor to "be" a
+functor, it needs to also be applicable to functions. In the case of `Maybe`,
+this can be done by defining:
+
+```haskell
+fmap :: (a -> b) -> (Maybe a -> Maybe b)
+fmap f = \case
+  Nothing -> Nothing
+  Just a -> Just (f a)
+```
+
+In the same way, we can make the `List` type constructor a functor by defining:
+
+```haskell
+fmap :: (a -> b) -> [a] -> [b]
+fmap f = \case
+  [] -> []
+  (a:as) -> f a : fmap f as
+```
+
+The type constructor `(->) r` can also be made a functor by defining:
+
+```haskell
+fmap :: (a -> b) -> ((->) r) a -> ((->) r) b
+fmap f g = f . g
+```
+
+The type constructor `(Const c)` can also be made a functor by defining:
+
+```haskell
+fmap :: (a -> b) -> Const c a -> Const c b
+fmap _ const = const
+```
+
+This is a special-case (specifically, the "endofunctor in Hask" case) of
+$\Delta_c$.
+
+Functors can be seen as morphisms in a category where objects are categories.
+The category of all "small" categories is called Cat. (It doesn't include
+itself, because Cat is big.)
+
+#### Challenges
+
+> 1. Can we turn the Maybe type constructor into a functor by defining:
+> ```haskell
+> fmap _ _ = Nothing
+> ```
+> which ignores both of its arguments? (Hint: Check the functor laws.)
+
+No: identity is not preserved. With that definition, `fmap id (Just x)` is
+`Nothing` instead of `id (Just x)`.
+
+> 2. Prove functor laws for the reader functor. Hint: it's really simple.
+
+Identity:
+
+```haskell
+fmap id f x = (id . f) x = id (f x) = f x
+(id f) x = f x
+```
+
+Composition:
+
+```haskell
+fmap (f . g) h = (f . g) . h
+               = f . g . h
+(fmap f . fmap g) h = (fmap f) (fmap g h)
+                    = f . (g . h)
+                    = f . g . h
+```
+
+> 3. Implement the reader functor in your second favorite language (the first
+>    being Haskell, of course).
+
+```java
+import java.util.function.Function;
+
+public final class Reader<R> {
+  public <A, B> Function<Function<R, A>, Function<R, B>> fmap(Function<A, B> f) {
+    return g -> r -> f.apply(g.apply(r));
+  }
+}
+```
+
+> 4. Prove the functor laws for the list functor. Assume that the laws are true
+>    for the tail part of the list you’re applying it to (in other words, use
+>    induction).
+
+For reference:
+
+```haskell
+fmap f = \case
+  [] -> []
+  (a:as) -> f a : fmap f as
+```
+
+Identity:
+
+```haskell
+fmap id [] = []
+id [] = []
+fmap id (a:as) = id a : fmap id as
+               = a : id as
+               = a : as
+               = id (a:as)
+```
+
+Composition:
+
+```haskell
+fmap (f . g) [] = []
+(fmap f . fmap g) [] = fmap f (fmap g []) = fmap f [] = []
+fmap (f . g) (a:as)
+  = (f . g) a : fmap (f . g) as
+(fmap f . fmap g) (a:as)
+  = fmap f (fmap g (a:as))
+  = fmap f (g a : fmap g as)
+  = f (g a) : fmap f (fmap g as)
+  = (f . g) a : (fmap f . fmap g) as
 ```
