@@ -1,4 +1,5 @@
-(ns t.core)
+(ns t.core
+  (:require [datascript.core :as d]))
 
 (defn baseline
   []
@@ -410,6 +411,55 @@
                          (assoc regs arg1 (if (== (get regs arg2) (get regs arg3))
                                             0 1)))))))))
 
+(defn optimize-register-code
+  [code]
+  (let [is-jump? {:jump 1, :jump-if-zero 2}
+        make-labels (fn [code]
+                      (let [jump-positions (->> code
+                                                (filter (comp is-jump? first))
+                                                (map (fn [op] (get op (is-jump? (first op)))))
+                                                set)]
+                        (loop [i 0
+                               done []
+                               todo code]
+                          (if (seq todo)
+                            (let [done (if-let [i (jump-positions i)]
+                                         (conj done [:label i] (first todo))
+                                         (conj done (first todo)))]
+                              (recur (inc i) done (rest todo)))
+                            done))))
+        recalculate-jumps (fn [code]
+                            (reduce (fn [code [_ label]]
+                                      (let [idx (->> code
+                                                     (keep-indexed #(when (= [:label label] %2) %1))
+                                                     first)]
+                                        (->> code
+                                             (remove #{[:label label]})
+                                             (map (fn [[op :as e]]
+                                                    (if-let [j (is-jump? op)]
+                                                      (update e j #(if (= label %)
+                                                                     idx
+                                                                     %))
+                                                      e))))))
+                                    code
+                                    (->> code (filter (comp #{:label} first)))))
+        patterns {'[[:add ?t ?a ?b] [:loadr ?r ?t]] ['[?r ?a ?b] #(->> % (cons :add) vec)]}
+        apply-pattern (fn [code [pattern [result f]]]
+                        (let [len (count pattern)]
+                          (loop [done []
+                                 todo code]
+                            (if (seq todo)
+                              (if-let [match (d/q `[:find ~result
+                                                    :where ~@pattern]
+                                                  (take len todo))]
+                                (recur done (cons (f match) (drop len todo)))
+                                (recur (conj done (first todo)) (rest todo)))
+                              done))))]
+    (recalculate-jumps
+      (reduce apply-pattern
+              (make-labels code)
+              patterns))))
+
 (comment
 
   (require '[criterium.core :as crit])
@@ -419,38 +469,98 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.66e-06"
+"2.73e-06"
 
   (bench (naive-ast-walk ast [nil nil]))
-"5.33e-03"
+"5.40e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc [nil nil]))
-"1.58e-03"
+"1.61e-03"
 
   (def sc (compile-stack ast))
-  (= sc [[:push 100] [:set 0] [:push 1000] [:set 1] [:push 0] [:get 1] [:not=] [:jump-if-zero 27] [:get 0] [:push 4] [:add] [:get 0] [:add] [:push 3] [:add] [:set 0] [:get 0] [:push 2] [:add] [:push 4] [:add] [:set 0] [:push -1] [:get 1] [:add] [:set 1] [:jump 4] [:get 0]])
+  (= sc [[:push 100]
+         [:set 0]
+         [:push 1000]
+         [:set 1]
+         [:push 0]
+         [:get 1]
+         [:not=]
+         [:jump-if-zero 27]
+         [:get 0]
+         [:push 4]
+         [:add]
+         [:get 0]
+         [:add]
+         [:push 3]
+         [:add]
+         [:set 0]
+         [:get 0]
+         [:push 2]
+         [:add]
+         [:push 4]
+         [:add]
+         [:set 0]
+         [:push -1]
+         [:get 1]
+         [:add]
+         [:set 1]
+         [:jump 4]
+         [:get 0]])
   (bench (run-stack sc))
-"2.82e-02"
+"2.93e-02"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.10e-03"
+"5.15e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.39e-03"
+"1.49e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"7.01e-04"
+"7.15e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.92e-04"
+"6.19e-04"
 
   (def rc (compile-register-ssa ast))
+  (= rc [[:load 2 100]
+         [:loadr 0 2]
+         [:load 4 1000]
+         [:loadr 1 4]
+         [:load 6 0]
+         [:loadr 7 1]
+         [:not= 8 6 7]
+         [:jump-if-zero 8 27]
+         [:loadr 10 0]
+         [:load 11 4]
+         [:add 12 10 11]
+         [:loadr 13 0]
+         [:add 14 12 13]
+         [:load 15 3]
+         [:add 16 14 15]
+         [:loadr 0 16]
+         [:loadr 18 0]
+         [:load 19 2]
+         [:add 20 18 19]
+         [:load 21 4]
+         [:add 22 20 21]
+         [:loadr 0 22]
+         [:load 24 -1]
+         [:loadr 25 1]
+         [:add 26 24 25]
+         [:loadr 1 26]
+         [:jump 4]
+         [:loadr 29 0]])
+
   (bench (run-registers rc))
-"9.15e-03"
+"8.31e-03"
+
+  (def opt-rc (optimize-register-code rc))
+  (bench (run-registers opt-rc))
+"6.43e-03"
 
   )
