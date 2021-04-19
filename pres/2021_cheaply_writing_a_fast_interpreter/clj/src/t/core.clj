@@ -20,83 +20,90 @@
      [:set 0 [:add [:add [:add [:var 0] [:lit 4]] [:var 0]] [:lit 3]]]
      [:set 0 [:add [:add [:var 0] [:lit 2]] [:lit 4]]]
      [:set 1 [:add [:lit -1] [:var 1]]]]]
-   [:var 0]])
+   [:return [:var 0]]])
 
 (defn naive-ast-walk
-  [expr env]
-  (case (first expr)
-    :do (reduce (fn [[_ env] expr] (naive-ast-walk expr env))
-                [nil env]
-                (rest expr))
-    :set (let [[_ idx e] expr
-               [v env] (naive-ast-walk e env)]
-           [nil (assoc env idx v)])
-    :lit [(second expr) env]
-    :not= (let [[_ e1 e2] expr
-                [v1 env] (naive-ast-walk e1 env)
-                [v2 env] (naive-ast-walk e2 env)]
-            (if (== v1 v2)
-              [0 env]
-              [1 env]))
-    :var (let [[_ idx] expr]
-           [(get env idx) env])
-    :add (let [[_ e1 e2] expr
-               [v1 env] (naive-ast-walk e1 env)
-               [v2 env] (naive-ast-walk e2 env)]
-           [(unchecked-add v1 v2) env])
-    :while (let [[_ e-condition e-body] expr]
-             (loop [env env]
-               (let [[condition env] (naive-ast-walk e-condition env)]
-                 (if (== condition 1)
-                   (let [[_ env] (naive-ast-walk e-body env)]
-                     (recur env))
-                   [nil env]))))))
+  [expr]
+  (let [h (fn h [expr env]
+            (case (first expr)
+              :do (reduce (fn [[_ env] expr] (h expr env))
+                          [nil env]
+                          (rest expr))
+              :set (let [[_ idx e] expr
+                         [v env] (h e env)]
+                     [nil (assoc env idx v)])
+              :lit [(second expr) env]
+              :not= (let [[_ e1 e2] expr
+                          [v1 env] (h e1 env)
+                          [v2 env] (h e2 env)]
+                      (if (== v1 v2)
+                        [0 env]
+                        [1 env]))
+              :var (let [[_ idx] expr]
+                     [(get env idx) env])
+              :add (let [[_ e1 e2] expr
+                         [v1 env] (h e1 env)
+                         [v2 env] (h e2 env)]
+                     [(unchecked-add v1 v2) env])
+              :while (let [[_ e-condition e-body] expr]
+                       (loop [env env]
+                         (let [[condition env] (h e-condition env)]
+                           (if (== condition 1)
+                             (let [[_ env] (h e-body env)]
+                               (recur env))
+                             [nil env]))))
+              :return (h (second expr) env)))]
+    (first (h expr {}))))
 
 (defn compile-to-closure
   [expr]
-  (case (first expr)
-    :do (let [do-body (reduce (fn [kont expr]
-                                (let [f (compile-to-closure expr)]
-                                  (fn [env _]
-                                    (let [[v env] (f env)]
-                                      (kont env v)))))
-                              (fn [env v] [v env])
-                              (reverse (rest expr)))]
-          (fn [env] (do-body env nil)))
-    :set (let [[_ idx e] expr
-               f (compile-to-closure e)]
-           (fn [env]
-             (let [[v env] (f env)]
-               [nil (assoc env idx v)])))
-    :lit (let [e (second expr)]
-           (fn [env] [e env]))
-    :not= (let [[_ e1 e2] expr
-                f1 (compile-to-closure e1)
-                f2 (compile-to-closure e2)]
-            (fn [env]
-              (let [[v1 env] (f1 env)
-                    [v2 env] (f2 env)]
-                (if (== v1 v2)
-                  [0 env]
-                  [1 env]))))
-    :var (let [[_ idx] expr]
-           (fn [env] [(get env idx) env]))
-    :add (let [[_ e1 e2] expr
-               f1 (compile-to-closure e1)
-               f2 (compile-to-closure e2)]
-           (fn [env]
-             (let [[v1 env] (f1 env)
-                   [v2 env] (f2 env)]
-               [(unchecked-add v1 v2) env])))
-    :while (let [[_ e-condition e-body] expr
-                 f-condition (compile-to-closure e-condition)
-                 f-body (compile-to-closure e-body)]
-             (fn [env]
-               (let [[condition env] (f-condition env)]
-                 (if (== condition 1)
-                   (let [[_ env] (f-body env)]
-                     (recur env))
-                   [nil env]))))))
+  (let [h (fn h [expr]
+            (case (first expr)
+              :do (let [do-body (reduce (fn [kont expr]
+                                          (let [f (h expr)]
+                                            (fn [env _]
+                                              (let [[v env] (f env)]
+                                                (kont env v)))))
+                                        (fn [env v] [v env])
+                                        (reverse (rest expr)))]
+                    (fn [env] (do-body env nil)))
+              :set (let [[_ idx e] expr
+                         f (h e)]
+                     (fn [env]
+                       (let [[v env] (f env)]
+                         [nil (assoc env idx v)])))
+              :lit (let [e (second expr)]
+                     (fn [env] [e env]))
+              :not= (let [[_ e1 e2] expr
+                          f1 (h e1)
+                          f2 (h e2)]
+                      (fn [env]
+                        (let [[v1 env] (f1 env)
+                              [v2 env] (f2 env)]
+                          (if (== v1 v2)
+                            [0 env]
+                            [1 env]))))
+              :var (let [[_ idx] expr]
+                     (fn [env] [(get env idx) env]))
+              :add (let [[_ e1 e2] expr
+                         f1 (h e1)
+                         f2 (h e2)]
+                     (fn [env]
+                       (let [[v1 env] (f1 env)
+                             [v2 env] (f2 env)]
+                         [(unchecked-add v1 v2) env])))
+              :while (let [[_ e-condition e-body] expr
+                           f-condition (h e-condition)
+                           f-body (h e-body)]
+                       (fn [env]
+                         (let [[condition env] (f-condition env)]
+                           (if (== condition 1)
+                             (let [[_ env] (f-body env)]
+                               (recur env))
+                             [nil env]))))
+              :return (h (second expr))))
+        cc (h expr)]
+    #(first (cc {}))))
 
 (defn compile-stack
   [ast]
@@ -128,51 +135,50 @@
                                                   (count body)
                                                   1)]]
                                body
-                               [[:jump cur]]))))]
+                               [[:jump cur]]))
+              :return (let [r (h cur (first args))]
+                        (concat r [[:end]]))))]
     (vec (h 0 ast))))
 
 (defn run-stack
   [code]
+  ;; TODO: remove m structure
   (let [m {:code code
            :pointer 0
            :stack []}
-        finished? (fn [m] (== (count (:code m))
-                              (:pointer m)))
         push (fn [m v] (update m :stack conj v))
         pop (fn [m] [(-> m :stack peek)
                      (update m :stack pop)])
         inc-pointer (fn [m] (update m :pointer inc))]
     (loop [m m]
-      (if (finished? m)
-        [(peek (:stack m)) (:stack m)]
-        (let [[op arg] (get-in m [:code (:pointer m)])]
-          (recur (case op
-                   :push (-> m
-                             (push arg)
-                             inc-pointer)
-                   :get (-> m
-                            (push (get-in m [:stack arg]))
-                            inc-pointer)
-                   :not= (let [[p1 m] (pop m)
-                               [p2 m] (pop m)]
-                           (-> m
-                               (push (if (== p1 p2) 0 1))
-                               inc-pointer))
-                   :add (let [[p1 m] (pop m)
-                              [p2 m] (pop m)]
-                          (-> m
-                              (push (unchecked-add p1 p2))
-                              inc-pointer))
-                   :set (let [[p m] (pop m)]
-                          (-> m
-                              (assoc-in [:stack arg] p)
-                              inc-pointer))
-                   :jump-if-zero
-                   (let [[p m] (pop m)]
-                     (if (zero? p)
-                       (assoc m :pointer arg)
-                       (update m :pointer inc)))
-                   :jump (assoc m :pointer arg))))))))
+      (let [[op arg] (get-in m [:code (:pointer m)])]
+        (case op
+          :push (recur (-> m
+                           (push arg)
+                           inc-pointer))
+          :get (recur (-> m
+                          (push (get-in m [:stack arg]))
+                          inc-pointer))
+          :not= (recur (let [[p1 m] (pop m)
+                             [p2 m] (pop m)]
+                         (-> m
+                             (push (if (== p1 p2) 0 1))
+                             inc-pointer)))
+          :add (recur (let [[p1 m] (pop m)
+                            [p2 m] (pop m)]
+                        (-> m
+                            (push (unchecked-add p1 p2))
+                            inc-pointer)))
+          :set (recur (let [[p m] (pop m)]
+                        (-> m
+                            (assoc-in [:stack arg] p)
+                            inc-pointer)))
+          :jump-if-zero (recur (let [[p m] (pop m)]
+                                 (if (zero? p)
+                                   (assoc m :pointer arg)
+                                   (update m :pointer inc))))
+          :jump (recur (assoc m :pointer arg))
+          :end (-> m :stack peek))))))
 
 (defn stack-exec-cont
   [ops]
@@ -206,14 +212,14 @@
                               [nip stack]))
             :jump (fn [^long _ stack]
                     [arg stack])
-            :stop (fn [^long _ stack]
+            :end (fn [^long _ stack]
                     [nil stack])))
-        tape (vec (map compile-stack-op (concat ops [[:stop]])))]
+        tape (vec (map compile-stack-op ops))]
   (fn []
     (loop [[ip? stack] ((tape 0) 0 [])]
       (if ip?
         (recur ((tape ip?) ip? stack))
-        stack)))))
+        (peek stack))))))
 
 (defn stack-exec-mut
   [ops]
@@ -244,16 +250,16 @@
             :jump (let [idx (long arg)]
                     (fn ^long [^long _ ^java.util.Stack _]
                       arg))
-            :stop (fn ^long [^long _ ^java.util.Stack _]
+            :end (fn ^long [^long _ ^java.util.Stack _]
                     (long -1))))
-        tape ^"[Ljava.lang.Object;" (into-array Object (map compile-stack-op (concat ops [[:stop]])))]
+        tape ^"[Ljava.lang.Object;" (into-array Object (map compile-stack-op ops))]
   (fn []
     (let [stack (java.util.Stack.)]
       (.push stack 0)
       (.push stack 0)
       (loop [ip (long 0)]
         (if (== (long -1) ip)
-          (into [] stack)
+          (.pop stack)
           (recur (long ((aget tape ip) (long ip) stack)))))))))
 
 (defn stack-exec-case
@@ -266,7 +272,7 @@
          (.push ~stack 0)
          (.push ~stack 0)
          (loop [~ip (long 0)]
-           ~(->> (concat ops [[:stop]])
+           ~(->> ops
                  (mapcat
                    (fn [idx [op arg]]
                      [idx (case op
@@ -284,14 +290,13 @@
                                                  (recur ~arg)
                                                  (recur ~(inc idx))))
                             :jump `(recur ~arg)
-                            :stop `(into [] ~stack))])
+                            :end `(.pop ~stack))])
                    (range))
                  (concat ['case ip]))))))))
 
 (defn stack-exec-case-jump
   [ops]
-  (let [ops (concat ops [[:stop]])
-        stack (gensym)
+  (let [stack (gensym)
         ip (gensym)
         segments (->> ops
                       (filter (comp #{:jump :jump-if-zero} first))
@@ -328,7 +333,7 @@
                                                              (recur ~arg)
                                                              (do ~@(map compile-op tail)))
                                             :jump `(recur ~arg)
-                                            :stop `(into [] ~stack))))
+                                            :end `(.get ~stack 0))))
                                    (cons 'do))])))]
     (eval `(fn []
              (let [~stack (java.util.Stack.)]
@@ -338,10 +343,12 @@
                  ~(concat ['case ip] segments)))))))
 
 (defn compile-register-ssa
+  ;;TODO: generate labels
   [ast]
   (let [max-var (fn max-var [[op & [arg1 arg2 :as args]]]
                   (case op
                     :lit 0
+                    :return (max-var arg1)
                     :not= (max (max-var arg1)
                                (max-var arg2))
                     :add (max (max-var arg1)
@@ -355,6 +362,9 @@
             (fn [i] (+ i m 1)))
         h (fn h [cur [op & [arg1 arg2 :as args]]]
             (case op
+              :return (let [[r right] (h cur arg1)]
+                        [nil (concat right
+                                     [[:return r]])])
               :lit [(r cur) [[:load (r cur) arg1]]]
               :set (let [[r right] (h cur arg2)]
                      [nil (concat right
@@ -390,26 +400,26 @@
     (second (h 0 ast))))
 
 (defn run-registers
+  ;;TODO: handle labels
   [code]
   (let [tape (vec code)]
     (loop [i 0
            regs {}]
-      (if (= i (count tape))
-        (sort regs)
-        (let [[ins arg1 arg2 arg3] (tape i)]
-          (case ins
-            :load (recur (inc i) (assoc regs arg1 arg2))
-            :loadr (recur (inc i) (assoc regs arg1 (get regs arg2)))
-            :jump-if-zero (if (zero? (get regs arg1))
-                            (recur (long arg2) regs)
-                            (recur (inc i) regs))
-            :jump (recur (long arg1) regs)
-            :add (recur (inc i)
-                        (assoc regs arg1 (unchecked-add (get regs arg2)
-                                                        (get regs arg3))))
-            :not= (recur (inc i)
-                         (assoc regs arg1 (if (== (get regs arg2) (get regs arg3))
-                                            0 1)))))))))
+      (let [[ins arg1 arg2 arg3] (tape i)]
+        (case ins
+          :return (get regs arg1)
+          :load (recur (inc i) (assoc regs arg1 arg2))
+          :loadr (recur (inc i) (assoc regs arg1 (get regs arg2)))
+          :jump-if-zero (if (zero? (get regs arg1))
+                          (recur (long arg2) regs)
+                          (recur (inc i) regs))
+          :jump (recur (long arg1) regs)
+          :add (recur (inc i)
+                      (assoc regs arg1 (unchecked-add (get regs arg2)
+                                                      (get regs arg3))))
+          :not= (recur (inc i)
+                       (assoc regs arg1 (if (== (get regs arg2) (get regs arg3))
+                                          0 1))))))))
 
 (defn optimize-register-code
   [code]
@@ -470,42 +480,41 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.73e-06"
+"2.88e-06"
 
-  (bench (naive-ast-walk ast [nil nil]))
-"5.40e-03"
+  (bench (naive-ast-walk ast))
+"5.83e-03"
 
   (def cc (compile-to-closure ast))
-  (bench (cc [nil nil]))
-"1.61e-03"
+  (bench (cc))
+"2.00e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"2.93e-02"
+"2.61e-02"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.15e-03"
+"5.14e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.49e-03"
+"1.43e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"7.15e-04"
+"6.94e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"6.19e-04"
+"6.01e-04"
 
   (def rc (compile-register-ssa ast))
-
   (bench (run-registers rc))
-"8.31e-03"
+"7.63e-03"
 
   (def opt-rc (optimize-register-code rc))
   (bench (run-registers opt-rc))
-"6.43e-03"
+"5.85e-03"
 
   )
