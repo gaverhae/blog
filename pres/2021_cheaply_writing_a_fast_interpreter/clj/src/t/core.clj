@@ -359,45 +359,49 @@
                     :while (max (max-var arg1)
                                 (max-var arg2))))
         r (let [m (max-var ast)]
-            (fn [i] (+ i m 1)))
-        h (fn h [cur [op & [arg1 arg2 :as args]]]
+            (fn [i t] (or t (+ i m 1))))
+        h (fn h [cur ret [op & [arg1 arg2 :as args]]]
             (case op
-              :return (let [[r right] (h cur arg1)]
+              :return (let [[r right] (h cur nil arg1)]
                         [nil (concat right
                                      [[:return r]])])
-              :lit [(r cur) [[:load (r cur) arg1]]]
-              :set (let [[r right] (h cur arg2)]
-                     [nil (concat right
-                                  [[:loadr arg1 r]])])
+              :lit [(r cur ret) [[:load (r cur ret) arg1]]]
+              :set (if (#{:lit :add} (first arg2))
+                     (h cur arg1 arg2)
+                     (let [[r right] (h cur nil arg2)]
+                       [nil
+                        (concat right [[:loadr arg1 r]])]))
               :do [nil (->> args
                             (reduce (fn [[cur so-far] el]
-                                      (let [[_ code] (h cur el)]
+                                      (let [[_ code] (h cur nil el)]
                                         [(+ cur (count code))
                                          (concat so-far code)]))
                                     [cur []])
                             second)]
-              :while (let [[rcond condition] (h cur arg1)
-                           [_ body] (h (+ cur 1 (count condition)) arg2)]
+              :while (let [[rcond condition] (h cur nil arg1)
+                           [_ body] (h (+ cur 1 (count condition)) nil arg2)]
                        [nil (concat condition
                                     [[:jump-if-zero rcond (+ cur (count condition) 1 (count body) 1)]]
                                     body
                                     [[:jump cur]])])
-              :var [(r cur) [[:loadr (r cur) arg1]]]
-              :add (let [[rleft left] (h cur arg1)
-                         [rright right] (h (+ cur (count left)) arg2)
+              :var [arg1 []]
+              :add (let [[rleft left] (h cur nil arg1)
+                         [rright right] (h (+ cur (count left)) nil arg2)
                          rresult (+ cur (count left) (count right))]
-                     [(r rresult) (concat
-                                    left
-                                    right
-                                    [[:add (r rresult) rleft rright]])])
-              :not= (let [[rleft left] (h cur arg1)
-                          [rright right] (h (+ cur (count left)) arg2)
+                     [(r rresult ret)
+                      (concat
+                        left
+                        right
+                        [[:add (r rresult ret) rleft rright]])])
+              :not= (let [[rleft left] (h cur nil arg1)
+                          [rright right] (h (+ cur (count left)) nil arg2)
                           rresult (+ cur (count left) (count right))]
-                      [(r rresult) (concat
-                                     left
-                                     right
-                                     [[:not= (r rresult) rleft rright]])])))]
-    (second (h 0 ast))))
+                      [(r rresult ret)
+                       (concat
+                         left
+                         right
+                         [[:not= (r rresult ret) rleft rright]])])))]
+    (second (h 0 nil ast))))
 
 (defn run-registers
   ;;TODO: handle labels
@@ -420,56 +424,6 @@
           :not= (recur (inc i)
                        (assoc regs arg1 (if (== (get regs arg2) (get regs arg3))
                                           0 1))))))))
-
-(defn optimize-register-code
-  [code]
-  (let [is-jump? {:jump 1, :jump-if-zero 2}
-        make-labels (fn [code]
-                      (let [jump-positions (->> code
-                                                (filter (comp is-jump? first))
-                                                (map (fn [op] (get op (is-jump? (first op)))))
-                                                set)]
-                        (loop [i 0
-                               done []
-                               todo code]
-                          (if (seq todo)
-                            (let [done (if-let [i (jump-positions i)]
-                                         (conj done [:label i] (first todo))
-                                         (conj done (first todo)))]
-                              (recur (inc i) done (rest todo)))
-                            done))))
-        recalculate-jumps (fn [code]
-                            (reduce (fn [code [_ label]]
-                                      (let [idx (->> code
-                                                     (keep-indexed #(when (= [:label label] %2) %1))
-                                                     first)]
-                                        (->> code
-                                             (remove #{[:label label]})
-                                             (map (fn [[op :as e]]
-                                                    (if-let [j (is-jump? op)]
-                                                      (update e j #(if (= label %)
-                                                                     idx
-                                                                     %))
-                                                      e))))))
-                                    code
-                                    (->> code (filter (comp #{:label} first)))))
-        patterns {'[[:add ?t ?a ?b] [:loadr ?r ?t]] ['[?r ?a ?b] #(->> % (cons :add) vec)]}
-        ;; TODO: check for last read before write
-        apply-pattern (fn [code [pattern [result f]]]
-                        (let [len (count pattern)]
-                          (loop [done []
-                                 todo code]
-                            (if (seq todo)
-                              (if-let [match (d/q `[:find ~result
-                                                    :where ~@pattern]
-                                                  (take len todo))]
-                                (recur done (cons (f match) (drop len todo)))
-                                (recur (conj done (first todo)) (rest todo)))
-                              done))))]
-    (recalculate-jumps
-      (reduce apply-pattern
-              (make-labels code)
-              patterns))))
 
 (comment
 
@@ -511,10 +465,6 @@
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"7.63e-03"
-
-  (def opt-rc (optimize-register-code rc))
-  (bench (run-registers opt-rc))
-"5.85e-03"
+"4.78e-03"
 
   )

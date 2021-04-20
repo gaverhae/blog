@@ -47,37 +47,25 @@
   (is (= -13 ((t/stack-exec-case-jump stack-code)))))
 
 (def register-code
-  [[:load 2 100]
-   [:loadr 0 2]
-   [:load 4 1000]
-   [:loadr 1 4]
-   [:load 6 0]
-   [:loadr 7 1]
-   [:not= 8 6 7]
-   [:jump-if-zero 8 27]
-   [:loadr 10 0]
-   [:load 11 4]
-   [:add 12 10 11]
-   [:loadr 13 0]
-   [:add 14 12 13]
-   [:load 15 3]
-   [:add 16 14 15]
-   [:loadr 0 16]
-   [:loadr 18 0]
-   [:load 19 2]
-   [:add 20 18 19]
-   [:load 21 4]
-   [:add 22 20 21]
-   [:loadr 0 22]
-   [:load 24 -1]
-   [:loadr 25 1]
-   [:add 26 24 25]
-   [:loadr 1 26]
-   [:jump 4]
-   [:loadr 29 0]
-   [:return 29]])
+  [[:load 0 100]
+   [:load 1 1000]
+   [:load 4 0]
+   [:not= 5 4 1]
+   [:jump-if-zero 5 17]
+   [:load 7 4]
+   [:add 8 0 7]
+   [:add 9 8 0]
+   [:load 10 3]
+   [:add 0 9 10]
+   [:load 12 2]
+   [:add 13 0 12]
+   [:load 14 4]
+   [:add 0 13 14]
+   [:load 16 -1]
+   [:add 1 16 1]
+   [:jump 2]
+   [:return 0]])
 
 (deftest registers
   (is (= register-code (t/compile-register-ssa t/ast)))
-  (is (= -13 (t/run-registers register-code)))
-  (is (= -13 (t/run-registers (t/optimize-register-code register-code)))))
+  (is (= -13 (t/run-registers register-code))))
