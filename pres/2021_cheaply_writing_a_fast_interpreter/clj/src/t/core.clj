@@ -142,43 +142,32 @@
 
 (defn run-stack
   [code]
-  ;; TODO: remove m structure
-  (let [m {:code code
-           :pointer 0
-           :stack []}
-        push (fn [m v] (update m :stack conj v))
-        pop (fn [m] [(-> m :stack peek)
-                     (update m :stack pop)])
-        inc-pointer (fn [m] (update m :pointer inc))]
-    (loop [m m]
-      (let [[op arg] (get-in m [:code (:pointer m)])]
-        (case op
-          :push (recur (-> m
-                           (push arg)
-                           inc-pointer))
-          :get (recur (-> m
-                          (push (get-in m [:stack arg]))
-                          inc-pointer))
-          :not= (recur (let [[p1 m] (pop m)
-                             [p2 m] (pop m)]
-                         (-> m
-                             (push (if (== p1 p2) 0 1))
-                             inc-pointer)))
-          :add (recur (let [[p1 m] (pop m)
-                            [p2 m] (pop m)]
-                        (-> m
-                            (push (unchecked-add p1 p2))
-                            inc-pointer)))
-          :set (recur (let [[p m] (pop m)]
-                        (-> m
-                            (assoc-in [:stack arg] p)
-                            inc-pointer)))
-          :jump-if-zero (recur (let [[p m] (pop m)]
-                                 (if (zero? p)
-                                   (assoc m :pointer arg)
-                                   (update m :pointer inc))))
-          :jump (recur (assoc m :pointer arg))
-          :end (-> m :stack peek))))))
+  (loop [pc 0
+         stack []]
+    (let [[op arg] (code pc)]
+      (case op
+        :push (recur (inc pc) (conj stack arg))
+        :get (recur (inc pc) (conj stack (stack arg)))
+        :not= (let [p1 (peek stack)
+                    stack (pop stack)
+                    p2 (peek stack)
+                    stack (pop stack)]
+                (recur (inc pc) (conj stack (if (== p1 p2) 0 1))))
+        :add (let [p1 (peek stack)
+                   stack (pop stack)
+                   p2 (peek stack)
+                   stack (pop stack)]
+               (recur (inc pc) (conj stack (unchecked-add p1 p2))))
+        :set (let [p (peek stack)
+                   stack (pop stack)]
+               (recur (inc pc) (assoc stack arg p)))
+        :jump-if-zero (let [p (peek stack)
+                            stack (pop stack)]
+                        (if (zero? p)
+                          (recur (long arg) stack)
+                          (recur (inc pc) stack)))
+        :jump (recur (long arg) stack)
+        :end (peek stack)))))
 
 (defn stack-exec-cont
   [ops]
@@ -343,7 +332,6 @@
                  ~(concat ['case ip] segments)))))))
 
 (defn compile-register-ssa
-  ;;TODO: generate labels
   [ast]
   (let [max-var (fn max-var [[op & [arg1 arg2 :as args]]]
                   (case op
@@ -404,7 +392,6 @@
     (second (h 0 nil ast))))
 
 (defn run-registers
-  ;;TODO: handle labels
   [code]
   (let [tape (vec code)]
     (loop [i 0
@@ -434,10 +421,10 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.88e-06"
+"2.73e-06"
 
   (bench (naive-ast-walk ast))
-"5.83e-03"
+"5.90e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
@@ -445,26 +432,26 @@
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"2.61e-02"
+"4.52e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.14e-03"
+"5.23e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.43e-03"
+"1.41e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.94e-04"
+"6.79e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"6.01e-04"
+"5.84e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"4.78e-03"
+"4.32e-03"
 
   )
