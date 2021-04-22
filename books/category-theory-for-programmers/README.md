@@ -759,3 +759,185 @@ fmap (f . g) (a:as)
   = f (g a) : fmap f (fmap g as)
   = (f . g) a : (fmap f . fmap g) as
 ```
+
+### Chapter 8 - Functoriality
+
+A _bifunctor_ is a functor of two arguments, i.e. from C x D to E. We define
+composition in C x D as (f, g) . (f', g') = (f . f', g . g'). In Haskell, a
+(endo?) bifunctor (Hask x Hask -> Hask) can be defined with:
+
+```haskell
+class Bifunctor f where
+  bimap :: (a -> c) -> (b -> d) -> f a b -> f c d
+  bimap g h = first g . second h
+  first :: (a -> c) -> f a b -> f c b
+  first g = bimap g id
+  second :: (b -> d) -> f a b -> f a d
+  second = bimap id
+```
+
+Both `Either` and `(,)` have a natural `Bifunctor` instance. Since `Const ()`
+and `Identity` are also functors, any algebraic data type is functorial by
+construction. In Haskell, this construction (for bifunctors) can be written as:
+
+```haskell
+newtype BiComp bf fu gu a b = BiComp (bf (fu a) (gu b))
+instance (Bifunctor bf, Functor fu, Functor gu) => Bifunctor (BiComp bf fu gu)
+where
+  bimap f1 f2 (BiComp x) = BiComp ((bimap (fmap f1) (fmap f2)) x)
+```
+
+For example, this means that `Maybe` is a functor because it is built out of
+`Const ()` (= `Nothing`) and `Identity` (= `Just`) using `Either`.
+
+The `DeriveFunctor` Haskell extension lets the compiler automatically derive
+`fmap` implementations using `deriving Functor` on any algebraic data type.
+
+In a Kleisli category, we have `>=>` and `return` with the signatures:
+
+```haksell
+(>=>) :: (a -> k b) -> (b -> k c) -> (a -> k c)
+return :: a -> k a
+```
+
+which means we can define `fmap` (and thus make up a functor) with:
+```haskell
+fmap f = id >=> (\x -> return (f x))
+```
+
+All of those functors are called _covariant_ functors. There are also
+_contravariant_ functors, which are mappings that reverse morphisms (but apart
+from that still respect composition). In Haskell, they correspond to the class:
+
+``` haskell
+class Contravariant f where
+  contramap :: (b -> a) -> (f a -> f b)
+```
+
+The type constructor `(-> r)` is a contravariant functor with `contramap = flip
+(.)` (as opposed to `(a ->)` which is covariant with `fmap = .`).
+
+In Haskell, a type with two parameters such that one is covariant and the other
+is contravariant (like `->`) is called a `Profunctor` and defined by:
+
+```haskell
+class Profunctor p where
+  dimap :: (a -> b) -> (c -> d) -> p b c -> p a d
+  dimap f g = lmap f . rmap g
+  lmap :: (a -> b) -> p b c -> p a c
+  lmap f = dimap f id
+  rmap :: (b -> c) -> p a b -> p a c
+  rmap = dimap id
+```
+
+and thus
+
+```haskell
+instance Profunctor (->) where
+  lmap = flip (.)
+  rmap = (.)
+  dimap ab cd bc = cd . bc . ab
+```
+
+#### Challenges
+
+> 1. Show that the data type:
+>    ```haskell
+>    data Pair a b = Pair a b
+>    ```
+>    is a bifunctor. For additional credit implement all three methods of
+>    Bifunctor and use equational reasoning to show that these definitions are
+>    compatible with the default implementations whenever they can be applied.
+
+```haskell
+instance Bifunctor Pair where
+  bimap f g (Pair a b) = Pair (f a) (g b)
+  first f (Pair a b) = Pair (f a) b
+  second g (Pair a b) = Pair a (g b)
+```
+
+> 2. Show the isomorphism between the standard definition of `Maybe` and this
+>    desugaring:
+>    ```haskell
+>    type Maybe' a = Either (Const () a) (Identity a)
+>    ```
+>    Hint: Define two mappings between the two implementations. For additional
+>    credit, show that they are the inverse of each other using equational
+>    reasoning.
+
+```haskell
+pt :: Maybe' a -> Maybe a
+pt (Left _) = Nothing
+pt (Right (Identity a)) = Just a
+
+tp :: Maybe a -> Maybe' a
+rp Nothing = Left (Const ())
+rp (Just a) = Right (Identity a)
+```
+
+> 3. Let’s try another data structure. I call it a `PreList` because it’s a
+>    precursor to a `List`. It replaces recursion with a type parameter `b`.
+>    ```haskell
+>    data PreList a b = Nil | Cons a b
+>    ```
+>    You could recover our earlier definition of a `List` by recursively applying
+>    `PreList` to itself (we’ll see how it’s done when we talk about fixed
+>    points).
+>    Show that `PreList` is an instance of `Bifunctor`.
+
+```haskell
+instance Bifunctor PreList where
+  bimap f g Nil = Nil
+  bimap f g (Cons a b) = Cons (f a) (g b)
+  first f Nil = Nil
+  first f (Cons a b) = Cons (f a) b
+  second g Nil = Nil
+  second g (Cons a b) = Cons a (g b)
+```
+
+> 4. Show that the following data types define bifunctors in `a` and `b`:
+>    ```haskell
+>    data K2 c a b = K2 c
+>    data Fst a b = Fst a
+>    data Snd a b = Snd b
+>    ```
+>    For additional credit, check your solutions against Conor McBride’s paper
+>    [Clowns to the Left of me, Jokers to the Right][clowns].
+>    [clowns]: http://strictlypositive.org/CJ.pdf
+
+```haskell
+instance Bifunctor (K2 c) where
+  bimap _ _ (K2 c a b) = c
+  first _ (K2 c a b) = c
+  second _ (K2 c a b) = c
+instance Bifunctor Fst where
+  bimap f _ (Fst a) = Fst (f a)
+  first f (Fst a) = Fst (f a)
+  second _ f = f
+instance Bifunctor Snd where
+  bimap _ g (Snd b) = Snd (g b)
+  first _ s = s
+  second g (Snd b) = Snd (g b)
+```
+
+> 5. Define a `bifunctor` in a language other than Haskell. Implement `bimap`
+>    for a generic pair in that language.
+
+```clojure
+(defprotocol Bifunctor
+  (bimap [this f g])
+  (first [this f])
+  (second [this g]))
+(extend-protocol Bifunctor
+  clojure.lang.PersistentVector
+  (bimap [[a b] f g] [(f a) (g b)])
+  (first [[a b] f] [(f a) b])
+  (second [[a b] g] [a (g b)]))
+```
+
+> 6. Should `std::map` be considered a bifunctor or a profunctor in the two
+>    template arguments `Key` and `T`? How would you redesign this data type to
+>    make it so?
+
+I don't know C++. Changing keys to a map seems dangerous, but maybe a simple
+list of pairs (allowing repetition of keys) could be made into a bifunctor.
