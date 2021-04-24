@@ -349,52 +349,42 @@
         r (fn [i t] (or t (+ i max-var 1)))
         h (fn h [m [op & [arg1 arg2 :as args]]]
             (case op
-              :return (let [[r right] (h (assoc m :ret nil) arg1)]
-                        [nil (concat right
-                                     [[:return r]])])
-              :lit [(r (:cur m) (:ret m)) [[:load (r (:cur m) (:ret m)) arg1]]]
+              :return (let [[r m] (h (assoc m :ret nil) arg1)]
+                        [nil (update m :code concat [[:return r]])])
+              :lit [(r (-> m :code count) (:ret m)) (update m :code concat [[:load (r (-> m :code count) (:ret m)) arg1]])]
               :set (if (#{:lit :add} (first arg2))
                      (h (assoc m :ret arg1) arg2)
-                     (let [[r right] (h (assoc m :ret nil) arg2)]
+                     (let [[r m] (h (assoc m :ret nil) arg2)]
                        [nil
-                        (concat right [[:loadr arg1 r]])]))
+                        (-> m :code concat [[:loadr arg1 r]])]))
               :do [nil (->> args
-                            (reduce (fn [[m so-far] el]
-                                      (let [[_ code] (h (assoc m :ret nil) el)]
-                                        [(assoc m :cur (+ (:cur m) (count code)))
-                                         (concat so-far code)]))
-                                    [m []])
-                            second)]
-              :while (let [[rcond condition] (h (assoc m :ret nil) arg1)
-                           [_ body] (h (assoc m :cur (+ (:cur m) 1 (count condition))
-                                                :ret nil)
-                                       arg2)]
-                       [nil (concat condition
-                                    [[:jump-if-zero rcond (+ (:cur m) (count condition) 1 (count body) 1)]]
-                                    body
-                                    [[:jump (:cur m)]])])
-              :var [arg1 []]
-              :add (let [[rleft left] (h (assoc m :ret nil) arg1)
-                         [rright right] (h (assoc m :cur (+ (:cur m) (count left))
-                                                    :ret nil)
-                                           arg2)
-                         rresult (+ (:cur m) (count left) (count right))]
-                     [(r rresult (:ret m))
-                      (concat
-                        left
-                        right
-                        [[:add (r rresult (:ret m)) rleft rright]])])
-              :not= (let [[rleft left] (h (assoc m :ret nil) arg1)
-                          [rright right] (h (assoc m :cur (+ (:cur m) (count left))
-                                                     :ret nil)
-                                            arg2)
-                          rresult (+ (:cur m) (count left) (count right))]
-                      [(r rresult (:ret m))
-                       (concat
-                         left
-                         right
-                         [[:not= (r rresult (:ret m)) rleft rright]])])))]
-    (second (h {:cur 0, :ret nil} ast))))
+                            (reduce (fn [m el] (second (h (assoc m :ret nil) el)))
+                                    m))]
+              :while (let [start (-> m :code count)
+                           [rcond m] (h (assoc m :ret nil) arg1)
+                           m (update m :code concat [[:jump-if-zero rcond nil]])
+                           jump-idx (-> m :code count dec)
+                           [_ m] (h (assoc m :ret nil) arg2)
+                           m (update m :code concat [[:jump start]])]
+                       [nil (update m :code (fn [code]
+                                              (update (vec code) jump-idx assoc 2 (count code))))])
+              :var [arg1 m]
+              :add (let [ret (:ret m)
+                         [rleft m] (h (assoc m :ret nil) arg1)
+                         [rright m] (h (assoc m :ret nil) arg2)
+                         rresult (-> m :code count)]
+                     [(r rresult ret)
+                      (update m :code concat [[:add (r rresult ret) rleft rright]])])
+              :not= (let [ret (:ret m)
+                          [rleft m] (h (assoc m :ret nil) arg1)
+                          [rright m] (h (assoc m :ret nil) arg2)
+                          rresult (-> m :code count)]
+                      [(r rresult ret)
+                       (update m :code concat [[:not= (r rresult ret) rleft rright]])])))]
+    (-> (h {:ret nil, :code []} ast)
+        second
+        :code
+        vec)))
 
 (defn run-registers
   [code]
