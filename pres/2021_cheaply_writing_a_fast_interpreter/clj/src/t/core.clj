@@ -333,21 +333,20 @@
 
 (defn compile-register-ssa
   [ast]
-  (let [max-var (fn max-var [[op & [arg1 arg2 :as args]]]
-                  (case op
-                    :lit 0
-                    :return (max-var arg1)
-                    :not= (max (max-var arg1)
+  (let [max-var ((fn max-var [[op & [arg1 arg2 :as args]]]
+                   (case op
+                     :lit 0
+                     :return (max-var arg1)
+                     :not= (max (max-var arg1)
+                                (max-var arg2))
+                     :add (max (max-var arg1)
                                (max-var arg2))
-                    :add (max (max-var arg1)
-                              (max-var arg2))
-                    :var arg1
-                    :set (max arg1 (max-var arg2))
-                    :do (reduce max (map max-var args))
-                    :while (max (max-var arg1)
-                                (max-var arg2))))
-        r (let [m (max-var ast)]
-            (fn [i t] (or t (+ i m 1))))
+                     :var arg1
+                     :set (max arg1 (max-var arg2))
+                     :do (reduce max (map max-var args))
+                     :while (max (max-var arg1)
+                                 (max-var arg2)))) ast)
+        r (fn [i t] (or t (+ i max-var 1)))
         h (fn h [cur ret [op & [arg1 arg2 :as args]]]
             (case op
               :return (let [[r right] (h cur nil arg1)]
