@@ -409,6 +409,71 @@
 
 (comment
 
+  [:bind ma f]
+  [:return a]
+
+  (defmacro mdo
+    [bindings]
+    (if (#{0 1} (count bindings))
+      (throw (RuntimeException. "invalid number of elements in mdo bindings"))
+      (let [[n v & r] bindings]
+        (if (empty? r)
+          v
+          [:bind v `(fn [~n] (mdo ~r))]))))
+
+  (defn run
+    [ma]
+    (case (first ma)
+      :return (let [[_ a] ma] a)
+      :pure (let [[_ a] ma] a)
+      :bind (let [[_ ma f] ma] (run (f (run ma))))))
+
+  (run (mdo [a [:pure 15]
+             b [:pure 18]
+             _ [:return (+ a b)]]))
+
+  (defn run-output
+    [ma]
+    (case (first ma)
+      :return (let [[_ a] ma] [[] a])
+      :pure (let [[_ a] ma] [[] a])
+      :bind (let [[_ ma f] ma]
+              (let [[prev a] (run-output ma)
+                    [next b] (run-output (f a))]
+                [(concat prev next) b]))
+      :output (let [[_ l] ma] [[l] nil])))
+
+  (run-output (mdo [a [:pure 1]
+                    _ [:output a]
+                    b [:pure (+ a 3)]
+                    _ [:output b]
+                    c [:pure (+ b 4)]
+                    _ [:output c]
+                    result [:pure (* 3 c)]
+                    _ [:output result]
+                    _ [:return result]]))
+[(1 4 8 24) 24]
+
+  (defn run-stack
+    [stack ma]
+    (case (first ma)
+      :return (let [[_ a] ma] [stack a])
+      :pure (let [[_ a] ma] [stack a])
+      :bind (let [[_ ma f] ma]
+              (let [[new-stack a] (run-stack stack ma)]
+                (run-stack new-stack (f a))))
+      :pop [(pop stack) (peek stack)]
+      :push (let [[_ e] ma] [(conj stack e) nil])))
+
+  (run-stack [10 12] (mdo [a [:pop]
+                           b [:pop]
+                           _ [:push (+ a b)]]))
+[[22] nil]
+
+             )
+
+(comment
+
   (require '[criterium.core :as crit])
 
   (defmacro bench
