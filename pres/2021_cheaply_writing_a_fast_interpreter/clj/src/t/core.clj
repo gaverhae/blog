@@ -431,6 +431,18 @@
   (run (mdo [a [:pure 15]
              b [:pure 18]
              _ [:return (+ a b)]]))
+(defn mdo'
+    [bindings]
+    (if (#{0 1} (count bindings))
+      (throw (RuntimeException. "invalid number of elements in mdo bindings"))
+      (let [[n v & r] bindings]
+        (if (empty? r)
+          v
+          [:bind v `(fn [~n] (mdo ~r))]))))
+(mdo' ['a [:pure 15]
+             'b [:pure 18]
+             '_ [:return '(+ a b)]])
+[:bind [:pure 15] (fn [a] [:bind [:pure 18] (fn [b] [:return (+ a b)])])]
 
   (defn run-output
     [ma]
