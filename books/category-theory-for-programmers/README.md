@@ -696,8 +696,8 @@ No: identity is not preserved. With that definition, `fmap id (Just x)` is
 Identity:
 
 ```haskell
-fmap id f x = (id . f) x = id (f x) = f x
-(id f) x = f x
+fmap id f = id . f = f
+id f = f
 ```
 
 Composition:
@@ -717,7 +717,8 @@ fmap (f . g) h = (f . g) . h
 import java.util.function.Function;
 
 public final class Reader<R> {
-  public <A, B> Function<Function<R, A>, Function<R, B>> fmap(Function<A, B> f) {
+  private Reader() {}
+  public static <A, B> Function<Function<R, A>, Function<R, B>> fmap(Function<A, B> f) {
     return g -> r -> f.apply(g.apply(r));
   }
 }
@@ -751,6 +752,7 @@ Composition:
 ```haskell
 fmap (f . g) [] = []
 (fmap f . fmap g) [] = fmap f (fmap g []) = fmap f [] = []
+
 fmap (f . g) (a:as)
   = (f . g) a : fmap (f . g) as
 (fmap f . fmap g) (a:as)
@@ -941,3 +943,5 @@ instance Bifunctor Snd where
 
 I don't know C++. Changing keys to a map seems dangerous, but maybe a simple
 list of pairs (allowing repetition of keys) could be made into a bifunctor.
+
+### Chapter 9 - Function Types
