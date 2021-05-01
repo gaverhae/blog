@@ -331,6 +331,15 @@
                (loop [~ip (long 0)]
                  ~(concat ['case ip] segments)))))))
 
+(defmacro mdo
+  [bindings]
+  (if (#{0 1} (count bindings))
+    (throw (RuntimeException. "invalid number of elements in mdo bindings"))
+    (let [[n v & r] bindings]
+      (if (empty? r)
+        v
+        [:bind v `(fn [~n] (mdo ~r))]))))
+
 (defn compile-register-ssa
   [ast]
   (let [max-var ((fn max-var [[op & [arg1 arg2 :as args]]]
@@ -346,45 +355,59 @@
                      :do (reduce max (map max-var args))
                      :while (max (max-var arg1)
                                  (max-var arg2)))) ast)
-        r (fn [i t] (or t (+ i max-var 1)))
-        h (fn h [m [op & [arg1 arg2 :as args]]]
+        next-reg (fn [s] (-> s :code count (+ max-var) inc))
+        run (fn run [s ma]
+              (case (first ma)
+                :pure (let [[_ a] ma] [s a])
+                :bind (let [[_ ma f] ma]
+                        (let [[s a] (run s ma)]
+                          (run s (f a))))
+                :current-position [s (-> s :code count dec)]
+                :free-register [s (next-reg s)]
+                :emit (let [[_ code] ma]
+                        [(update s :code conj code) (next-reg s)])
+                :future [(-> s
+                             (update :code conj :placeholder)
+                             (update :nested conj (-> s :code count)))
+                         nil]
+                :resolve (let [[_ f] ma]
+                           [(-> s
+                                (update :code assoc (-> s :nested peek) (f (-> s :code count)))
+                                (update :nested pop))
+                            nil])))
+        h (fn h [[op & [arg1 arg2 :as args]] & [ret]]
             (case op
-              :return (let [[r m] (h (assoc m :ret nil) arg1)]
-                        [nil (update m :code concat [[:return r]])])
-              :lit [(r (-> m :code count) (:ret m)) (update m :code concat [[:load (r (-> m :code count) (:ret m)) arg1]])]
-              :set (if (#{:lit :add} (first arg2))
-                     (h (assoc m :ret arg1) arg2)
-                     (let [[r m] (h (assoc m :ret nil) arg2)]
-                       [nil
-                        (-> m :code concat [[:loadr arg1 r]])]))
-              :do [nil (->> args
-                            (reduce (fn [m el] (second (h (assoc m :ret nil) el)))
-                                    m))]
-              :while (let [start (-> m :code count)
-                           [rcond m] (h (assoc m :ret nil) arg1)
-                           m (update m :code concat [[:jump-if-zero rcond nil]])
-                           jump-idx (-> m :code count dec)
-                           [_ m] (h (assoc m :ret nil) arg2)
-                           m (update m :code concat [[:jump start]])]
-                       [nil (update m :code (fn [code]
-                                              (update (vec code) jump-idx assoc 2 (count code))))])
-              :var [arg1 m]
-              :add (let [ret (:ret m)
-                         [rleft m] (h (assoc m :ret nil) arg1)
-                         [rright m] (h (assoc m :ret nil) arg2)
-                         rresult (-> m :code count)]
-                     [(r rresult ret)
-                      (update m :code concat [[:add (r rresult ret) rleft rright]])])
-              :not= (let [ret (:ret m)
-                          [rleft m] (h (assoc m :ret nil) arg1)
-                          [rright m] (h (assoc m :ret nil) arg2)
-                          rresult (-> m :code count)]
-                      [(r rresult ret)
-                       (update m :code concat [[:not= (r rresult ret) rleft rright]])])))]
-    (-> (h {:ret nil, :code []} ast)
-        second
-        :code
-        vec)))
+              :return (mdo [r (h arg1)
+                            _ [:emit [:return r]]])
+              :lit (mdo [r (if ret [:pure ret] [:free-register])
+                         _ [:emit [:load r arg1]]])
+              :set (if (#{:lit :add :not=} (first arg2))
+                     (h arg2 arg1)
+                     (mdo [r (h arg2)
+                           _ [:emit [:loadr arg1 r]]]))
+              :do (if (empty? args)
+                    [:pure nil]
+                    (mdo [_ (h (first args))
+                          _ (h (cons :do (rest args)))]))
+              :while (mdo [before-condition [:current-position]
+                           condition (h arg1)
+                           _ [:future]
+                           body (h arg2)
+                           _ [:emit [:jump (inc before-condition)]]
+                           _ [:resolve (fn [pos] [:jump-if-zero condition pos])]])
+              :var [:pure arg1]
+              :add (mdo [left (h arg1)
+                         right (h arg2)
+                         r (if ret [:pure ret] [:free-register])
+                         _ [:emit [:add r left right]]])
+              :not= (mdo [left (h arg1)
+                          right (h arg2)
+                          r (if ret [:pure ret] [:free-register])
+                          _ [:emit [:not= r left right]]])))]
+    (-> (run {:nesting (), :code []}
+             (h ast))
+        first
+        :code)))
 
 (defn run-registers
   [code]
