@@ -142,7 +142,7 @@ instance Monad (State s) where return = SReturn; (>>=) = SBind
 data State s a where
   SBind :: State s a -> (a -> State s b) -> State s b
   SReturn :: a -> State s a
-  SPut :: s' -> State s' ()
+  SPut :: s -> State s ()
   SGet :: State s s
 
 exampleS = do
