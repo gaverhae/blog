@@ -355,7 +355,10 @@
                      :do (reduce max (map max-var args))
                      :while (max (max-var arg1)
                                  (max-var arg2)))) ast)
-        next-reg (fn [s] (-> s :code count (+ max-var) inc))
+        next-reg (fn [s] (+ (-> s :code count)
+                            (-> s :hoisted count)
+                            max-var
+                            1))
         run (fn run [s ma]
               (case (first ma)
                 :pure (let [[_ a] ma] [s a])
@@ -366,6 +369,8 @@
                 :free-register [s (next-reg s)]
                 :emit (let [[_ code] ma]
                         [(update s :code conj code) (next-reg s)])
+                :hoist (let [[_ idx v] ma]
+                         [(update s :hoisted assoc idx v) (next-reg s)])
                 :future [(-> s
                              (update :code conj :placeholder)
                              (update :nested conj (-> s :code count)))
@@ -379,8 +384,10 @@
             (case op
               :return (mdo [r (h arg1)
                             _ [:emit [:return r]]])
-              :lit (mdo [r (if ret [:pure ret] [:free-register])
-                         _ [:emit [:load r arg1]]])
+              :lit (if ret
+                     [:emit [:load ret arg1]]
+                     (mdo [r [:free-register]
+                           _ [:hoist r arg1]]))
               :set (if (#{:lit :add :not=} (first arg2))
                      (h arg2 arg1)
                      (mdo [r (h arg2)
@@ -404,16 +411,16 @@
                           right (h arg2)
                           r (if ret [:pure ret] [:free-register])
                           _ [:emit [:not= r left right]]])))]
-    (-> (run {:nesting (), :code []}
+    (-> (run {:nested (), :code [], :hoisted {}}
              (h ast))
         first
-        :code)))
+        (dissoc :nested))))
 
 (defn run-registers
-  [code]
+  [{:keys [code hoisted]}]
   (let [tape (vec code)]
     (loop [i 0
-           regs {}]
+           regs hoisted]
       (let [[ins arg1 arg2 arg3] (tape i)]
         (case ins
           :return (get regs arg1)
@@ -516,37 +523,37 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.73e-06"
+"2.66e-06"
 
   (bench (naive-ast-walk ast))
-"5.90e-03"
+"5.78e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"2.00e-03"
+"2.02e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"4.52e-03"
+"4.58e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.23e-03"
+"5.16e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.41e-03"
+"1.40e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.79e-04"
+"6.86e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.84e-04"
+"5.78e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"4.32e-03"
+"3.14e-03"
 
   )
