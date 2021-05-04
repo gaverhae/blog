@@ -418,24 +418,34 @@
 
 (defn run-registers
   [{:keys [code hoisted]}]
-  (let [tape (vec code)]
-    (loop [i 0
-           regs hoisted]
+  (let [max-reg (max (->> hoisted keys (reduce max))
+                     (->> code
+                          (remove (comp #{:jump} first))
+                          (map second)
+                          (reduce max)))
+        registers (long-array (inc max-reg))
+        tape (vec code)]
+    (doseq [[k v] hoisted]
+      (aset ^longs registers (int k) (long v)))
+    (loop [i 0]
       (let [[ins arg1 arg2 arg3] (tape i)]
         (case ins
-          :return (get regs arg1)
-          :load (recur (inc i) (assoc regs arg1 arg2))
-          :loadr (recur (inc i) (assoc regs arg1 (get regs arg2)))
-          :jump-if-zero (if (zero? (get regs arg1))
-                          (recur (long arg2) regs)
-                          (recur (inc i) regs))
-          :jump (recur (long arg1) regs)
-          :add (recur (inc i)
-                      (assoc regs arg1 (unchecked-add (get regs arg2)
-                                                      (get regs arg3))))
-          :not= (recur (inc i)
-                       (assoc regs arg1 (if (== (get regs arg2) (get regs arg3))
-                                          0 1))))))))
+          :return (aget registers (int arg1))
+          :load (do (aset registers (int arg1) (long arg2))
+                    (recur (inc i)))
+          :loadr (do (aset registers (int arg1) (aget registers (int arg2)))
+                     (recur (inc i)))
+          :jump-if-zero (if (zero? (aget registers (int arg1)))
+                          (recur (long arg2))
+                          (recur (inc i)))
+          :jump (recur (long arg1))
+          :add (do (aset registers (int arg1) (unchecked-add (aget registers (int arg2))
+                                                             (aget registers (int arg3))))
+                   (recur (inc i)))
+          :not= (do (aset registers (int arg1) (if (== (aget registers (int arg2))
+                                                       (aget registers (int arg3)))
+                                                 0 1))
+                    (recur (inc i))))))))
 
 (comment
 
@@ -554,6 +564,6 @@
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"3.14e-03"
+"1.09e-03"
 
   )
