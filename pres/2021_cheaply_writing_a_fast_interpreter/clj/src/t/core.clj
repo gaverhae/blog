@@ -1,5 +1,4 @@
-(ns t.core
-  (:require [datascript.core :as d]))
+(ns t.core)
 
 (defn baseline
   []
@@ -22,187 +21,184 @@
      [:set 1 [:add [:lit -1] [:var 1]]]]]
    [:return [:var 0]]])
 
+(defmacro match
+  [expr & cases]
+  `(case (first ~expr)
+     ~@(->> (partition 2 cases)
+            (mapcat (fn [[pat body]]
+                      [(first pat) `(let [~(vec (cons '_ (rest pat))) ~expr]
+                                      ~body)])))))
+
 (defn naive-ast-walk
   [expr]
   (let [h (fn h [expr env]
-            (case (first expr)
-              :do (reduce (fn [[_ env] expr] (h expr env))
-                          [nil env]
-                          (rest expr))
-              :set (let [[_ idx e] expr
-                         [v env] (h e env)]
-                     [nil (assoc env idx v)])
-              :lit [(second expr) env]
-              :not= (let [[_ e1 e2] expr
-                          [v1 env] (h e1 env)
-                          [v2 env] (h e2 env)]
-                      (if (== v1 v2)
-                        [0 env]
-                        [1 env]))
-              :var (let [[_ idx] expr]
-                     [(get env idx) env])
-              :add (let [[_ e1 e2] expr
-                         [v1 env] (h e1 env)
-                         [v2 env] (h e2 env)]
-                     [(unchecked-add v1 v2) env])
-              :while (let [[_ e-condition e-body] expr]
-                       (loop [env env]
-                         (let [[condition env] (h e-condition env)]
-                           (if (== condition 1)
-                             (let [[_ env] (h e-body env)]
-                               (recur env))
-                             [nil env]))))
-              :return (h (second expr) env)))]
+            (match expr
+              [:do & sub-exprs] (reduce (fn [[_ env] expr] (h expr env))
+                                        [nil env]
+                                        sub-exprs)
+              [:set idx e] (let [[v env] (h e env)]
+                             [nil (assoc env idx v)])
+              [:lit v] [v env]
+              [:not= e1 e2] (let [[v1 env] (h e1 env)
+                                  [v2 env] (h e2 env)]
+                              (if (== v1 v2)
+                                [0 env]
+                                [1 env]))
+              [:var idx] [(get env idx) env]
+              [:add e1 e2] (let [[v1 env] (h e1 env)
+                                 [v2 env] (h e2 env)]
+                             [(unchecked-add v1 v2) env])
+              [:while e-condition e-body] (loop [env env]
+                                            (let [[condition env] (h e-condition env)]
+                                              (if (== condition 1)
+                                                (let [[_ env] (h e-body env)]
+                                                  (recur env))
+                                                [nil env])))
+              [:return e] (h e env)))]
     (first (h expr {}))))
 
 (defn compile-to-closure
   [expr]
   (let [h (fn h [expr]
-            (case (first expr)
-              :do (let [do-body (reduce (fn [kont expr]
-                                          (let [f (h expr)]
-                                            (fn [env _]
-                                              (let [[v env] (f env)]
-                                                (kont env v)))))
-                                        (fn [env v] [v env])
-                                        (reverse (rest expr)))]
-                    (fn [env] (do-body env nil)))
-              :set (let [[_ idx e] expr
-                         f (h e)]
-                     (fn [env]
-                       (let [[v env] (f env)]
-                         [nil (assoc env idx v)])))
-              :lit (let [e (second expr)]
-                     (fn [env] [e env]))
-              :not= (let [[_ e1 e2] expr
-                          f1 (h e1)
-                          f2 (h e2)]
-                      (fn [env]
-                        (let [[v1 env] (f1 env)
-                              [v2 env] (f2 env)]
-                          (if (== v1 v2)
-                            [0 env]
-                            [1 env]))))
-              :var (let [[_ idx] expr]
-                     (fn [env] [(get env idx) env]))
-              :add (let [[_ e1 e2] expr
-                         f1 (h e1)
-                         f2 (h e2)]
-                     (fn [env]
-                       (let [[v1 env] (f1 env)
-                             [v2 env] (f2 env)]
-                         [(unchecked-add v1 v2) env])))
-              :while (let [[_ e-condition e-body] expr
-                           f-condition (h e-condition)
-                           f-body (h e-body)]
-                       (fn [env]
-                         (let [[condition env] (f-condition env)]
-                           (if (== condition 1)
-                             (let [[_ env] (f-body env)]
-                               (recur env))
-                             [nil env]))))
-              :return (h (second expr))))
+            (match expr
+              [:do & sub-exprs] (let [do-body (reduce (fn [kont expr]
+                                                        (let [f (h expr)]
+                                                          (fn [env _]
+                                                            (let [[v env] (f env)]
+                                                              (kont env v)))))
+                                                      (fn [env v] [v env])
+                                                      (reverse sub-exprs))]
+                                  (fn [env] (do-body env nil)))
+              [:set idx e] (let [f (h e)]
+                             (fn [env]
+                               (let [[v env] (f env)]
+                                 [nil (assoc env idx v)])))
+              [:lit e] (fn [env] [e env])
+              [:not=  e1 e2] (let [f1 (h e1)
+                                   f2 (h e2)]
+                               (fn [env]
+                                 (let [[v1 env] (f1 env)
+                                       [v2 env] (f2 env)]
+                                   (if (== v1 v2)
+                                     [0 env]
+                                     [1 env]))))
+              [:var idx] (fn [env] [(get env idx) env])
+              [:add e1 e2] (let [f1 (h e1)
+                                 f2 (h e2)]
+                             (fn [env]
+                               (let [[v1 env] (f1 env)
+                                     [v2 env] (f2 env)]
+                                 [(unchecked-add v1 v2) env])))
+              [:while e-condition e-body] (let [f-condition (h e-condition)
+                                                f-body (h e-body)]
+                                            (fn [env]
+                                              (let [[condition env] (f-condition env)]
+                                                (if (== condition 1)
+                                                  (let [[_ env] (f-body env)]
+                                                    (recur env))
+                                                  [nil env]))))
+              [:return e] (h e)))
         cc (h expr)]
     #(first (cc {}))))
 
 (defn compile-stack
   [ast]
-  (let [h (fn h [cur [op & args]]
-            (case op
-              :do (->> args
-                       (reduce (fn [[cur so-far] el]
-                            (let [code (h cur el)]
-                              [(+ cur (count code))
-                               (concat so-far code)]))
-                          [0 []])
-                       second)
-              :lit [[:push (first args)]]
-              :set (concat (h cur (second args))
-                           [[:set (first args)]])
-              :add (let [left (h cur (first args))
-                         right (h (+ cur (count left)) (second args))]
-                     (concat left right [[:add]]))
-              :var [[:get (first args)]]
-              :not= (let [left (h cur (first args))
-                          right (h (+ cur (count left)) (second args))]
-                      (concat left right [[:not=]]))
-              :while (let [condition (h cur (first args))
-                           body (h (+ cur 1 (count condition)) (second args))]
-                       (concat condition
-                               [[:jump-if-zero (+ cur
-                                                  (count condition)
-                                                  1
-                                                  (count body)
-                                                  1)]]
-                               body
-                               [[:jump cur]]))
-              :return (let [r (h cur (first args))]
-                        (concat r [[:end]]))))]
+  (let [h (fn h [cur expr]
+            (match expr
+              [:do & sub-exprs] (->> sub-exprs
+                                     (reduce (fn [[cur so-far] el]
+                                               (let [code (h cur el)]
+                                                 [(+ cur (count code))
+                                                  (concat so-far code)]))
+                                             [0 []])
+                                     second)
+              [:lit v] [[:push v]]
+              [:set idx e] (concat (h cur e)
+                                   [[:set idx]])
+              [:add e1 e2] (let [left (h cur e1)
+                                 right (h (+ cur (count left)) e2)]
+                             (concat left right [[:add]]))
+              [:var idx] [[:get idx]]
+              [:not= e1 e2] (let [left (h cur e1)
+                                  right (h (+ cur (count left)) e2)]
+                              (concat left right [[:not=]]))
+              [:while cnd bod] (let [condition (h cur cnd)
+                                     body (h (+ cur 1 (count condition)) bod)]
+                                 (concat condition
+                                         [[:jump-if-zero (+ cur
+                                                            (count condition)
+                                                            1
+                                                            (count body)
+                                                            1)]]
+                                         body
+                                         [[:jump cur]]))
+              [:return e] (let [r (h cur e)]
+                            (concat r [[:end]]))))]
     (vec (h 0 ast))))
 
 (defn run-stack
   [code]
   (loop [pc 0
          stack []]
-    (let [[op arg] (code pc)]
-      (case op
-        :push (recur (inc pc) (conj stack arg))
-        :get (recur (inc pc) (conj stack (stack arg)))
-        :not= (let [p1 (peek stack)
-                    stack (pop stack)
-                    p2 (peek stack)
-                    stack (pop stack)]
-                (recur (inc pc) (conj stack (if (== p1 p2) 0 1))))
-        :add (let [p1 (peek stack)
-                   stack (pop stack)
-                   p2 (peek stack)
-                   stack (pop stack)]
-               (recur (inc pc) (conj stack (unchecked-add p1 p2))))
-        :set (let [p (peek stack)
-                   stack (pop stack)]
-               (recur (inc pc) (assoc stack arg p)))
-        :jump-if-zero (let [p (peek stack)
-                            stack (pop stack)]
-                        (if (zero? p)
-                          (recur (long arg) stack)
-                          (recur (inc pc) stack)))
-        :jump (recur (long arg) stack)
-        :end (peek stack)))))
+    (let [op (code pc)]
+      (match op
+        [:push val] (recur (inc pc) (conj stack val))
+        [:get idx] (recur (inc pc) (conj stack (stack idx)))
+        [:not=] (let [p1 (peek stack)
+                      stack (pop stack)
+                      p2 (peek stack)
+                      stack (pop stack)]
+                  (recur (inc pc) (conj stack (if (== p1 p2) 0 1))))
+        [:add] (let [p1 (peek stack)
+                     stack (pop stack)
+                     p2 (peek stack)
+                     stack (pop stack)]
+                 (recur (inc pc) (conj stack (unchecked-add p1 p2))))
+        [:set idx] (let [p (peek stack)
+                         stack (pop stack)]
+                     (recur (inc pc) (assoc stack idx p)))
+        [:jump-if-zero to] (let [p (peek stack)
+                                 stack (pop stack)]
+                             (if (zero? p)
+                               (recur (long to) stack)
+                               (recur (inc pc) stack)))
+        [:jump to] (recur (long to) stack)
+        [:end] (peek stack)))))
 
 (defn stack-exec-cont
   [ops]
   (let [compile-stack-op
-        (fn [[op arg]]
-          (case op
-            :push (fn [^long ip stack]
-                    [(inc ip) (conj stack arg)])
-            :get (fn [^long ip stack]
-                   [(inc ip) (conj stack (get stack arg))])
-            :set (fn [^long ip stack]
-                   (let [p (peek stack)
-                         stack (pop stack)]
-                     [(inc ip) (assoc stack arg p)]))
-            :add (fn [^long ip stack]
-                   (let [p1 (peek stack)
-                         stack (pop stack)
-                         p2 (peek stack)
-                         stack (pop stack)]
-                     [(inc ip) (conj stack (unchecked-add p2 p1))]))
-            :not= (fn [^long ip stack]
-                   (let [p1 (peek stack)
-                         stack (pop stack)
-                         p2 (peek stack)
-                         stack (pop stack)]
-                     [(inc ip) (conj stack (if (== p1 p2) 0 1))]))
-            :jump-if-zero (fn [^long ip stack]
-                            (let [p ^long (peek stack)
-                                  stack (pop stack)
-                                  nip (if (zero? p) arg (inc ip))]
-                              [nip stack]))
-            :jump (fn [^long _ stack]
-                    [arg stack])
-            :end (fn [^long _ stack]
-                    [nil stack])))
+        (fn [op]
+          (match op
+            [:push val] (fn [^long ip stack]
+                          [(inc ip) (conj stack val)])
+            [:get idx] (fn [^long ip stack]
+                         [(inc ip) (conj stack (get stack idx))])
+            [:set idx] (fn [^long ip stack]
+                         (let [p (peek stack)
+                               stack (pop stack)]
+                           [(inc ip) (assoc stack idx p)]))
+            [:add] (fn [^long ip stack]
+                     (let [p1 (peek stack)
+                           stack (pop stack)
+                           p2 (peek stack)
+                           stack (pop stack)]
+                       [(inc ip) (conj stack (unchecked-add p2 p1))]))
+            [:not=] (fn [^long ip stack]
+                      (let [p1 (peek stack)
+                            stack (pop stack)
+                            p2 (peek stack)
+                            stack (pop stack)]
+                        [(inc ip) (conj stack (if (== p1 p2) 0 1))]))
+            [:jump-if-zero to] (fn [^long ip stack]
+                                 (let [p ^long (peek stack)
+                                       stack (pop stack)
+                                       nip (if (zero? p) to (inc ip))]
+                                   [nip stack]))
+            [:jump to] (fn [^long _ stack]
+                         [to stack])
+            [:end] (fn [^long _ stack]
+                     [nil stack])))
         tape (vec (map compile-stack-op ops))]
   (fn []
     (loop [[ip? stack] ((tape 0) 0 [])]
@@ -213,34 +209,34 @@
 (defn stack-exec-mut
   [ops]
   (let [compile-stack-op
-        (fn [[op arg]]
-          (case op
-            :push (fn ^long [^long ip ^java.util.Stack stack]
-                    (.push stack arg)
-                    (unchecked-inc ip))
-            :get (let [idx (int arg)]
-                   (fn ^long [^long ip ^java.util.Stack stack]
-                     (.push stack (.get stack idx))
-                     (unchecked-inc ip)))
-            :set (let [idx (int arg)]
-                   (fn ^long [^long ip ^java.util.Stack stack]
-                     (.set stack idx (.pop stack))
-                     (unchecked-inc ip)))
-            :add (fn ^long [^long ip ^java.util.Stack stack]
-                   (.push stack (unchecked-add (.pop stack) (.pop stack)))
-                   (unchecked-inc ip))
-            :not= (fn ^long [^long ip ^java.util.Stack stack]
-                    (.push stack (if (== (.pop stack) (.pop stack)) 0 1))
-                    (unchecked-inc ip))
-            :jump-if-zero (fn ^long [^long ip ^java.util.Stack stack]
-                            (if (zero? (.pop stack))
-                              (long arg)
-                              (unchecked-inc ip)))
-            :jump (let [idx (long arg)]
-                    (fn ^long [^long _ ^java.util.Stack _]
-                      arg))
-            :end (fn ^long [^long _ ^java.util.Stack _]
-                    (long -1))))
+        (fn [op]
+          (match op
+            [:push v] (fn ^long [^long ip ^java.util.Stack stack]
+                        (.push stack v)
+                        (unchecked-inc ip))
+            [:get idx] (let [idx (int idx)]
+                         (fn ^long [^long ip ^java.util.Stack stack]
+                           (.push stack (.get stack idx))
+                           (unchecked-inc ip)))
+            [:set idx] (let [idx (int idx)]
+                         (fn ^long [^long ip ^java.util.Stack stack]
+                           (.set stack idx (.pop stack))
+                           (unchecked-inc ip)))
+            [:add] (fn ^long [^long ip ^java.util.Stack stack]
+                     (.push stack (unchecked-add (.pop stack) (.pop stack)))
+                     (unchecked-inc ip))
+            [:not=] (fn ^long [^long ip ^java.util.Stack stack]
+                      (.push stack (if (== (.pop stack) (.pop stack)) 0 1))
+                      (unchecked-inc ip))
+            [:jump-if-zero to] (fn ^long [^long ip ^java.util.Stack stack]
+                                 (if (zero? (.pop stack))
+                                   (long to)
+                                   (unchecked-inc ip)))
+            [:jump to] (let [idx (long to)]
+                         (fn ^long [^long _ ^java.util.Stack _]
+                           to))
+            [:end] (fn ^long [^long _ ^java.util.Stack _]
+                     (long -1))))
         tape ^"[Ljava.lang.Object;" (into-array Object (map compile-stack-op ops))]
   (fn []
     (let [stack (java.util.Stack.)]
@@ -263,23 +259,23 @@
          (loop [~ip (long 0)]
            ~(->> ops
                  (mapcat
-                   (fn [idx [op arg]]
-                     [idx (case op
-                            :push `(do (.push ~stack ~arg)
-                                       (recur ~(inc idx)))
-                            :get `(do (.push ~stack (.get ~stack ~arg))
-                                      (recur ~(inc idx)))
-                            :set `(do (.set ~stack ~arg (.pop ~stack))
-                                      (recur ~(inc idx)))
-                            :add `(do (.push ~stack (unchecked-add (.pop ~stack) (.pop ~stack)))
-                                      (recur ~(inc idx)))
-                            :not= `(do (.push ~stack (if (== (.pop ~stack) (.pop ~stack)) 0 1))
-                                       (recur ~(inc idx)))
-                            :jump-if-zero `(do (if (zero? (.pop ~stack))
-                                                 (recur ~arg)
-                                                 (recur ~(inc idx))))
-                            :jump `(recur ~arg)
-                            :end `(.pop ~stack))])
+                   (fn [idx op]
+                     [idx (match op
+                            [:push v] `(do (.push ~stack ~v)
+                                           (recur ~(inc idx)))
+                            [:get i] `(do (.push ~stack (.get ~stack ~i))
+                                            (recur ~(inc idx)))
+                            [:set i] `(do (.set ~stack ~i (.pop ~stack))
+                                            (recur ~(inc idx)))
+                            [:add] `(do (.push ~stack (unchecked-add (.pop ~stack) (.pop ~stack)))
+                                        (recur ~(inc idx)))
+                            [:not=] `(do (.push ~stack (if (== (.pop ~stack) (.pop ~stack)) 0 1))
+                                         (recur ~(inc idx)))
+                            [:jump-if-zero to] `(do (if (zero? (.pop ~stack))
+                                                      (recur ~to)
+                                                      (recur ~(inc idx))))
+                            [:jump to] `(recur ~to)
+                            [:end] `(.pop ~stack))])
                    (range))
                  (concat ['case ip]))))))))
 
@@ -305,24 +301,24 @@
                                         (empty? tail) [code]
                                         (= :jump-if-zero op) [(conj code (nest-jiz tail))]
                                         :else (cons code (nest-jiz tail)))))
-                                   (map (fn compile-op [[op arg tail]]
-                                          (case op
-                                            :push `(.push ~stack ~arg)
-                                            :get `(.push ~stack (.get ~stack ~arg))
-                                            :set `(.set ~stack ~arg (.pop ~stack))
-                                            :add `(.push ~stack
-                                                         (unchecked-add (.pop ~stack)
-                                                                        (.pop ~stack)))
-                                            :not= `(.push ~stack
-                                                          (if (== (.pop ~stack)
-                                                                  (.pop ~stack))
-                                                            0
-                                                            1))
-                                            :jump-if-zero `(if (zero? (.pop ~stack))
-                                                             (recur ~arg)
-                                                             (do ~@(map compile-op tail)))
-                                            :jump `(recur ~arg)
-                                            :end `(.get ~stack 0))))
+                                   (map (fn compile-op [op]
+                                          (match op
+                                            [:push v] `(.push ~stack ~v)
+                                            [:get i] `(.push ~stack (.get ~stack ~i))
+                                            [:set i] `(.set ~stack ~i (.pop ~stack))
+                                            [:add] `(.push ~stack
+                                                           (unchecked-add (.pop ~stack)
+                                                                          (.pop ~stack)))
+                                            [:not=] `(.push ~stack
+                                                            (if (== (.pop ~stack)
+                                                                    (.pop ~stack))
+                                                              0
+                                                              1))
+                                            [:jump-if-zero to tail] `(if (zero? (.pop ~stack))
+                                                                  (recur ~to)
+                                                                  (do ~@(map compile-op tail)))
+                                            [:jump to] `(recur ~to)
+                                            [:end] `(.get ~stack 0))))
                                    (cons 'do))])))]
     (eval `(fn []
              (let [~stack (java.util.Stack.)]
@@ -342,75 +338,71 @@
 
 (defn compile-register-ssa
   [ast]
-  (let [max-var ((fn max-var [[op & [arg1 arg2 :as args]]]
-                   (case op
-                     :lit 0
-                     :return (max-var arg1)
-                     :not= (max (max-var arg1)
-                                (max-var arg2))
-                     :add (max (max-var arg1)
-                               (max-var arg2))
-                     :var arg1
-                     :set (max arg1 (max-var arg2))
-                     :do (reduce max (map max-var args))
-                     :while (max (max-var arg1)
-                                 (max-var arg2)))) ast)
+  (let [max-var ((fn max-var [op]
+                   (match op
+                     [:lit _] 0
+                     [:return e] (max-var e)
+                     [:not= e1 e2] (max (max-var e1)
+                                        (max-var e2))
+                     [:add e1 e2] (max (max-var e1)
+                                       (max-var e2))
+                     [:var i] i
+                     [:set i e] (max i (max-var e))
+                     [:do & es] (reduce max (map max-var es))
+                     [:while c b] (max (max-var c)
+                                       (max-var b)))) ast)
         next-reg (fn [s] (+ (-> s :code count)
                             (-> s :hoisted count)
                             max-var
                             1))
         run (fn run [s ma]
-              (case (first ma)
-                :pure (let [[_ a] ma] [s a])
-                :bind (let [[_ ma f] ma]
-                        (let [[s a] (run s ma)]
-                          (run s (f a))))
-                :current-position [s (-> s :code count dec)]
-                :free-register [s (next-reg s)]
-                :emit (let [[_ code] ma]
-                        [(update s :code conj code) (next-reg s)])
-                :hoist (let [[_ idx v] ma]
-                         [(update s :hoisted assoc idx v) (next-reg s)])
-                :future [(-> s
-                             (update :code conj :placeholder)
-                             (update :nested conj (-> s :code count)))
-                         nil]
-                :resolve (let [[_ f] ma]
-                           [(-> s
-                                (update :code assoc (-> s :nested peek) (f (-> s :code count)))
-                                (update :nested pop))
-                            nil])))
-        h (fn h [[op & [arg1 arg2 :as args]] & [ret]]
-            (case op
-              :return (mdo [r (h arg1)
-                            _ [:emit [:return r]]])
-              :lit (if ret
-                     [:emit [:load ret arg1]]
-                     (mdo [r [:free-register]
-                           _ [:hoist r arg1]]))
-              :set (if (#{:lit :add :not=} (first arg2))
-                     (h arg2 arg1)
-                     (mdo [r (h arg2)
-                           _ [:emit [:loadr arg1 r]]]))
-              :do (if (empty? args)
-                    [:pure nil]
-                    (mdo [_ (h (first args))
-                          _ (h (cons :do (rest args)))]))
-              :while (mdo [before-condition [:current-position]
-                           condition (h arg1)
-                           _ [:future]
-                           body (h arg2)
-                           _ [:emit [:jump (inc before-condition)]]
-                           _ [:resolve (fn [pos] [:jump-if-zero condition pos])]])
-              :var [:pure arg1]
-              :add (mdo [left (h arg1)
-                         right (h arg2)
-                         r (if ret [:pure ret] [:free-register])
-                         _ [:emit [:add r left right]]])
-              :not= (mdo [left (h arg1)
-                          right (h arg2)
-                          r (if ret [:pure ret] [:free-register])
-                          _ [:emit [:not= r left right]]])))]
+              (match ma
+                [:pure a] [s a]
+                [:bind ma f] (let [[s a] (run s ma)]
+                               (run s (f a)))
+                [:current-position] [s (-> s :code count dec)]
+                [:free-register] [s (next-reg s)]
+                [:emit code] [(update s :code conj code) (next-reg s)]
+                [:hoist idx v] [(update s :hoisted assoc idx v) (next-reg s)]
+                [:future] [(-> s
+                               (update :code conj :placeholder)
+                               (update :nested conj (-> s :code count)))
+                           nil]
+                [:resolve f] [(-> s
+                                  (update :code assoc (-> s :nested peek) (f (-> s :code count)))
+                                  (update :nested pop))
+                              nil]))
+        h (fn h [op & [ret]]
+            (match op
+              [:return e] (mdo [r (h e)
+                                _ [:emit [:return r]]])
+              [:lit v] (if ret
+                         [:emit [:load ret v]]
+                         (mdo [r [:free-register]
+                               _ [:hoist r v]]))
+              [:set idx e] (if (#{:lit :add :not=} (first e))
+                             (h e idx)
+                             (mdo [r (h e)
+                                   _ [:emit [:loadr idx r]]]))
+              [:do & sub] (if (empty? sub)
+                            [:pure nil]
+                            (mdo [_ (h (first sub))
+                                  _ (h (cons :do (rest sub)))]))
+              [:while cnd bod] (mdo [before-condition [:current-position]
+                                     condition (h cnd)
+                                     _ [:future]
+                                     body (h bod)
+                                     _ [:emit [:jump (inc before-condition)]]
+                                     _ [:resolve (fn [pos] [:jump-if-zero condition pos])]])
+              [:var idx] [:pure idx]
+              [:add e1 e2] (mdo [left (h e1)
+                                 right (h e2)
+                                 r (if ret [:pure ret] [:free-register])
+                                 _ [:emit [:add r left right]]])
+              [:not= e1 e2] (mdo [left (h e1)
+                                  right (h e2)
+                                  r (if ret [:pure ret] [:free-register])
+                                  _ [:emit [:not= r left right]]])))]
     (-> (run {:nested (), :code [], :hoisted {}}
              (h ast))
         first
@@ -428,49 +420,42 @@
     (doseq [[k v] hoisted]
       (aset ^longs registers (int k) (long v)))
     (loop [i 0]
-      (let [[ins arg1 arg2 arg3] (tape i)]
-        (case ins
-          :return (aget registers (int arg1))
-          :load (do (aset registers (int arg1) (long arg2))
-                    (recur (inc i)))
-          :loadr (do (aset registers (int arg1) (aget registers (int arg2)))
-                     (recur (inc i)))
-          :jump-if-zero (if (zero? (aget registers (int arg1)))
-                          (recur (long arg2))
+      (let [ins (tape i)]
+        (match ins
+          [:return r] (aget registers (int r))
+          [:load r v] (do (aset registers (int r) (long v))
                           (recur (inc i)))
-          :jump (recur (long arg1))
-          :add (do (aset registers (int arg1) (unchecked-add (aget registers (int arg2))
-                                                             (aget registers (int arg3))))
-                   (recur (inc i)))
-          :not= (do (aset registers (int arg1) (if (== (aget registers (int arg2))
-                                                       (aget registers (int arg3)))
-                                                 0 1))
-                    (recur (inc i))))))))
+          [:loadr into from] (do (aset registers (int into) (aget registers (int from)))
+                                 (recur (inc i)))
+          [:jump-if-zero r to] (if (zero? (aget registers (int r)))
+                                 (recur (long to))
+                                 (recur (inc i)))
+          [:jump to] (recur (long to))
+          [:add result op1 op2] (do (aset registers (int result) (unchecked-add (aget registers (int op1))
+                                                                                (aget registers (int op2))))
+                                    (recur (inc i)))
+          [:not= result op1 op2] (do (aset registers (int result) (if (== (aget registers (int op1))
+                                                                          (aget registers (int op2)))
+                                                                    0 1))
+                                     (recur (inc i))))))))
 
 (comment
 
   [:bind ma f]
   [:return a]
 
-  (defmacro mdo
-    [bindings]
-    (if (#{0 1} (count bindings))
-      (throw (RuntimeException. "invalid number of elements in mdo bindings"))
-      (let [[n v & r] bindings]
-        (if (empty? r)
-          v
-          [:bind v `(fn [~n] (mdo ~r))]))))
-
   (defn run
     [ma]
-    (case (first ma)
-      :return (let [[_ a] ma] a)
-      :pure (let [[_ a] ma] a)
-      :bind (let [[_ ma f] ma] (run (f (run ma))))))
+    (match ma
+      [:return v] v
+      [:pure v] v
+      [:bind ma f] (run (f (run ma)))))
 
   (run (mdo [a [:pure 15]
              b [:pure 18]
              _ [:return (+ a b)]]))
+33
+
 (defn mdo'
     [bindings]
     (if (#{0 1} (count bindings))
@@ -486,14 +471,13 @@
 
   (defn run-output
     [ma]
-    (case (first ma)
-      :return (let [[_ a] ma] [[] a])
-      :pure (let [[_ a] ma] [[] a])
-      :bind (let [[_ ma f] ma]
-              (let [[prev a] (run-output ma)
-                    [next b] (run-output (f a))]
-                [(concat prev next) b]))
-      :output (let [[_ l] ma] [[l] nil])))
+    (match ma
+      [:return v] [[] v]
+      [:pure v] [[] v]
+      [:bind ma f] (let [[prev a] (run-output ma)
+                         [next b] (run-output (f a))]
+                     [(concat prev next) b])
+      [:output l] [[l] nil]))
 
   (run-output (mdo [a [:pure 1]
                     _ [:output a]
@@ -508,14 +492,13 @@
 
   (defn run-stack
     [stack ma]
-    (case (first ma)
-      :return (let [[_ a] ma] [stack a])
-      :pure (let [[_ a] ma] [stack a])
-      :bind (let [[_ ma f] ma]
-              (let [[new-stack a] (run-stack stack ma)]
-                (run-stack new-stack (f a))))
-      :pop [(pop stack) (peek stack)]
-      :push (let [[_ e] ma] [(conj stack e) nil])))
+    (match ma
+      [:return v] [stack v]
+      [:pure v] [stack v]
+      [:bind ma f] (let [[new-stack a] (run-stack stack ma)]
+                     (run-stack new-stack (f a)))
+      [:pop] [(pop stack) (peek stack)]
+      [:push e] [(conj stack e) nil]))
 
   (run-stack [10 12] (mdo [a [:pop]
                            b [:pop]
@@ -533,37 +516,37 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.66e-06"
+"2.71e-06"
 
   (bench (naive-ast-walk ast))
-"5.78e-03"
+"5.26e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"2.02e-03"
+"2.07e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"4.58e-03"
+"6.21e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.16e-03"
+"5.11e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.40e-03"
+"1.37e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.86e-04"
+"6.82e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.78e-04"
+"5.73e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"1.09e-03"
+"1.88e-03"
 
   )
