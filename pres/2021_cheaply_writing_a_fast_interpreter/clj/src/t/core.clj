@@ -351,19 +351,15 @@
                      [:do & es] (reduce max (map max-var es))
                      [:while c b] (max (max-var c)
                                        (max-var b)))) ast)
-        next-reg (fn [s] (+ (-> s :code count)
-                            (-> s :hoisted count)
-                            max-var
-                            1))
         run (fn run [s ma]
               (match ma
                 [:pure a] [s a]
                 [:bind ma f] (let [[s a] (run s ma)]
                                (run s (f a)))
                 [:current-position] [s (-> s :code count dec)]
-                [:free-register] [s (next-reg s)]
-                [:emit code] [(update s :code conj code) (next-reg s)]
-                [:hoist idx v] [(update s :hoisted assoc idx v) (next-reg s)]
+                [:free-register] [(update s :reg inc) (:reg s)]
+                [:emit code] [(update s :code conj code) nil]
+                [:hoist idx v] [(update s :hoisted assoc idx v) nil]
                 [:future] [(-> s
                                (update :code conj :placeholder)
                                (update :nested conj (-> s :code count)))
@@ -379,7 +375,8 @@
               [:lit v] (if ret
                          [:emit [:load ret v]]
                          (mdo [r [:free-register]
-                               _ [:hoist r v]]))
+                               _ [:hoist r v]
+                               _ [:pure r]]))
               [:set idx e] (if (#{:lit :add :not=} (first e))
                              (h e idx)
                              (mdo [r (h e)
@@ -398,15 +395,17 @@
               [:add e1 e2] (mdo [left (h e1)
                                  right (h e2)
                                  r (if ret [:pure ret] [:free-register])
-                                 _ [:emit [:add r left right]]])
+                                 _ [:emit [:add r left right]]
+                                 _ [:pure r]])
               [:not= e1 e2] (mdo [left (h e1)
                                   right (h e2)
                                   r (if ret [:pure ret] [:free-register])
-                                  _ [:emit [:not= r left right]]])))]
-    (-> (run {:nested (), :code [], :hoisted {}}
+                                  _ [:emit [:not= r left right]]
+                                  _ [:pure r]])))]
+    (-> (run {:nested (), :code [], :hoisted {}, :reg (inc max-var)}
              (h ast))
         first
-        (dissoc :nested))))
+        (dissoc :nested :reg))))
 
 (defn run-registers
   [{:keys [code hoisted]}]

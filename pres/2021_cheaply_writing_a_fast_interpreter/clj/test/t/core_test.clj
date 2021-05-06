@@ -47,17 +47,17 @@
   (is (= -13 ((t/stack-exec-case-jump stack-code)))))
 
 (def register-code
-  {:hoisted {4 0, 7 4, 10 3, 12 2, 14 4, 16 -1}
+  {:hoisted {2 0, 4 4, 7 3, 8 2, 10 4, 11 -1}
    :code [[:load 0 100]
           [:load 1 1000]
-          [:not= 5 4 1]
-          [:jump-if-zero 5 11]
-          [:add 8 0 7]
-          [:add 9 8 0]
+          [:not= 3 2 1]
+          [:jump-if-zero 3 11]
+          [:add 5 0 4]
+          [:add 6 5 0]
+          [:add 0 6 7]
+          [:add 9 0 8]
           [:add 0 9 10]
-          [:add 13 0 12]
-          [:add 0 13 14]
-          [:add 1 16 1]
+          [:add 1 11 1]
           [:jump 2]
           [:return 0]]})
 
