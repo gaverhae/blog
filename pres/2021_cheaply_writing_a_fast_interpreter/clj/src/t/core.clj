@@ -23,11 +23,13 @@
 
 (defmacro match
   [expr & cases]
-  `(case (first ~expr)
-     ~@(->> (partition 2 cases)
-            (mapcat (fn [[pat body]]
-                      [(first pat) `(let [~(vec (cons '_ (rest pat))) ~expr]
-                                      ~body)])))))
+  (let [e (gensym)]
+    `(let [~e ~expr]
+       (case (first ~e)
+         ~@(->> (partition 2 cases)
+                (mapcat (fn [[pat body]]
+                          [(first pat) `(let [~(vec (cons '_ (rest pat))) ~e]
+                                          ~body)])))))))
 
 (defn naive-ast-walk
   [expr]
@@ -419,24 +421,23 @@
     (doseq [[k v] hoisted]
       (aset ^longs registers (int k) (long v)))
     (loop [i 0]
-      (let [ins (tape i)]
-        (match ins
-          [:return r] (aget registers (int r))
-          [:load r v] (do (aset registers (int r) (long v))
-                          (recur (inc i)))
-          [:loadr into from] (do (aset registers (int into) (aget registers (int from)))
-                                 (recur (inc i)))
-          [:jump-if-zero r to] (if (zero? (aget registers (int r)))
-                                 (recur (long to))
-                                 (recur (inc i)))
-          [:jump to] (recur (long to))
-          [:add result op1 op2] (do (aset registers (int result) (unchecked-add (aget registers (int op1))
-                                                                                (aget registers (int op2))))
-                                    (recur (inc i)))
-          [:not= result op1 op2] (do (aset registers (int result) (if (== (aget registers (int op1))
-                                                                          (aget registers (int op2)))
-                                                                    0 1))
-                                     (recur (inc i))))))))
+      (match (tape i)
+        [:return r] (aget registers (int r))
+        [:load r v] (do (aset registers (int r) (long v))
+                        (recur (inc i)))
+        [:loadr into from] (do (aset registers (int into) (aget registers (int from)))
+                               (recur (inc i)))
+        [:jump-if-zero r to] (if (zero? (aget registers (int r)))
+                               (recur (long to))
+                               (recur (inc i)))
+        [:jump to] (recur (long to))
+        [:add result op1 op2] (do (aset registers (int result) (unchecked-add (aget registers (int op1))
+                                                                              (aget registers (int op2))))
+                                  (recur (inc i)))
+        [:not= result op1 op2] (do (aset registers (int result) (if (== (aget registers (int op1))
+                                                                        (aget registers (int op2)))
+                                                                  0 1))
+                                   (recur (inc i)))))))
 
 (comment
 
