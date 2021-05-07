@@ -409,6 +409,21 @@
         first
         (dissoc :nested :reg))))
 
+(defmacro match-arr
+  [expr & cases]
+  (let [e (with-meta (gensym)
+                     (meta expr))]
+    `(let [~e ~expr]
+       (case (aget ~e 0)
+         ~@(->> (partition 2 cases)
+                (mapcat (fn [[pat body]]
+                          [(first pat) `(let ~(->> pat
+                                                   (map-indexed vector)
+                                                   rest
+                                                   (mapcat (fn [[idx v]] `[~v (aget ~e ~idx)]))
+                                                   vec)
+                                          ~body)])))))))
+
 (defn run-registers
   [{:keys [code hoisted]}]
   (let [max-reg (max (->> hoisted keys (reduce max))
@@ -417,24 +432,38 @@
                           (map second)
                           (reduce max)))
         registers (long-array (inc max-reg))
-        tape (vec code)]
+        ^"[[J" tape (->> code
+                         (map (fn [op]
+                                (let [r (long-array (count op))]
+                                  (aset r 0 (case (first op)
+                                              :return 0
+                                              :load 1
+                                              :loadr 2
+                                              :jump-if-zero 3
+                                              :jump 4
+                                              :add 5
+                                              :not= 6))
+                                  (doseq [n (range 1 (count op))]
+                                    (aset r n (long (get op n))))
+                                  r)))
+                         into-array)]
     (doseq [[k v] hoisted]
       (aset ^longs registers (int k) (long v)))
     (loop [i 0]
-      (match (tape i)
-        [:return r] (aget registers (int r))
-        [:load r v] (do (aset registers (int r) (long v))
+      (match-arr ^"[J" (aget tape i)
+        [0 r] (aget registers (int r))
+        [1 r v] (do (aset registers (int r) (long v))
                         (recur (inc i)))
-        [:loadr into from] (do (aset registers (int into) (aget registers (int from)))
+        [2 into from] (do (aset registers (int into) (aget registers (int from)))
                                (recur (inc i)))
-        [:jump-if-zero r to] (if (zero? (aget registers (int r)))
+        [3 r to] (if (zero? (aget registers (int r)))
                                (recur (long to))
                                (recur (inc i)))
-        [:jump to] (recur (long to))
-        [:add result op1 op2] (do (aset registers (int result) (unchecked-add (aget registers (int op1))
+        [4 to] (recur (long to))
+        [5 result op1 op2] (do (aset registers (int result) (unchecked-add (aget registers (int op1))
                                                                               (aget registers (int op2))))
                                   (recur (inc i)))
-        [:not= result op1 op2] (do (aset registers (int result) (if (== (aget registers (int op1))
+        [6 result op1 op2] (do (aset registers (int result) (if (== (aget registers (int op1))
                                                                         (aget registers (int op2)))
                                                                   0 1))
                                    (recur (inc i)))))))
@@ -516,37 +545,37 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.71e-06"
+"2.68e-06"
 
   (bench (naive-ast-walk ast))
-"5.26e-03"
+"5.30e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"2.07e-03"
+"1.94e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"6.21e-03"
+"6.51e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.11e-03"
+"5.59e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.37e-03"
+"1.40e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.82e-04"
+"6.64e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.73e-04"
+"5.70e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"1.88e-03"
+"1.82e-04"
 
   )
