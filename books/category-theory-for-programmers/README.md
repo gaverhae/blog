@@ -797,7 +797,7 @@ The `DeriveFunctor` Haskell extension lets the compiler automatically derive
 
 In a Kleisli category, we have `>=>` and `return` with the signatures:
 
-```haksell
+```haskell
 (>=>) :: (a -> k b) -> (b -> k c) -> (a -> k c)
 return :: a -> k a
 ```
