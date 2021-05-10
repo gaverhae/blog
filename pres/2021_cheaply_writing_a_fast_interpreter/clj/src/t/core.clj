@@ -468,6 +468,70 @@
                                                                   0 1))
                                    (recur (inc i)))))))
 
+(defn registers-jump
+  [reg]
+  (let [registers (gensym)
+        ip (gensym)
+        is-jump? (comp #{:jump :jump-if-zero} first)
+        segments (->> reg
+                      :code
+                      (map-indexed vector)
+                      (filter (comp is-jump? second))
+                      (mapcat (fn [[idx op]]
+                                (match op
+                                  [:jump x] [x]
+                                  [:jump-if-zero _ x] [x (inc idx)])))
+                      (cons 0)
+                      set
+                      sort
+                      (mapcat
+                        (fn [ep]
+                          (let [segment (->> (drop ep (:code reg))
+                                             (reduce (fn [acc op]
+                                                       (if (is-jump? op)
+                                                         (reduced (conj acc op))
+                                                         (conj acc op)))
+                                                     []))]
+                            [ep (->> segment
+                                     (map (fn [op]
+                                            (match op
+                                              [:return r] `(aget ~registers (int ~r))
+                                              [:load r v] `(aset ~registers (int ~r) (long ~v))
+                                              [:loadr to from] `(aset ~registers (int ~to)
+                                                                      (aget ~registers (int ~from)))
+                                              [:jump-if-zero r to] `(if (zero? (aget ~registers (int ~r)))
+                                                                      (recur (int ~to))
+                                                                      (recur (int ~(+ ep
+                                                                                      (count segment)))))
+                                              [:jump to] `(recur (int ~to))
+                                              [:add to r1 r2] `(aset ~registers (int ~to)
+                                                                     (unchecked-add
+                                                                       (aget ~registers (int ~r1))
+                                                                       (aget ~registers (int ~r2))))
+                                              [:not= to r1 r2] `(aset ~registers (int ~to)
+                                                                      (if (== (aget ~registers (int ~r1))
+                                                                              (aget ~registers (int ~r2)))
+                                                                        0 1)))))
+                                     (cons 'do))]))))
+        max-registers (max (->> reg :hoisted keys (reduce max))
+                           (->> reg
+                                :code
+                                (remove (comp #{:jump} first))
+                                (map second)
+                                (reduce max)))
+        init (->> reg
+                  :hoisted
+                  sort
+                  (map (fn [[k v]]
+                         `(aset ~registers (int ~k) (long ~v)))))]
+    (eval
+      `(fn []
+         (let [~registers (long-array ~(inc max-registers))]
+           ~@init
+           (loop [~ip (int 0)]
+             (case ~ip
+               ~@segments)))))))
+
 (comment
 
   [:bind ma f]
@@ -545,37 +609,41 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.68e-06"
+"2.77e-06"
 
   (bench (naive-ast-walk ast))
-"5.30e-03"
+"5.34e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"1.94e-03"
+"1.97e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"6.51e-03"
+"6.43e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.59e-03"
+"5.24e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.40e-03"
+"1.39e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.64e-04"
+"6.79e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.70e-04"
+"5.84e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"1.82e-04"
+"1.86e-04"
+
+  (def rcj (registers-jump (compile-register-ssa ast)))
+  (bench (rcj))
+"4.26e-05"
 
   )
