@@ -524,6 +524,53 @@
              (case ~ip
                ~@segments)))))))
 
+(defn registers-loop
+  [{:keys [code hoisted]}]
+  (let [registers (->> code
+                       (remove (comp #{:jump} first))
+                       (map second)
+                       set
+                       sort
+                       (map-indexed (fn [idx i]
+                                      [i [idx (gensym)]]))
+                       (into {}))
+        re-get (fn [r] (hoisted r (second (registers r))))
+        ip (gensym)
+        rec (fn [n exp & [update-ip]]
+              `(recur ~(or update-ip `(unchecked-inc-int ~ip))
+                      ~@(->> registers
+                             (map (fn [[i [idx sym]]] [idx i sym]))
+                             sort
+                             (map (fn [[idx i sym]]
+                                    (if (= i n)
+                                      exp
+                                      sym))))))]
+    (eval
+      `(fn []
+         (loop [~ip (int 0)
+                ~@(->> registers
+                       (map (fn [[i [idx sym]]] [idx sym]))
+                       sort
+                       (mapcat (fn [[_ sym]] [sym `(long 0)])))]
+           (case ~ip
+             ~@(->> code
+                    (map-indexed vector)
+                    (mapcat (fn [[idx op]]
+                              [idx (match op
+                                     [:return r] (re-get r)
+                                     [:load r v] (rec r `(long ~v))
+                                     [:loadr to from] (rec to (re-get from))
+                                     [:jump-if-zero r to] (rec nil nil
+                                                               `(if (zero? ~(re-get r))
+                                                                  (int ~to)
+                                                                  (unchecked-inc-int ~ip)))
+                                     [:jump to] (rec nil nil `(int ~to))
+                                     [:add to r1 r2] (rec to `(unchecked-add ~(re-get r1)
+                                                                             ~(re-get r2)))
+                                     [:not= to r1 r2] (rec to `(if (== ~(re-get r1)
+                                                                       ~(re-get r2))
+                                                                 0 1)))])))))))))
+
 (comment
 
   [:bind ma f]
@@ -636,6 +683,10 @@
 
   (def rcj (registers-jump (compile-register-ssa ast)))
   (bench (rcj))
-"3.44e-05"
+"3.34e-05"
+
+  (def rcj (registers-loop (compile-register-ssa ast)))
+  (bench (rcj))
+"3.50e-05"
 
   )
