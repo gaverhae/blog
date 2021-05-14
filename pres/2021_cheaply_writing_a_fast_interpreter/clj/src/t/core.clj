@@ -543,16 +543,21 @@
                              (map (fn [[i [idx sym]]] [idx sym]))
                              sort
                              (map second))))
-        segments (->> code
-                      (map-indexed vector)
-                      (filter (comp is-jump? second))
-                      (mapcat (fn [[idx op]]
-                                (match op
-                                  [:jump x] [x]
-                                  [:jump-if-zero _ x] [x (inc idx)])))
-                      (cons 0)
-                      set
-                      sort
+        entrypoints (->> code
+                         (map-indexed vector)
+                         (filter (comp is-jump? second))
+                         (mapcat (fn [[idx op]]
+                                   (match op
+                                     [:jump x] [x]
+                                     [:jump-if-zero _ x] [x (inc idx)])))
+                         (cons 0)
+                         set
+                         sort)
+        reindex (->> entrypoints
+                     (map-indexed vector)
+                     (map (comp vec reverse))
+                     (into {}))
+        segments (->> entrypoints
                       (mapcat
                         (fn [ep]
                           (let [segment (->> (drop ep code)
@@ -561,26 +566,26 @@
                                                          (reduced (conj acc op))
                                                          (conj acc op)))
                                                      []))]
-                            [ep `(let [~@(->> (butlast segment)
-                                              (mapcat (fn [[_ to :as op]]
-                                                        [(re-get to)
-                                                         (match op
-                                                           [:load _ v] v
-                                                           [:loadr _ from] (re-get from)
-                                                           [:add _ r1 r2] `(unchecked-add ~(re-get r1)
-                                                                                          ~(re-get r2))
-                                                           [:not= _ r1 r2] `(if (== ~(re-get r1)
-                                                                                    ~(re-get r2))
-                                                                              0 1))])))]
-                                   ~(match (last segment)
-                                      [:jump to] (rec `(int ~to))
-                                      [:jump-if-zero r to] (rec `(if (zero? ~(re-get r))
-                                                                   (int ~to)
-                                                                   (unchecked-add-int
-                                                                     ~ip
-                                                                     (int ~(count segment)))))
-                                      [:return r] (re-get r)))]))))]
-    (eval `(fn []
+                            [(reindex ep)
+                             `(let [~@(->> (butlast segment)
+                                           (mapcat (fn [[_ to :as op]]
+                                                     [(re-get to)
+                                                      (match op
+                                                        [:load _ v] v
+                                                        [:loadr _ from] (re-get from)
+                                                        [:add _ r1 r2] `(unchecked-add ~(re-get r1)
+                                                                                       ~(re-get r2))
+                                                        [:not= _ r1 r2] `(if (== ~(re-get r1)
+                                                                                 ~(re-get r2))
+                                                                           0 1))])))]
+                                ~(match (last segment)
+                                   [:jump to] (rec `(int ~(reindex to)))
+                                   [:jump-if-zero r to] (rec `(if (zero? ~(re-get r))
+                                                                (int ~(reindex to))
+                                                                (int ~(reindex (+ ep (count segment))))))
+                                   [:return r] (re-get r)))]))))]
+    (eval
+      `(fn []
              (loop [~ip (int 0)
                     ~@(->> registers
                            (map (fn [[i [idx sym]]] [idx sym]))
@@ -666,18 +671,18 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.88e-06"
+"2.78e-06"
 
   (bench (naive-ast-walk ast))
-"5.36e-03"
+"5.63e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"1.95e-03"
+"1.99e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"6.30e-03"
+"6.40e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
@@ -685,19 +690,19 @@
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.43e-03"
+"1.39e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.74e-04"
+"6.96e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.80e-04"
+"5.91e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"1.88e-04"
+"1.86e-04"
 
   (def rcj (registers-jump (compile-register-ssa ast)))
   (bench (rcj))
@@ -705,6 +710,6 @@
 
   (def rcj (registers-loop (compile-register-ssa ast)))
   (bench (rcj))
-"9.37e-06"
+"8.08e-06"
 
   )
