@@ -1,4 +1,6 @@
-(ns t.core)
+(ns t.core
+  (:require [clojure.java.shell :as shell]
+            [clojure.string :as string]))
 
 (defn baseline
   []
@@ -594,6 +596,74 @@
                (case ~ip
                  ~@segments))))))
 
+(defn registers-c
+  [{:keys [code hoisted]} iter]
+  (let [target-register (fn [op]
+                          (match op
+                            [:load to _] to
+                            [:loadr to _] to
+                            [:add to _ _] to
+                            [:not= to _ _] to
+                            [:jump _] nil
+                            [:jump-if-zero _ _] nil
+                            [:return _] nil))
+        labels (->> code
+                    (keep (fn [op]
+                            (case (op 0)
+                              :jump (op 1)
+                              :jump-if-zero (op 2)
+                              nil)))
+                    set)
+        max-index (max (->> hoisted keys (reduce max))
+                       (->> code (keep target-register) (reduce max)))
+        lines (fn [s] (->> s (interpose "\n") (apply str)))
+        reg (fn [r]
+              (or (hoisted r)
+                  (str "r_" r)))
+        body (->> code
+                  (map-indexed
+                    (fn [idx op]
+                      (str (when (labels idx) (str "LABEL_" idx ":\n"))
+                           (match op
+                             [:load r v] (str (reg r) " = " v ";")
+                             [:loadr to from] (str (reg to) " = " (reg from) ";")
+                             [:add to arg1 arg2] (str (reg to) " = " (reg arg1) " + " (reg arg2) ";")
+                             [:not= to arg1 arg2] (str (reg to) " = " (reg arg1) " == " (reg arg2) " ? 0 : 1;")
+                             [:jump to] (str "goto LABEL_" to ";")
+                             [:jump-if-zero r to] (str "if (" (reg r) " == 0) { goto LABEL_" to "; }")
+                             [:return r] (str "return " (reg r) ";")))))
+                  lines)
+        c-code (lines
+                 ["#include <stdio.h>"
+                  "#include <time.h>"
+                  ""
+                  "long compiled_fn(void) {"
+                  (->> (range (inc max-index))
+                       (remove hoisted)
+                       (map (fn [i] (str "long r_" i " = 0;")))
+                       lines)
+                  body
+                  "}"
+                  ""
+                  "int main() {"
+                  "printf(\"%ld\\n\", compiled_fn());"
+                  "clock_t start = clock();"
+                  (str "for (int i = " iter "; i --> 0; ) {")
+                  "compiled_fn();"
+                  "}"
+                  "printf(\"%ld\\n\", ((clock() - start) * 1000) / CLOCKS_PER_SEC);"
+                  "}"
+                  ])]
+    (let [tmp (-> (shell/sh "mktemp" "-d")
+                  :out
+                  string/trim)
+          _ (spit (str tmp "/main.c") c-code)]
+      (->> (shell/sh "bash" "-c" (str "cd " tmp "; cc main.c; ./a.out"))
+           :out
+           string/trim
+           string/split-lines
+           (mapv #(Long/parseLong %))))))
+
 (comment
 
   [:bind ma f]
@@ -711,5 +781,8 @@
   (def rcj (registers-loop (compile-register-ssa ast)))
   (bench (rcj))
 "8.08e-06"
+
+  (registers-c (compile-register-ssa ast) 1000000)
+[-13 8045]
 
   )

@@ -65,4 +65,5 @@
   (is (= register-code (t/compile-register-ssa t/ast)))
   (is (= -13 (t/run-registers register-code)))
   (is (= -13 ((t/registers-jump register-code))))
-  (is (= -13 ((t/registers-loop register-code)))))
+  (is (= -13 ((t/registers-loop register-code))))
+  (is (= -13 (first (t/registers-c register-code 1)))))
