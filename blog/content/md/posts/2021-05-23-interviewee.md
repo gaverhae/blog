@@ -6,42 +6,38 @@
 
 Many candidates approach interviews like they approach oral exams at school: a
 stressful, one-sided evaluation of their knowledge, their skills, and perhaps
-even their worth as a human being. This is misguided and detrimental: the
-interview process goes both ways. It's more akin to dating: sure, you want to
-put your best foot forward, and you are, to some extent, being judged for
-adequacy. But ultimately the goal is for both parties to evaluate whether there
-is a _match_; it's not about judging the other party's "worth" on some
-<strike>arbitrary</strike> absolute scale, it's really about evaluating fitness
-for a specific role in a specific context.[^flawed]
+even their worth as a human being. This is misguided and detrimental: on the
+one hand, this tends to generate a lot more stress than it should, and on the
+other hand, it prevents the candidate from evaluating the interviewer.
 
-[^flawed]: It's also a deeply flawed, highly inaccurate process. Good companies
-recognize this, and therefore try to err on the side of false negatives. That
-is, because the process is flawed and hiring a poor fit is a lot more costly
-than not hiring a good fit, many companies will avoid hiring someone unless
-they are highly confident there will be a good fit. This means that getting
-rejected really doesn't mean anything, and you shouldn't take it personally.
-It's not that you're bad, it's just that, in that specific set of arbitrary,
-mostly unrealistic tests, you failed to absolutely convince beyond any doubt
-that you will 100% be a good fit.
+In fact, an interview process should go both ways. It's more akin to dating:
+sure, you want to put your best foot forward, and you are, to some extent,
+being judged for adequacy, but you should also be judging the other party and
+how good a fit they are for you. Ultimately, the goal is for both parties to
+evaluate whether there is a _match_; it's not about judging the other party's
+"worth" on some arbitrary, absolute scale, it's really about evaluating mutual
+fitness for a specific role in a specific context.
 
 I've done my fair share of interviews, on both sides. Most recently, my team is
 currently hiring, which means I've been doing a couple interviews a week for
 the past few months. We tend to be very conservative in our decisions, and
-we're not in a rush, so it's taking some time.
-
-Because interviews are a two-way process, I always make sure to save some time
-for candidates to ask me questions towards the end of an interview. That's not
-worked out as well as I'd hope.
+we're not in a rush, so it's taking some time. I always make sure to save some
+time for candidates to ask me questions towards the end of an interview, and I
+have been a bit disappointed by the questions I get, so I decided to write some
+thoughts and advice on the subject.
 
 ### Things to avoid
 
 Some candidates tell me their questions have already been answered by other
-people in other interviews. That's pretty bad: it gives me the impression that
-the candidate is not prepared (or is not aware that the interview is supposed
-to go both ways), or that they lack in critical thinking. As a candidate, I
-really like having the opportunity to ask the same questions to multiple
-people, as that's a great way to quickly identify points of dysfunction in a
-company.
+people in other interviews. That's pretty bad: it signals either a lack of
+interest (maybe they don't actually have any question), a lack of understanding
+of the process (they're not aware they should be evaluating the company), or a
+lack of critical thinking skills (they don't think there's any value in hearing
+different answers). That last part is critical: as an interviewer, I want to
+hire people who can think, criticize, and value different perspectives. More
+importantly, I have found that, as a candidate, asking the same questions in
+multiple interviews is a great way to quickly identify dysfunctional
+workplaces. You learn a lot if the answers do _not_ match.
 
 If you've never been on the other side of the interview process, and you're
 concerned about "being caught" asking the same questions to multiple
@@ -52,8 +48,7 @@ somehow interview for a company where people discuss interviews in such details
 that they end up comparing notes on which questions you ask, if they hold that
 against you, you probably don't want to work there.
 
-Some candidates just tell me point blank that they don't have any questions. Or
-my suggestion that it is their turn to ask is met with a stretch of silence.
+Some candidates just tell me point blank that they don't have any questions.
 This is obviously not great either: on the one hand, you're squandering an
 opportunity to learn more about how well the company fits you; on the other
 hand, it doesn't send a very strong signal that you're serious about the job.
@@ -66,7 +61,7 @@ that are too vague to be answered, like "what is your typical day like?".
 You should ask questions that are designed to:
 
 - Be easy to answer, and
-- Yield infirmation that will help _you_ decide whether that workplace is a
+- Yield information that will help _you_ decide whether that workplace is a
   good fit.
 
 You may not care about the same things I do, so my questions may not work for
@@ -76,7 +71,9 @@ over time to get the best responses.
 
 ### My questions
 
-Here are three questions I like to ask in interviews, and why.
+Here are three questions I like to ask in interviews, and why. Hopefully,
+seeing my reasoning will help you come up with your own. Or, if you like these
+ones, feel free to steal them.
 
 #### How do you know what to work on?
 
@@ -123,12 +120,12 @@ Maybe we ran out of time; maybe I decided I would rather give the candidate a
 chance to ask their questions. There may be some technical area I haven't
 covered, or something the candidate said that bothers me because it's not quite
 wrong but it's not really correct either, or the candidate gives me the
-impression that what they want is different from what our company can offer.
+impression that what they want is different from what the position can offer.
 
 Any such question that stays open in the interviewer's mind is ultimately going
 to play against the candidate. Not necessarily by much, and it may not be the
-one thing that makes the difference, but if you still have a couple minutes at
-the end of yur interview, I think this is a good way to wrap up.
+deciding factor, but if you still have a couple minutes at the end of yur
+interview, I think this is a good way to wrap up.
 
 If nothing else, if the interviewer does have some unaddressed questions after
 that, they'll blame themselves for not asking, which is always better than them
