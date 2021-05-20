@@ -7,8 +7,8 @@
 Many candidates approach interviews like they approach oral exams at school: a
 stressful, one-sided evaluation of their knowledge, their skills, and perhaps
 even their worth as a human being. This is misguided and detrimental: on the
-one hand, this tends to generate a lot more stress than it should, and on the
-other hand, it prevents the candidate from evaluating the interviewer.
+one hand, this tends to generate a lot more stress than is warranted, and on
+the other hand, it prevents the candidate from evaluating the interviewer.
 
 In fact, an interview process should go both ways. It's more akin to dating:
 sure, you want to put your best foot forward, and you are, to some extent,
@@ -41,12 +41,10 @@ workplaces. You learn a lot if the answers do _not_ match.
 
 If you've never been on the other side of the interview process, and you're
 concerned about "being caught" asking the same questions to multiple
-interviewers, don't be: I've done quite a few interviews now, and I've never
-once had a discussion with a co-interviewer that ended up revealing anything
-the candidate asked. This is just not how these things go. Even if you did
-somehow interview for a company where people discuss interviews in such details
-that they end up comparing notes on which questions you ask, if they hold that
-against you, you probably don't want to work there.
+interviewers, don't be. Even if you did somehow interview for a company where
+people discuss interviews in such details that they end up comparing notes on
+which questions you asked, if they hold that against you, you probably don't
+want to work there.
 
 Some candidates just tell me point blank that they don't have any questions.
 This is obviously not great either: on the one hand, you're squandering an
@@ -124,7 +122,7 @@ impression that what they want is different from what the position can offer.
 
 Any such question that stays open in the interviewer's mind is ultimately going
 to play against the candidate. Not necessarily by much, and it may not be the
-deciding factor, but if you still have a couple minutes at the end of yur
+deciding factor, but if you still have a couple minutes at the end of your
 interview, I think this is a good way to wrap up.
 
 If nothing else, if the interviewer does have some unaddressed questions after
