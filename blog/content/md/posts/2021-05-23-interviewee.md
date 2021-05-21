@@ -2,8 +2,6 @@
  :layout :post
  :tags ["interview"]}
 
-### It goes both ways
-
 Many candidates approach interviews like they approach oral exams at school: a
 stressful, one-sided evaluation of their knowledge, their skills, and perhaps
 even their worth as a human being. This is misguided and detrimental: on the
@@ -67,13 +65,11 @@ you. But think about what your questions should be, and don't be afraid to ask
 them at every single interview, so you can compare answers. Also, tweak them
 over time to get the best responses.
 
-### My questions
-
 Here are three questions I like to ask in interviews, and why. Hopefully,
 seeing my reasoning will help you come up with your own. Or, if you like these
 ones, feel free to steal them.
 
-#### How do you know what to work on?
+### How do you know what to work on?
 
 This question should be easy to answer, as people have to decide what to work
 on every day (whether that day happens to be typical or not). This question
@@ -93,7 +89,7 @@ fancies it, etc.).
 You may also use that discussion to signal that you're willing to work within
 the system they already have. This is not the time to tell them it's a bad one.
 
-#### Once it "works on my machine", how does it get to customers and how long does that take? Please describe every step.
+### Once it "works on my machine", how does it get to customers and how long does that take? Please describe every step.
 
 This question will tell you about code review, CI, testing, and deployment. It
 should also raise the question of pair programming, if that's something the
@@ -111,7 +107,7 @@ you'd rather stay focused on the theoretical beauty of your algorithms, this
 will tell you where the position you're applying for actually sits on that
 spectrum.
 
-#### Is there any remaining concern I can address?
+### Is there any remaining concern I can address?
 
 As an interviewer, I sometimes end an interview with unanswered questions.
 Maybe we ran out of time; maybe I decided I would rather give the candidate a
