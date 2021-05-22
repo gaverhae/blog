@@ -4,7 +4,73 @@ My notes on reading [Programming in Haskell][0].
 
 [0]: https://www.amazon.co.uk/Programming-Haskell-Graham-Hutton/dp/0521692695
 
-# Chapter 1
+# Chapter 1 - Introduction
+
+## 1.1 - Functions
+
+A _function_ is a mapping of one or more arguments to a single result. Example:
+
+```haskell
+double x = x + x
+```
+
+Function application is done by substituting definitions:
+
+```haskell
+  double 3
+= -- definition of `double`
+  3 + 3
+= -- applying +
+  6
+```
+
+In most cases, the order of substitutions does not matter. See Chapter 12 for
+details.
+
+## 1.2 - Functional programming
+
+In the context of this book, _functional programming_ is a style of programming
+in which the basic method of computation is the application of functions to
+arguments. This is in contrast to _imperative programing_, in which the basic
+method of computation is changing stored values.
+
+## 1.3 - Features of Haskell
+
+- Concise programs
+- Powerful type system
+- List comprehensions
+- Recursive functions
+- Higher-order functions
+- Monadic effects
+- Lazy evaluation
+- Reasoning about programs
+
+## 1.4 - Historical background
+
+Haskell is the product of research and takes inspiration from languages before
+it, among which Lisp, ML and Miranda.
+
+## 1.5 - A taste of Haskell
+
+```haskell
+sum :: Num a => [a] -> a
+sum [] = 0
+sum (x:xs) = x + sum xs
+
+qsort :: Ord a => [a] -> [a]
+qsort [] = []
+qsort (x:xs) = qsort smaller ++ [x] ++ qsort larger
+               where smaller = [a | a <- xs, a <= x]
+                     larger = [a | a <- xs, a > x]
+```
+
+## 1.6 - Chapter remarks
+
+[Haskell 98](https://www.haskell.org/onlinereport/), [Haskell
+2010](https://www.haskell.org/onlinereport/haskell2010/), [Hudak's take on
+Haskell's history](https://dl.acm.org/doi/10.1145/72551.72554).
+
+## 1.7 - Challenges
 
 > 1. Give another possible calculation for the result of `double (double 2)`.
 
