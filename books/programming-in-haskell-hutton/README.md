@@ -70,7 +70,7 @@ qsort (x:xs) = qsort smaller ++ [x] ++ qsort larger
 2010](https://www.haskell.org/onlinereport/haskell2010/), [Hudak's take on
 Haskell's history](https://dl.acm.org/doi/10.1145/72551.72554).
 
-## 1.7 - Challenges
+## 1.7 - Exercises
 
 > 1. Give another possible calculation for the result of `double (double 2)`.
 
@@ -125,7 +125,37 @@ rqsort (x:xs) = rqsort larger ++ [x] ++ rqsort smaller
 Same as `sort | uniq` instead of just `sort`, i.e. the resulting list is sorted
 and has no duplicates.
 
-# Chapter 2
+# Chapter 2 - First steps
+
+## 2.1 - The Hugs system
+
+This book is designed for Hugs but should work just as well with GHC.
+
+## 2.2 - The standard prelude
+
+`Prelude.hs` is loaded automatically. Operators have priorities. Basic
+operations on integers: `+`, `-`, `*`, `div`, `^`. Useful functions on lists:
+`head`, `tail`, `!!`, `take`, `drop`, `length`, `sum`, `product`, `++`,
+`reverse`.
+
+## 2.3 - Function application
+
+Function application in Haskell is denoted by spacing, i.e. the math expression
+$f(a,b)$ is written `f a b`; it has the highest priority and associates to the
+left.
+
+## 2.4 - Haskell scripts
+
+Hugs can load files with `:l`. `:r` will reload all loaded scripts. Haskell is
+generally indentation-sensitive, though blocks can also be explicit with `{}`
+and `;`. Line comments start with `--` and nested comments can be delimited by
+`{- -}`.
+
+## 2.5 - Chapter remarks
+
+See [haskell.org](https://www.haskell.org].
+
+## 2.6 - Exercises
 
 > 1. Parenthesise the following arithmetic expressions:
 > ```
@@ -184,7 +214,6 @@ init xs = take (length xs - 1) xs
 ```haskell
 init xs = reverse (tail (reverse xs))
 ````
-
 
 # Chapter 3
 
