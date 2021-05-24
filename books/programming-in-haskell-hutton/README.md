@@ -215,7 +215,67 @@ init xs = take (length xs - 1) xs
 init xs = reverse (tail (reverse xs))
 ````
 
-# Chapter 3
+# Chapter 3 - Types and classes
+
+## 3.1 - Basic concepts
+
+A _type_ is a collection of related values. `e :: t` means `e` is of type `t`.
+Every expression in Haskell has a type.
+
+## 3.2 - Basic types
+
+`Bool`, `Char`, `String` (which is really just `[Char]`), `Int` (fixed-length),
+`Integer` (arbitrary precision), `Float`. Literal numbers can have multiple
+types and are thus context-dependent.
+
+## 3.3 - List types
+
+A _list_ `[a]` is a (possibly infinite) sequence of elements of the same type
+`a`.
+
+## 3.4 - Tuple types
+
+A _tuple_ is a finite sequence of components of possibly different types, for
+example `(Bool, Int)`. The type conveys the number of elements as well as the
+type of each position.
+
+## 3.5 - Function types
+
+`a -> b` is the type of functions from `a` to `b`.
+
+## 3.6 - Curried functions
+
+Function application associates to the left, so the type operator `->`
+associates to the right.
+
+```haskell
+add :: Int -> Int -> Int
+add x y = x + y
+```
+
+## 3.7 - Polymorphic types
+
+Lower-case letters in types denote type variables.
+
+## 3.8 - Overloaded types
+
+Overloading is done through class constraints. Example:
+
+```haskell
+(+) :: Num a => a -> a -> a
+```
+
+## 3.9 - Basic classes
+
+`Eq` (`==`, `/=`), `Ord` (`<`, `>`, `>=`, `<=`, `min`, `max`), `Show` (`show`),
+`Read` (`read`), `Num` (`+`, `-`, `*`, `negate`, `abs`, `signum`), `Integral`
+(`div`, `mod`), `Fractional` (`/`, `recip`).
+
+## 3.10 - Chapter remarks
+
+`Bool` comes from George Boole; "curried" comes from Haskell Curry.
+
+## 3.11 - Exercises
 
 > 1. What are the types of the following values?
 > ```haskell
