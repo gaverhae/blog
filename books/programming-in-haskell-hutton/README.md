@@ -354,7 +354,100 @@ expressions for equivalence. Both approaches would result in very long calls to
 (==), and neither could be guaranteeed correct for all types in the current
 state of mathematical knowledge.
 
-# Chapter 4
+# Chapter 4 - Defining functions
+
+## 4.1 - New from old
+
+```haskell
+isDigit :: Char -> Bool
+isDigit c = c >= '0' && c <= '9'
+
+even :: Integral a => a -> Bool
+even n = n `mod` 2 == 0
+
+splitAt :: Int -> [a] -> ([a], [a])
+splitAt n xs = (take n xs, drop n xs)
+
+recip :: Fractional a => a -> a
+recip n = 1 / n
+```
+
+## 4.2 - Conditional expressions
+
+Conditional expressions must always have an `else`, and the two possible
+results have to be of the same type.
+
+```haskell
+abs :: Int -> Int
+abs n = if n >= 0 then n else -n
+
+signum :: Int -> Int
+signum n = if n < 0
+           then -1
+           else if n == 0
+                then 0
+                else 1
+```
+
+## 4.3 - Guarded equations
+
+In this context, `|` is read "such that". Guard expressions are checked in
+order.
+
+```haskell
+abs n | n >= 0 = n
+      | otherwise = -n
+
+signum n | n < 0 = -1
+         | n == 0 = 0
+         | otherwise = 1
+```
+
+## 4.4 - Pattern matching
+
+Patterns are checked in order.
+
+```haskell
+not :: Bool -> Bool
+not False = True
+not True = False
+
+(&&) :: Bool -> Bool -> bool
+True && b = b
+False && _ = False
+
+fst :: (a, b) -> a
+fst (x, _) = x
+```
+
+## 4.5 - Lambda expressions
+
+```haskell
+odds n = map (\x -> x * 2 + 1) [0 .. n - 1]
+```
+
+## 4.6 - Sections
+
+For any operator `+`, we get threes _sections_:
+
+```haskell
+(+) :: a -> b -> c
+(+) = \x -> \y -> x + y
+
+(x +) :: b -> c
+(x +) = \y -> x + y
+
+(+ y) :: a -> c
+(+ y) = \x -> x + y
+```
+
+## 4.7 - Chapter remarks
+
+For the formal meaning of pattern matching, see the Haskell report. The `\` in
+"lambda expressions" stands for the greek letter lambda, a reference to lambda
+calculus, a model of (pure) computation that predates Turing machines.
+
+## 4.8 - Exercises
 
 > 1. Using library functions, define a function
 > ```haskell
