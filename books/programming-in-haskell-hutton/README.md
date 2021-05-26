@@ -563,7 +563,141 @@ mult :: Num a => a -> a -> a -> a
 mult = \x -> \y -> \z -> x * y * z
 ```
 
-# Chapter 5
+# Chapter 5 - List comprehensions
+
+## 5.1 - Generators
+
+In
+
+```haskell
+[ x^2 | x <- [1 .. 5]]
+```
+
+the symbol `|` is read "such that", the symbol `<-` is read "is drawn from",
+and the expression `x <- [1 .. 5]` is called a _generator_.
+
+Generators "nest" from left to right, i.e. the right-most "iterates faster":
+
+```haskell
+[(x, y) | x <- [1, 2], y <- [4, 5]] == [(1, 4), (1, 5), (2, 4), (2, 5)]
+```
+
+Examples:
+
+```haskell
+concat :: [[a]] -> [a]
+concat xss = [x | xs <- xss, x <- xs]
+
+firsts :: [(a, b)] -> [a]
+firsts ps = [x | (x, _) <- ps]
+
+length :: [a] -> Int
+length xs = sum [1 | _ <- xs]
+```
+
+## 5.2 - Guards
+
+Like pattern matches, list comprehensions can contain _guards_, which filter
+out non-matching values.
+
+```haskell
+factors :: Int -> [Int]
+factors n = [x | x <- [1 .. n], n `mod` x == 0]
+
+prime :: Int -> Bool
+prime n = factors n == [1, n]
+
+primes :: Int -> [Int]
+primes n = [x | x <- [2 .. n], prime x]
+
+find :: Eq a => a -> [(a, b)] -> [b]
+find k t = [v | (k', v) <- t, k == k']
+```
+
+## 5.3 - The `zip` function
+
+```haskell
+> zip ['a', 'b', 'c'] [1, 2, 3, 4]
+[('a', 1), ('b', 2), ('c', 3)]
+
+pairs :: [a] -> [(a, a)]
+pairs xs = zip xs (tail xs)
+
+sorted :: Ord a => [a] -> Bool
+sorted xs = and [x <= y | (x, y) <- pairs xs]
+
+positions :: Eq a => a -> [a] -> [Int]
+positions x xs = [i | (x', i) <- zip xs [0 .. n], x == x']
+                 where n = length xs - 1
+```
+
+## 5.4 - String comprehensions
+
+`String` is `[Char]` so comprehensions work.
+
+```haskell
+lowers :: String -> Int
+lowers xs = length [x | x <- xs, isLower x]
+
+count :: Char -> String -> Int
+count x xs = length [x' | x' <- xs, x == x']
+```
+
+## 5.5 - The Caesar cipher
+
+The Caesar cipher consists of shifting each letter three places further down in
+the alphabet, with wrapping.
+
+```haskell
+let2int :: Char -> Int
+let2int c = ord c - ord 'a'
+
+int2let :: Int -> Char
+int2let n = chr (ord 'a' + n)
+
+shift :: Int -> Char -> Char
+shift n c | isLower c = int2let ((let2int c + n) `mod` 26)
+          | otherwise = c
+
+encode :: Int -> String -> String
+encode n xs = [shift n x | x <- xs]
+```
+
+Cracking the Caesar cipher relies on letter frequencies.
+
+```haskell
+table :: [Float]
+table = [ 8.2, 1.5, 2.8, 4.3, 12.7, 2.2, 2.0, 6.1, 7.0, 0.2, 0.8, 4.0, 2.4,
+--          a,   b,   c,   d,    e,   f,   g,   h,   i,   j,   k,   l,   m
+          6.7, 7.5, 1.9, 0.1,  6.0, 6.3, 9.1, 2.8, 1.0, 2.4, 0.2, 2.0, 0.1 ]
+--          n,   o,   p,   q,    r,   s,   t,   u,   v,   w,   x,   y,   z
+
+percent :: Int -> Int -> Float
+percent n m = (fromInt n / fromInt m) * 100
+
+freqs :: String -> [Float]
+freqs xs = [percent (count x xs) n | x <- ['a' .. 'z']]
+           where n = lowers xso
+
+chisqr :: [Float] -> [Float] -> Float
+chisqr os es = sum [((o - e)^2)/e | (o, e) <- zip os es]
+
+rotate :: Int -> [a] -> [a]
+rotate n xs = drop n xs ++ take n xs
+
+crack :: String -> String
+crack xs = encode (-factor) xs
+  where factor = head (positions (minimum chitab) chitab)
+        chitab = [chisqr (rotate n table') table | n <- [0 .. 25]]
+        table' = freqs xs
+```
+
+## 5.6 - Chatper remarks
+
+List comprehensions can be formally defined in terms of underlying language
+features; see the Haskell report for details.
+
+## 5.7 - Exercises
 
 > 1. Using a list comprehension, give an expression that calculates the sum
 >    `1^2 + 2^2 + 3^2 + ... + 100^2` of the first one hundred integer squares.
