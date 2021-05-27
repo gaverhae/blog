@@ -801,7 +801,77 @@ shift n c | isLower c = int2let ((let2int c + n) `mod` 26)
           | isUpper c = toUpper (shift n (toLower c))
           | otherwise = c
 ```
-# Chapter 6
+
+# Chapter 6 - Recursive functions
+
+## 6.1 - Basic concepts
+
+```haskell
+factorial :: Int -> Int
+factorial 0 = 1
+factorial n = n * factorial (n - 1)
+```
+
+## 6.2 - Recursion on lists
+
+```haskell
+product :: Num a => [a] -> a
+product [] = 1
+product (x:xs) = x * product xs
+
+insert :: Ord a => a -> [a] -> [a]
+insert x [] = [x]
+insert x (y:ys) | x <= y = x : y : ys
+                | otherwise = y : insert x ys
+
+isort :: Ord a => [a] -> [a]
+isort [] = []
+isort (x:xs) = insert x (isort xs)
+```
+
+## 6.3 - Multiple arguments
+
+```haskell
+zip :: [a] -> [b] -> [(a, b)]
+zip [] _ = []
+zip _ [] = []
+zip (x:xs) (y:ys) = (x, y) : zip xs ys
+```
+
+## 6.4 - Multiple recursion
+
+```haskell
+fibonacci :: Int -> Int
+fibonacci 0 = 0
+fibonacci 1 = 1
+fibonacci n = fibonacci (n - 1) + fibonacci (n - 2)
+```
+
+## 6.5 - Mutual recursion
+
+```haskell
+even :: Int -> Bool
+even 0 = True
+even n = odd (n - 1)
+
+odd :: Int -> Bool
+odd 0 = False
+odd n = even (n - 1)
+```
+
+## 6.6 - Advice on recursion
+
+1. Define the type.
+2. Enumerate the cases.
+3. Define simple cases.
+4. Define other cases.
+5. Tidy up.
+
+## 6.7 - Chapter remarks
+
+:shrug:
+
+## 6.8 - Exercises
 
 > 1. Define the exponentiation operator `^` for non-negative integers using the
 >    same pattern of recursion as the multiplication operator `*`, and show how
