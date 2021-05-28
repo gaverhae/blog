@@ -1043,7 +1043,128 @@ last [x] = x
 last (x:xs) = last xs
 ```
 
-# Chapter 7
+# Chapter 7 - Higher-order functions
+
+## 7.1 - Basic concepts
+
+```haskell
+twice :: (a -> a) -> a -> a
+twice f x = f (f x)
+```
+
+## 7.2 - Processing lists
+
+The function `map` applies a function to every element in a list:
+
+```haskell
+map :: (a -> b) -> [a] -> [b]
+-- list comprehension
+map f xs = [f x | x <- xs]
+-- recursion
+map f [] = []
+map f (x:xs) = f x : map f xs
+```
+
+`filter` is also useful:
+
+```haskell
+filter :: (a -> Bool) -> [a] -> [a]
+-- list comprehension
+filter f xs = [x | x <- xs, f x]
+-- recursion
+filter f [] = []
+filter f (x:xs) | f x = x : filter f xs
+                | otherwise = filter f xs
+```
+
+A few others: `all`, `any`, `takeWhile`, `dropWhile`.
+
+## 7.3 - The `foldr` function
+
+```haskell
+foldr :: (a -> b -> b) -> b -> [a] -> b
+foldr f v [] = v
+foldr f v (x:xs) = f x (foldr f v xs)
+```
+
+Note that if `f` is _lazy_ in its second argument, `foldr` may not need to
+process the entire list and can thus be used on infinite lists.
+
+## 7.4 - The `foldl` function
+
+```haskell
+foldl :: (b -> a -> b) -> b -> [a] -> b
+foldl f v [] = v
+foldl f v (x:xs) = foldl f (f v x) xs
+```
+
+As it is much rarer for `f` to be lazy in its first argument (and even then it
+would still need to traverse the entire list), `foldl` tends to not work very
+well with laziness.
+
+## 7.5 - The composition operator
+
+```haskell
+(.) :: (b -> c) -> (a -> b) -> (a -> c)
+f . g = \x -> f (g x)
+```
+
+## 7.6 - String transmitter
+
+We simulate the transmission of a string of 0's and 1's. To simplify
+conversions, we assume numbers are read right to left.
+
+```haskell
+-- Assumed to hold only either 0 or 1
+newtype Bit = Bit Int
+
+bin2int :: [Bit] -> Int
+bin2int bits = sum [w * b | (w, (Bit b)) <- zip weights bits]
+  where weights = iterate (* 2) 1
+
+int2bin :: Int -> [Bit]
+int2bin 0 = []
+int2bin n = Bit (n `mod` 2) : int2bin (n `div` 2)
+```
+
+We want to work with 8-bit bytes:
+
+```haskell
+make8 :: [Bit] -> [Bit]
+make8 bits = take 8 (bits ++ repeat (Bit 0))
+```
+
+We can encode (& decode) characters:
+
+```haskell
+encode :: String -> [Bit]
+encode = concat . map (make8 . int2bin . ord)
+
+chop8 :: [Bit] -> [[Bit]]
+chop8 [] = []
+chop8 bits = take 8 bits : chop8 (drop 8 bits)
+
+decode :: [Bit] -> String
+decode = map (chr . bin2int) . chop8
+```
+
+Finally, perfect transmission can be simulated with:
+
+```haskell
+transmit :: ([Bit] -> [Bit]) -> String -> String
+transmit channel = decode . channel . encode
+
+perfect_channel :: [Bit] -> [Bit]
+perfect_channel = id
+```
+
+## 7.7 - Chapter remarks
+
+More examples in [The Fun of
+Programming](https://www.cs.ox.ac.uk/publications/books/fop/).
+
+## 7.8 - Exercices
+
 
 > 1. Show how the list comprehension `[f x | x <- xs, p x]` can be re-expressed
 >    using the higher-order functions `map` and `filter`.
