@@ -131,6 +131,17 @@ code {
     color: #428bca;
 }
 
+table {
+    margin: 0px auto;
+}
+
+tr, td, th {
+    border: 1px solid rgb(128, 128, 128);
+    margin: 0px auto;
+    box-sizing: border-box;
+    padding: 6px 13px;
+}
+
 @media (min-width: 768px) {
     .navbar {
         min-height: 70px;
