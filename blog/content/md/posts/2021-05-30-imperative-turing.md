@@ -49,7 +49,8 @@ definition per programming language that claims to be it.
 ## Models of computation
 
 Functional programming, however, is a _model of computation_ based on Church's
-"lambda calculus". It has pretty much nothing to do with either of the above
+"lambda calculus". It is _code of a different nature_, not a different way to
+organize code. It has pretty much nothing to do with either of the above
 concepts. If a comparison needs to be made, it should be to _imperative
 programming_, which is a model of computation based on Turing's "Turing
 machine", and is inarguably the dominant programming paradigm of the last 200
@@ -289,7 +290,7 @@ We can now read the ribbon, and we have computed \\(2 + 1 = 3\\).
 ## Programmable machines
 
 The example Turing machine above is running a specific program. This may seem a
-bit limiting, but, as programmers, we know that if yoou can write a program in
+bit limiting, but, as programmers, we know that if you can write a program in
 a "Turing-complete" language, you can write a programmable program. This turns
 out to be true of Turing machines. They are, after all, the very definition of
 "Turing-complete".
@@ -376,5 +377,4 @@ hardware. Importantly, note that this story does not say we're programming
 Turing machines because it's easy, or good. It simply was _possible_.
 
 In the next post, I will describe another model of computation, lambda
-calculus, how it relates to functional programming, and why we can and should
-finally break the shackles of the Turing machine domination.
+calculus, how it relates to functional programming, and why you should care.
