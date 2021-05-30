@@ -1,43 +1,50 @@
-{:title "What is functional programming?"
+{:title "What is imperative programming?"
  :layout :post
  :tags ["paradigms"]}
 
-Some people would argue that the dominant programming paradigm of the nineties
-and aughts was "object-oriented". The same people would probably argue it still
-is. There's a newcomer, though, that's been making a lot of headway over the
-past twenty years or so: functional programming. Most people learn new things
-by comparing them with things they already know, and it is thus fairly natural
-for programmers well-versed in object-oriented techniques to ask how functional
-code compares to object-oriented code.
+In this post, I explain why you should care about Turing machines and what
+they are. In the next parts of this series, I will contrast Turing machines
+with lambda calculus and expand on why understanding both models is useful for
+everyday programming.
+
+## Functional v. object-oriented
+
+Over the past fifteen years or so, fear of the flattening of Moore's law has
+driven renewed interest in functional programming. Many programmers are still
+unclear on what functional programming really is, and how it relates to their
+current approaches, commonly designated as "object-oriented" programming.
 
 This is, however, not a useful question. Functional code does not contrast with
 object-oriented code, because they sit alongside different axes. They are
 orthogonal to each other and, to a large extent, do not apply at the same
 level.
 
-In this post, I'll try to explain what functional programming is, and what it
-should be contrasted to. One of the biggest hurdles for such a discussion is
-that programming, as a discipline, does not have a widely-agreed-upon
-jargon[^jargon] yet. For the purposes of this blog post, I assume
-"object-oriented" is one of two things, which in my experience are at the heart
-of the most common meanings for the term:
+In the next few posts, I'll try to explain what functional programming is, and
+what it should be contrasted to. One of the biggest hurdles for such a
+discussion is that programming, as a nascent discipline, does not have a
+widely-agreed-upon jargon[^jargon] yet. For the purposes of this blog post, I
+assume "object-oriented" is one of two things, which in my experience are at
+the heart of the most common meanings for the term:
 
 [^jargon]: Jargon is usually seen as a bad thing to the uninitiated, but the
 development of jargon is actually a very important sign that a discipline is
-maturing. Jargon is what lets experts in a field have useful discussions with
+maturing. Jargon is what lets experts in a field have fruitful discussions with
 each other, where they can precisely refer to discipline-specific concepts and
 ideas and reduce ambiguity and misunderstandings. Computer programming is still
 a very young field of study; it has been pretty prolific in creating new words,
 or appropriating existing words, but it has not yet reached the point where
-those cords truly have agreed-upon, precise defintions across the discipline.
+those words truly have agreed-upon, precise definitions across the discipline.
 Even basic terms like "variable" or "type" can mean widely different things to
-different people.
+different people. Object-oriented is definitely such a term, with at least one
+definition per programming language that claims to be it.
 
 - An organization of code whereby data and the functions to manipulate that
   data are colocated under a common reference. This is the nuts-and-bolt
   "objects and classes" language-level set of features.
-- An architectural technique whereby programs are divided into separate parts
-  that communicate through message-passing. This can be done in any language.
+- An architectural technique whereby systems are divided into separate parts
+  that communicate through message-passing. This can be done in almost any
+  language, or across languages if the messages are passed through some sort of
+  network or queue.
 
 ## Models of computation
 
@@ -80,9 +87,9 @@ is "this number can be computed _within this model_", but what if the model
 itself is incomplete?
 
 A few years later, Turing proposed his idea of a Turing machine, but more
-importantly he offered a proof that the set of numbers that can be computed
-with his Turing machine is exactly the same as the set of numbers that can be
-computed with Church's lambda calculus. Since then, a fairly large number of
+importantly he offered a proof that the set of functions that can be described
+with his Turing machine is exactly the same as the set of functions that can be
+described with Church's lambda calculus. Since then, a fairly large number of
 alternative models of computation have been proposed, and so far none of them
 has been proven to be able to compute anything the Turing machine cannot
 compute. In other words, the Turing machine is exactly as powerful as the
@@ -91,16 +98,16 @@ compute more things") than either.
 
 Note that we do _not_ have a proof that there is not a more powerful model of
 computation available. All we know is that so far we have not found one. The
-idea there the Turing machine _is_ the most powerful model of computation (as
+idea that the Turing machine _is_ the most powerful model of computation (as
 opposed to "the most powerful one _we have found so far_) is known as "the
 Church-Turing hypothesis".
 
-Why am I telling all of that? Mostly because I like to ramble, but also because
+Why am I telling you this? Mostly because I like to ramble, but also because
 lambda calculus and Turing machines turn out to be really important for modern
-computing, and understanding them at a superficial level can give you deep
-insights into computer programming.
+computing, and because understanding them, even at a superficial level, can
+give you deep insights into computer programming.
 
-## Turing machines & imperative execution
+## Turing machines
 
 Formally, a Turing machine is a 7-tuple \\(M=\\langle Q, \\Gamma, b, \\Sigma,
 \\delta, q\_0, F\\rangle\\) where:
@@ -112,19 +119,33 @@ Formally, a Turing machine is a 7-tuple \\(M=\\langle Q, \\Gamma, b, \\Sigma,
 - \\(b\\in\\Gamma\\) is a special symbol of the alphabet, which can appear an
   infinite number of times on the _tape_ (see below for what the tape is); all
   other symbols in \\(\\Gamma\\) can only appear on the tape a finite number of
-  times at any point in time.
+  times.
 - \\(\\Sigma \\subseteq (\\Gamma \\setminus \\{b\\})\\) is the set of symbols
   that are allowed to appear on the _initial tape contents_.
 - \\(q\_0\\in Q\\) is the initial state of the machine.
 - \\(F\\subseteq Q\\) is the set of final states.
 - \\(\\delta: (Q\\setminus F)\\times\\Gamma\\to
-  Q\\times\\Gamma\\times\\{L,R\\}\\) is a (partial) function called the
-  _transition function_.
+  Q\\times\\Gamma\\times\\{L,R\\}\\) is a (partial) function[^function] called
+  the _transition function_.
+
+[^function]: It may seem recursive that we invented Turing machines as a way to
+  express functions, yet we need a function in the description of a Turing
+machine. This is not actually a problem, because the purpose of a Turing
+machine is _not_ to offer a way to define functions, but to offer a way to
+describe how to compute functions. "Simple" functions can be described as a set
+of pairs such that the first element is the input and the second element is the
+output (and there are no two pairs with the same first element). The functions
+that can be described in this way using a finite set of pairs do not need to be
+computed, as they can just be described with their values directly available.
+\\(\\delta\\) is such a function. Some functions cannot be described using a
+finite set of pairs, but can still be described succinctly by a simple formula,
+such as the function "x squared". But some functions have an infinite set of
+inputs and no simple formula, such as square root.
 
 This may or may not look like a jumble of meaningless symbols, and quite
 frankly understanding the precise meaning of each of those is not very
 important to my point here. (I do enjoy looking at typeset mathematics,
-though). These are just the components; a formal definition would also need to
+though.) These are just the components; a formal definition would also need to
 proceed with exactly how they are used (i.e. what their semantics are), but I
 prefer to drop the formality level a few notches at this point. For our
 purposes, it is enough to know that a formal definition exists.
@@ -148,9 +169,9 @@ Informally, one can visualize a Turing machine as having three components:
   its current position.
 
 The operation of the processor is the core of the Turing machine, and is mostly
-described by the \\(\\delta\\) function. The Turing machine must be thought as
-performing a number of _steps_, where each step consists of the following
-events:
+described by the \\(\\delta\\) function. The Turing machine can be thought of
+as performing a number of _steps_, where each step consists of the following
+operations:
 
 1. Check the current state. If the current state is in \\(F\\), the machine has
    finished running. Stop here. Exactly what it means for the machine to have
@@ -168,10 +189,23 @@ Note that, while there is no "internal structure" to the states of the
 processor in a Turing machine, this is not a limitation as far as
 mathematicians care: any internal structure can just be expanded to a set of
 individual states by enumerating all of the possible values of all internal
-variables. Additionally, while the formal definition only allows the head to
-move one cell at a time, it is trivial to implement larger moves by simply
-adding intermediate state that do nothing but rewrite what they just read and
-keep moving.
+variables. For example, if you wanted your Turing machine state to be "any JSON
+value representable using 30kb", that would be OK: this is a well-defined,
+finite set of numbers[^json]. You could even decide to set the name of each
+state to "the string representing that JSON value". This is not cheating. I
+swear.
+
+[^json]: Because JSON is defined as using UTF-8 encoding, any JSON
+  representation maps directly to a well-defined, unique sequence of bytes,
+  which can be seen as just one big number. I'm using "representation" here
+  instead of "value" because there can be multiple representations for the same
+  value, as JSON authorizes the use of non-significant whitespace.
+
+Additionally, while the formal definition only allows the head to move one cell
+at a time, it is trivial to implement larger moves by simply adding
+intermediate states that do nothing but rewrite what they just read from it on
+the ribbon and keep moving, perhaps decrementing a counter in their
+non-existent-but-still-useable internal state representation.
 
 As a concrete example, a Turing machine that does 2-bit addition could be
 defined by:
@@ -217,7 +251,12 @@ defined by:
 
 There are missing entries in that table. For example, if the machine ever reads
 a \\(2\\) symbol on the ribbon while in the \\(H\_0\\) state, the \\(\\delta\\)
-function is undefined. In such cases, we say that the computation failed.
+function is undefined. In such cases, we say that the computation failed. This
+is ok: \\(\\delta\\) is defined as a partial function to start with. If this
+bothers you, though, you can simply add another state to \\(F\\) (and thus to
+\\(Q\\)) representing failure, and add all the missing combinations of
+\\(\Gamma\\) and \\(Q\\) to the table, mapping all of them to that new state
+along with a movement to the right (which is always safe).
 
 Also note how the set of states really represents two internal variables: where
 we are in the computation (not read anything yet, need to read one more
@@ -247,31 +286,37 @@ computation would proceed as follows:
 
 We can now read the ribbon, and we have computed \\(2 + 1 = 3\\).
 
-The model of a Turing machine is powerful enough to define the model of a
-Turing machine. That is, it is possible to define a specific Turing machine,
-generally called "the unversal Turing machine" (UTM). More precisely:
+## Programmable machines
 
-- The alphabet of the UTM is righ enough that one can describe any other Turing
-  machine using it.
+The example Turing machine above is running a specific program. This may seem a
+bit limiting, but, as programmers, we know that if yoou can write a program in
+a "Turing-complete" language, you can write a programmable program. This turns
+out to be true of Turing machines. They are, after all, the very definition of
+"Turing-complete".
+
+That is, the model of a Turing machine is powerful enough to describe the model
+of a Turing machine. In other words, it is possible to define a specific Turing
+machine, generally called "the unversal Turing machine" (UTM), which can read a
+description of a Turing machine and an input for it, and simulate the execution
+of the described Turing machine on the given input. More precisely:
+
+- The alphabet of the UTM is rich enough that one can describe any other Turing
+  machine using it. (For example, that alphabet could be \\(\\{0, 1,
+  \\epsilon\\}\\).)
 - That definition would include the specification of the input alphabet of the
-  "simulated" Turing machine.
+  "simulated" Turing machine, or an encoding thereof.
 - A given run of the UTM would correspond to a given run of the simulated
   machine _on a specific input for that machine_; therefore the initial ribbon
   of the UTM can be described as containing two parts: first, a description of
-  the simulated turing machine, and second, the input for the simulated Turing
+  the simulated Turing machine, and second, the input for the simulated Turing
   machine.
 
-The UTM can simulate itself, etc., though it obviously gets really tedious
-really fast.
+The UTM can simulate itself simulating another machine, etc., though it
+obviously gets really tedious really fast.
 
 Why is any of this relevant? If you squint a little bit, a Turing machine is a
-really good description of modern CPUs. The CPU reads from memory (which is
-indexed 0 to many), the CPU has internal state (registers), and the CPU makes
-its computations one step at a time by reading an instruction from memory,
-changing its internal state, and moving on to another location in memory.
-
-It is also a very good model to represent the state of a computer programmer
-trying to understand imperative code. Imagine the following C code:
+really good description of a programmer trying to understand imperative code.
+As an example, let's take a look at the following C code:
 
 ```c
 /* 1 */  int x = 1;
@@ -284,12 +329,12 @@ trying to understand imperative code. Imagine the following C code:
 ```
 
 In order to predict what will be printed, a programmer would read the code one
-line at a time, updating their internal state of believe for what the value of
-all variables is at each step. Calling \\(H\\) the current line (for _head_),
+line at a time, updating their internal state of belief for what the value of
+each variable is at each step. Calling \\(H\\) the current line (for _head_),
 here is how such an evaluation would go:
 
-- \\(\\{x = ?, i = ?, H = 1\\}\\): `x = 1`.
-- \\(\\{x = 1, i = ?, H = 2\\}\\): `i = 1`.
+- \\(\\{x = ?, i = ?, H = 1\\}\\): `x = 1` we need to set \\(x\\) to \\(1\\).
+- \\(\\{x = 1, i = ?, H = 2\\}\\): `i = 1` we need to set \\(i\\) to \\(1\\).
 - \\(\\{x = 1, i = 1, H = 3\\}\\): `x = x * i` we need to set \\(x\\) to \\(1\\).
 - \\(\\{x = 1, i = 1, H = 4\\}\\): `i = i + 1` we need to set \\(i\\) to \\(2\\).
 - \\(\\{x = 1, i = 2, H = 5\\}\\): `i <= 4` is true so we set \\(H\\) to \\(3\\).
@@ -303,165 +348,33 @@ here is how such an evaluation would go:
 - \\(\\{x = 24, i = 4, H = 4\\}\\): `i = i + 1` we need to set \\(i\\) to \\(5\\).
 - \\(\\{x = 24, i = 5, H = 5\\}\\): `i <= 4` is **false** so we set \\(H\\) to \\(6\\).
 
-And the program reaches its end.
+And the program reaches its end. Note how closely this resembles the workings
+of a Turing machine: each numbered line of the program could be a symbol from
+the input alphabet, and the transition between each bullet point can easily be
+encoded as a \\(\\delta\\) function. As described, the value of all variables
+can also be easily encoded into a state representation.
+
+## CPUs
+
+This correspondence between Turing machines and C code is no accident. The
+reason Turing machines are the most important model of computation we have is
+because _they can be built_. CPUs really are just physical implementations of a
+universal Turing machine (albeit with a finite ribbon of memory).
 
 > Like a Turing machine, _imperative code_ is _executed_ by reading
 > instructions that tell:
 > 1. How to update the internal state of a processor, and
 > 2. Where to look for the next instruction.
 
-## Lambda calculus & functional evaluation
+## Up next
 
-Lambda calculus is formally defined as performing reduction operations on
-lambda terms, where lambda terms are built using these:
+This is why imperative code is the dominant programming paradigm: we started
+with a handful of models of computation, were able to build one of them, and
+then wrote programs for that one. Over time, we added layers of abstraction,
+but ultimately we mostly remained stuck within the confines of the underlying
+hardware. Importantly, note that this story does not say we're programming
+Turing machines because it's easy, or good. It simply was _possible_.
 
-- A sequence of roman-alphabet letters (usually just one letter) is a
-  _variable_.
-- An expression of the form \\((\\lambda x. M)\\), where \\(x\\) is a variable
-  and \\(M\\) is a term, is a function definition, also called an
-  _abstraction_.
-- An expression of the form \\((M N)\\) where both \\(N\\) and \\(M\\) are
-  terms is the _application_ of the function \\(M\\) evaluates to to the
-  argument \\(N\\).
-
-And "reduction" is defined by the two following rules:
-
-- \\(\\lambda x. M[x]\\) can be rewritten to \\(\\lambda y. M[y]\\). This is
-  called \\(\alpha\\)-converstion. The notation \\(M[x]\\) here means the
-  variable \\(x\\) appears as a _free variable_ in the term \\(M\\). This is
-  mostly there to reduce confusion for humans who might be confused by name
-  collisions.
-- \\(((\\lambda x. M) E) \\to (M[x := E])\\), called \\(\\beta\\)-reduction,
-  consists in replacing all of the _bound_ instances of \\(x\\) in \\(M\\) with
-  the term \\(E\\).
-
-As a concrete example, the term:
-
-\\[(\\lambda x. x)(\\lambda x. x)z\\]
-
-can be rewritten to just \\(z\\) through the following sequence of steps:
-
-- \\((\\lambda x. x)(\\lambda x.x) z\\): \\(\\alpha\\)-reduction to rename
-  \\(x\\) to \\(y\\) in the second term, mostly for clarity.
-- \\((\\lambda x. x)(\\lambda y.y) z\\):\\(\\beta\\)-reduction of the two right-most terms.
-- \\((\\lambda x. x) z\\): \\(\\beta\\)-reduction.
-- \\(z\\).
-
-Just like the Turing machine is an appropriate model for how a programmer would
-approach simulating imperative code, lambda calculus is an appropriate model
-for how a programmer should approach simulating functional code. Using Scheme
-as a notation, the above example could be written:
-
-```scheme
-((lambda (x) x) ((lambda (x) x) z)) ;; alpha-reduction
-((lambda (x) x) ((lambda (y) y) z)) ;; beta-reduction
-((lambda (x) x) z) ;; beta-reduction
-z
-```
-
-Similarly, the following expression:
-
-```scheme
-(factorial 4)
-```
-
-given the definition
-
-```scheme
-(define factorial
-  (lambda (n)
-    (if (= 1 n)
-      1
-      (* n (factorial (- n 1))))))
-```
-
-would be evaluated using the following steps:
-
-- `(factorial 4)`: replacing `factorial` with its definition.
-- `((lambda (n) (if (= 1 n) 1 (* n (factorial (- n 1))))) 4)`: \\(\\beta\\) reduction.
-- `(if (= 1 4) 1 (* 4 (factorial (- 4 1))))`: evaluating `(= 1 4)`.
-- `(if false 1 (* 4 (factorial (- 4 1))))`: applying `if`.
-- `(* 4 (factorial (- 4 1)))`: evaluating `(- 4 1)`.
-- `(* 4 (factorial 3))`: replacing `factorial` with its definition.
-- `(* 4 ((lambda (n) (if (= 1 n) 1 (* n (factorial (- n 1))))) 3))`: \\(\\beta\\) reduction.
-- `(* 4 (if (= 1 3) 1 (* 3 (factorial (- 3 1)))))`: evaluating `(= 1 3)`.
-- `(* 4 (if false 1 (* 3 (factorial (- 3 1)))))`: applying `if`.
-- `(* 4 (* 3 (factorial (- 3 1))))`: evaluating `(- 3 1)`.
-- `(* 4 (* 3 (factorial 2)))`: replacing `factorial` with its definition.
-- `(* 4 (* 3 ((lambda (n) (if (= 1 n) 1 (* n (factorial (- n 1))))) 2)))`: \\(\\beta\\) reduction.
-- `(* 4 (* 3 (if (= 1 2) 1 (* 2 (factorial (- 2 1))))))`: evaluating `(= 1 2)`.
-- `(* 4 (* 3 (if false 1 (* 2 (factorial (- 2 1))))))`: applying `if`.
-- `(* 4 (* 3 (* 2 (factorial (- 2 1)))))`: evaluating `(- 2 1)`.
-- `(* 4 (* 3 (* 2 (factorial 1))))`: replacing `factorial` with its definition.
-- `(* 4 (* 3 (* 2 ((lambda (n) (if (= 1 n) 1 (* n (factorial (- n 1))))) 1))))`: \\(\\beta\\) reduction.
-- `(* 4 (* 3 (* 2 (if (= 1 1) 1 (* 1 (factorial (- 1 1)))))))`: evaluating `(= 1 1)`.
-- `(* 4 (* 3 (* 2 (if true 1 (* 1 (factorial (- 1 1)))))))`: applying `if`.
-- `(* 4 (* 3 (* 2 1)))`: evaluating `(* 2 1)`.
-- `(* 4 (* 3 2))`: evaluating `(* 3 2)`.
-- `(* 4 6)`: evaluating `(* 4 6)`.
-- `24`.
-
-Ignoring the syntactic difference, those last three steps are exactly what one
-would do when computing basic arithmetic: each line is a completely
-self-contained description of the current state of the computation, and
-progress is made by choosing a subset of the computation and evaluating it. For
-example;
-
-- \\(1 + 2 + 4 * 7 - 13\\): evaluating \\(1 + 2\\).
-- \\(3 + 4 * 7 - 13\\): evaluating \\(4 * 7\\).
-- \\(3 + 28 - 13\\): evaluating \\(28 - 13\\).
-- \\(3 + 15\\): evaluating \\(3 + 15\\).
-- \\(18\\).
-
-> Like lambda calculuse, _fucntional code_ is _evaluated_ by applying these
-> three reduction technques on an expression:
-> - Replacing a name by its definition.
-> - \\(\\beta\\)-reduction of a lambda term.
-> - Evaluation of "leaf" operators.
-> Note the absence of state to carry within the processor.
-
-## Why these two models?
-
-There are many other models of computation out there, but they are not (yet?)
-very interesting to the practicing programmer.
-
-The Turing machine is important because of its mechanical nature: it can be
-built. In fact, the first design for building such a machine predates their
-formal mathematical definition by almost exactly a hundred year.
-
-Lambda calculus is important because it treats computation just like any other
-mathematical expression, which means that one can _reason_ about code using all
-the techniques and tools developed by mathematicians over the past three
-thousand years, as well as reuse all of the training and intuition one has
-built while studying other branches of mathematics.
-
-## Equivalence proof
-
-The formal proof of equivalence is way outside the scope of this blog. The
-general principle behind the proof, however, has profound implications for the
-working programming. In a nutshell, in order to prove that two models of
-computation are equivalent, you need to prove that each is "as powerful" as the
-other. In order to prove that model \\(A\\) is as powerful as model \\(B\\),
-you need to prove that you can express any computation model \\(B\\) can
-express in model \\(A\\).
-
-In the specific case of \\(B\\) being Turing machines, it is sufficient to show
-that you can implement a universal Turing machine in model \\(A\\). Lambda
-calculus similarly has a notion of a universal function.
-
-In a less formal sense, as programmers we can think of models of computation as
-programming languages. In this metaphor, two models of computation are
-equivalent if you can write an interpreter for the other one in each of them.
-
-The practical implication is that most imperative languages have at least a
-subset of functional code in them. It usually follows the distinction between
-"expressions" (functional) and "instructions" (imperative).
-
-## Effects
-
-One property the Turing machine has is a well-defined notion of _time_: the
-head must move through the cells one at a time. This makes the Turing machine
-an easier model when it comes to comparing the performance of two different
-ways to compute the same function.
-
-This also makes the Turing machine better at
+In the next post, I will describe another model of computation, lambda
+calculus, how it relates to functional programming, and why we can and should
+finally break the shackles of the Turing machine domination.
