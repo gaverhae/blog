@@ -1165,7 +1165,6 @@ Programming](https://www.cs.ox.ac.uk/publications/books/fop/).
 
 ## 7.8 - Exercices
 
-
 > 1. Show how the list comprehension `[f x | x <- xs, p x]` can be re-expressed
 >    using the higher-order functions `map` and `filter`.
 
@@ -1317,7 +1316,213 @@ See [`Bits.hs`](src/Bits.hs).
 
 Surprise: it fails.
 
-# Chapter 8
+# Chapter 8 - Functional parsers
+
+## 8.1 - Parser
+
+A _parser_ is a program that takes a string of characters and procues some form
+of tree.
+
+## 8.2 - The parser type
+
+A parser can naturally be viewed as a function from `String` to `tree`. There
+are two issues with that, though: a parser may not consume the entire string,
+so it is useful to return both a `tree` and a `String` with whatever parts of
+the input were not processed, and a parser could fail, which we can represent
+by returning a `Maybe`.
+
+```haskell
+newtype Parser = Parser (String -> Maybe (tree, String))
+```
+
+## 8.3 - Basic parsers
+
+```haskell
+return :: a -> Parser a
+return v = Parser (\s -> Just (v, s))
+
+failure :: Parser a
+failure = Parser (\s -> Nothing)
+
+item :: Parser Char
+item = Parser (\s -> case s of
+                       [] -> Nothing
+                       (x:xs) -> Just (x, xs))
+
+parse :: Parser a -> String -> Maybe (a, String)
+parse (Parser f) = f
+```
+
+## 8.4 - Sequencing
+
+```haskell
+(>>=) :: Parser a -> (a -> Parser b) -> b
+p >>= f = Parser (\s -> case parse p s of
+                          Nothing -> Nothing
+                          Just (v, out) -> parse (f v) out)
+```
+
+With `>>=` and `return`, we can use `do` notation. For example, a parser that
+consumes three characters and returns the first and third as a pair could be
+written:
+
+```haskell
+p :: Parser (Char, Char)
+p = item >>= (\x ->
+    item >>= (\_ ->
+    item >>= (\y ->
+    return (x, y))))
+```
+
+or, equivalently:
+
+```haskell
+p :: Parser (Char, Char)
+p = do
+  x <- item
+  item
+  y <- item
+  return (x, y)
+```
+
+## 8.5 - Choice
+
+```haskell
+(+++) :: Parser a -> Parser a -> Parser a
+p +++ q = Parser (\s -> case parse p s of
+                          Nothing -> parse q s
+                          success -> success)
+```
+
+## 8.6 - Derived primitives
+
+```haskell
+sat :: (Char -> Bool) -> Parser Char
+sat p = do
+  x <- item
+  if p x then return x else failure
+
+digit :: Parser Char
+digit = sat isDigit
+
+lower :: Parser Char
+lower = sat isLower
+
+upper :: Parser Char
+upper = sat isUpper
+
+letter :: Parser Char
+letter = sat isAlpha
+
+alphanum :: Parser Char
+alphanum = sat isAlphaNum
+
+char :: Char -> Parser Char
+char x = sat (== x)
+
+string :: String -> Parser String
+string [] = return []
+string (x:xs) = do
+  char x
+  string xs
+  return (x:xs)
+
+many :: Parser a -> Parser [a]
+many p = many1 p +++ return []
+
+many1 :: Parser a -> Parser [a]
+many1 p = do
+  v <- p
+  vs <- many p
+  return (v:vs)
+
+ident :: Parser String
+ident = do
+  x <- lower
+  xs <- many alphanum
+  return (x:xs)
+
+nat :: Parser Int
+nat = do
+  xs <- many1 digit
+  return (read xs)
+
+space :: Parser ()
+space = do
+  many (sat isSpace)
+  return ()
+```
+
+## 8.7 - Handling spacing
+
+```haskell
+token :: Parser a -> Parser a
+token p = do
+  space
+  v <- p
+  space
+  return v
+
+identifier :: Parser String
+identifier = token ident
+
+natural :: Parser Int
+natural = token nat
+
+symbol :: String -> Parser String
+symbol xs = token (string xs)
+```
+
+## 8.8 - Arithmetic expressions
+
+The following grammar:
+
+```plaintext
+expr ::= term (+ expr | e)
+term ::= factor (* term | e)
+factor ::= (expr) | nat
+nat ::= 0 | 1 | 2 | ...
+```
+
+can be translated to:
+
+```haskell
+expr :: Parser Int
+expr = do
+  t <- term
+  (    do symbol "+"; e <- expr; return (t + e)
+   +++ do symbol "-"; e <- expr; return (t - e)
+   +++ return t)
+
+term :: Parser Int
+term = do
+  f <- factor
+  (    do symbol "*"; t <- term; return (f * t)
+   +++ do symbol "/"; t <- term; return (f `div` t)
+   +++ return f)
+
+factor :: Parser Int
+factor = do
+  e <- base
+  (    do symbol "^"; f <- factor; return (e ^ f)
+   +++ return e)
+```
+
+We can evaluate expressions of that grammar with:
+
+```haskell
+eval :: String -> Int
+eval xs = case parse expr xs of
+  Just (n, []) -> n
+  Just (_, output) -> error $ "unused input " ++ output
+  Nothing -> error "invalid input"
+```
+
+## 8.9 - Chapter notes
+
+:shrug:
+
+## 8.10 - Exercises
 
 > 1. The [library file](http://www.cs.nott.ac.uk/~pszgmh/Code.zip) also defines
 >    a parser `int :: Parser Int` for an integer. Without looking at this
