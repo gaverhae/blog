@@ -1771,8 +1771,13 @@ type IO a = World -> (a, World)
 
 ```haskell
 getChar :: IO Char
+-- native implementation
+
 putChar :: Char -> IO ()
+-- native implementation
+
 return :: a -> IO a
+-- native implementation
 ```
 
 `return` provides a bridge from pure values to `IO` values. There is no way
@@ -1987,3 +1992,35 @@ wait n = seqn [ return () | _ <- [1..n]]
 :shrug:
 
 ## 9.9 - Exercises
+
+> 1. Define an action `readLine :: IO String` that behaves in the same way as
+>    `getLine`, except that it also permits the delete key to be used to remove
+>    characters. Hint: the delete character is ’\DEL’, and the control string
+>    for moving the cursor back one character is "\ESC[1D".
+
+```haskell
+readLine :: IO String
+readLine = loop 0 []
+where loop :: Int -> String -> IO String
+      loop pos line = do
+        x <- getCh
+        case x of
+          '\n' -> return line
+          '\ESC[1D' -> do
+            putChar x
+            loop (max 0 (pos - 1)) line
+          '\DEL' -> do
+            if pos == length line
+            then loop pos line
+            else do
+              let rew = drop (pos + 1) line
+              putStr rew
+              putChar ' '
+              putStr ['\ESC[1D' | _ <- rew]
+              putChar '\ESC[1D'
+              loop pos (rem pos line)
+          c -> loop (pos + 1) (line ++ [c])
+      rem :: Int -> String -> String
+      rem 0 line = tail line
+      rem n (x:xs) = x : rem (n - 1) xs
+```
