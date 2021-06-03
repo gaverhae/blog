@@ -2000,27 +2000,22 @@ wait n = seqn [ return () | _ <- [1..n]]
 
 ```haskell
 readLine :: IO String
-readLine = loop 0 []
-where loop :: Int -> String -> IO String
-      loop pos line = do
-        x <- getCh
-        case x of
-          '\n' -> return line
-          '\ESC[1D' -> do
-            putChar x
-            loop (max 0 (pos - 1)) line
-          '\DEL' -> do
-            if pos == length line
-            then loop pos line
-            else do
-              let rew = drop (pos + 1) line
-              putStr rew
-              putChar ' '
-              putStr ['\ESC[1D' | _ <- rew]
-              putChar '\ESC[1D'
-              loop pos (rem pos line)
-          c -> loop (pos + 1) (line ++ [c])
-      rem :: Int -> String -> String
-      rem 0 line = tail line
-      rem n (x:xs) = x : rem (n - 1) xs
+readLine = loop []
+  where
+  loop :: String -> IO String
+  loop line = do
+    c <- getCh
+    case c of
+      '\n' -> do
+        putChar c
+        return line
+      '\DEL' -> do
+        case line of
+          [] -> loop []
+          xs -> do
+            putStr "\ESC[1D \ESC[1D"
+            loop (init line)
+      _ -> do
+        putChar c
+        loop (line ++ [c])
 ```
