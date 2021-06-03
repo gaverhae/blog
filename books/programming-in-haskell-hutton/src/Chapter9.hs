@@ -1,3 +1,5 @@
+module Chapter9 where
+
 import System.IO
 
 getCh = do
