@@ -12,13 +12,13 @@ present a similarly informal introduction to lambda calculus and the associated
 Lambda calculus is formally defined as performing _reduction operations_ on
 _lambda terms_, where lambda terms are built using these:
 
-- A sequence of roman-alphabet letters (usually just one letter) is a
-  _variable_.
+- There is an alphabet of symboles representing _variables_ (usually single
+  letters).
 - An expression of the form \\((\\lambda x. M)\\), where \\(x\\) is a variable
   and \\(M\\) is a term, is a function definition, also called an
   _abstraction_.
 - An expression of the form \\((M N)\\) where both \\(N\\) and \\(M\\) are
-  terms is the _application_ of the function \\(M\\) evaluated to to the
+  terms is the _application_ of the function \\(M\\) evaluated to the
   argument \\(N\\).
 
 Here are a few examples of lambda terms:
@@ -51,7 +51,7 @@ referring to the _reduction operations_ mentioned above, which are:
   mostly there to reduce confusion for humans who might be confused by name
   collisions; in an ideal world, every single variable is unique throughout the
   entire expression being evaluated.[^indices]
-- \\(((\\lambda x. M) E) \\to (M[x := E])\\), called \\(\\beta\\)-reduction,
+- \\(((\\lambda x. M[x]) E) \\to (M[x := E])\\), called \\(\\beta\\)-reduction,
   consists in replacing all of the _bound_ instances of \\(x\\) in \\(M\\) with
   the term \\(E\\).
 
@@ -75,7 +75,7 @@ known as "dynamic" scope.
 
 Informally, in \\(\lambda x. \lambda y . xyz\\), we say that \\(x\\) and
 \\(y\\) are _bound_, because they correspond to the argument of an enclosing
-abstraction, whereas \\(z\\) is free, because it is not bound by an enclosing
+abstraction, whereas \\(z\\) is _free_, because it is not bound by an enclosing
 abstraction. Similarly, in \\(\lambda x. ((\lambda y. xyz)y)\\), the innermost
 \\(y\\) is bound, but the last one is _not_, and it is important to realize
 that they are not the same.
@@ -109,16 +109,16 @@ could also be interpreted as associating to the left, yielding:
 - \\(\\beta\\)-reduction on \\(y\\):<br/>
   \\(z\\)
 
-Not specifying the associativity is fine in many contexts, but can lead to
-issues in the case of potentially-infinite reductions. For the context of this
-post, association does not matter, but know that in a fully formal treatment of
-lambda calculus it _is_ formally defined such that parenthesis removal does not
-introduce ambiguity.
+Note that associativity is not the only reason why there may be multiple ways
+to reduce a lambda term. In the general case of \\((M E)\\), there is nothing
+in the definition of lambda calculus that prescribes whether one should first
+completely reduce \\(E\\) (or \\(M\\)) before doing the top-level
+\\(\\beta\\)-reduction.
 
 ## Extending lambda calculus
 
 It should be pretty obvious that the lambda calculus, as a model, is a lot
-simpler than the Turing machine. It is composed a fewer moving parts, and, more
+simpler than the Turing machine. It is composed of fewer moving parts, and, more
 importantly, while it follows a different set of rules from normal arithmetic,
 it does look like "normal" computation. Compare the above evaluation with:
 
@@ -128,14 +128,6 @@ it does look like "normal" computation. Compare the above evaluation with:
   \\(1 + 6\\)
 - evaluating \\(+\\):<br/>
   \\(7\\)
-
-In that sense, evaluating lambda calculus is way more familiar than executing
-Turing machines, to anyone with any training in arithmetic. It's also a lot
-easier to reason about lambda calculus expressions. For example, one could
-assert that two lambda terms are equal if they reduce to the same
-representation. In that sense, \\(\lambda x.x\\) is equal to \\(\lambda y.y\\),
-which matches a mathematician's intuition: it's the identity function,
-regardless of what name you give its argument.
 
 Simplicity is nice, but only if it comes without a loss of power. I've already
 claimed that lambda calculus is exactly as powerful as Turing machines, but at
@@ -189,10 +181,24 @@ We can compute \\(2 + 1\\) with:
   \\(\\lambda f. \\lambda x. fffx\\)
 - and that is our representation for \\(3\\).
 
+You may think that the "_replacing X_" steps are cheating, as lambda calculus
+as defined does not have any mechanism for "global variables". We can work
+around that. Observe that, in the original expression above, \\(+\\), \\(1\\),
+and \\(2\\) are free variables. We can simply _bind_ them by enclosing the
+original expression in an abstraction and applying it. Thus, the original
+expression \\((+2)1\\) can be seen as a shorthand notation for what would
+formally be:
+
+\\[(\\lambda +. (\\lambda 2. (\\lambda 1. ((+ 2) 1))))(\\lambda m.\\lambda n.\\lambda f.\\lambda x.mf(nfx))(\\lambda f.\\lambda x. f f x)(\\lambda f.\\lambda x. f x)\\]
+
+or, less formally:
+
+\\[(\\lambda +. \\lambda 2.\\lambda 1. + 2 1)(\\textrm{def. of }+)(\\textrm{def. of } 2)(\\textrm{def. of }1)\\]
+
 ## Programming languages
 
 Just like we can recover numbers, we can recover booleans and an if-then-else
-construct. Additionally, it is possible to define anonymous recusrion using the
+construct. Additionally, it is possible to define anonymous recursion using the
 Y combinator. This means that, through simple rewrite rules, we can extend the
 notation for lambda calculus, _without adding anything to the underlying
 model_, to become a programming language with:
@@ -202,9 +208,14 @@ model_, to become a programming language with:
 - Conditionals.
 
 It should be pretty clear that integers are enough to redefine any other data
-type we want, which means that this yields a useable programming language. The
-Lisp family of languages is directly inspired by lambda calculus, and Scheme
-provides a nice notation for our extended lambda calculus. For example:
+type we want, which means that this yields a useable programming
+language[^pure]. The Lisp family of languages is directly inspired by lambda
+calculus, and Scheme provides a nice notation for our extended lambda calculus.
+For example:
+
+[^pure]: Well, except for the part where it's _pure_; it's a programming
+  language that can be "pleasantly" and "productively" used to compute any
+  function, but which cannot be used for any _program_.
 
 ```scheme
 (define factorial
@@ -245,7 +256,7 @@ calculus, this evaluates in pretty much the same way:
 > three reduction operations on an expression:
 > - Replacing a name by its definition.
 > - \\(\\beta\\)-reduction of a lambda term (function application).
-> - Evaluation of "leaf" operators (if-then-else, +, etc.)
+> - Evaluation of higher-level abstractions (if-then-else, +, etc.).
 >
 > There is no state to update, no need to keep track of "variable values":
 > everything is embedded in the expression itself, at every step of evaluation.
@@ -257,21 +268,35 @@ enriched notation.
 ## Why lambda calculus?
 
 Last week we looked at Turing machines, which I argued were important _because
-they could be built_. In contrast, lambda calculus is important because it
-treats computation just like any other mathematical expression, which means
-that one can _reason_ about code using all the techniques and tools developed
-by mathematicians over the past three thousand years, as well as reuse all of
-the training and intuition one has built while studying other branches of
-mathematics.
+they could be built_. In contrast, lambda calculus is important because _it can
+be reasoned about_ with a human brain. I assert that for two reasons:
 
-I do not think the evolution of mathematics is an accident. I think mathematics
-developed the way they have because it is aligned with how the human brain
-naturally works. I don't have any proof of that, but if there is any grain of
-truth to it, then, while Turing machines are important because they are how
-computers actually work under the hood, lambda calculus is important because it
-represents how programmers think. Or at least how they would most naturally
-want to think if they did not have years of prior training with Turing
-machines.
+- The fundamental working of lambda calculus evaluation is the same processus
+  as any other arithmetic computation, which most human brains have been
+  trained for.
+- By construction, a lambda term is a tree in which every node is the root of a
+  fully self-sufficient lambda term. This means that one can reason about any
+  subtree independently; this is the fundamental "power of abstraction".
+
+This second point is crucial. This is the reason why we can "abstract away" a
+subtree of a lambda term by saying "this is addition; I know how addition
+works, so from now on I can use my knowledge of addition on integers rather
+than having to keep using \\(\\lambda m.\\lambda n.\\lambda f.\\lambda
+x.mf(nfx)\\).
+
+In other words, reasoning about lambda calculus is equivalent to reasoning
+about a single lambda term at a time. If you think of a lambda term as a tree,
+you can take any subtree and still be able to reason about it in isolation.
+This decomposability is where the power comes from. In contrast, in order to
+reason about the current state of a Turing machine, you need to know the entire
+program (\\(\\delta\\)), the entire current content of the ribbon, the current
+position of the head and the current state of the machine. There is no obvious,
+general way to think about a subset of a running Turing machine.
+
+Furthermore, \\(\\alpha\\)-reduction means that reasoning about lambda terms
+can be generalized. For example, we can recognize that \\(\lambda x.x\\) is
+equal to \\(\lambda y.y\\), which should match our intuition: it's the identity
+function, regardless of what name you give its parameter.
 
 ## Up next
 
