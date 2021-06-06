@@ -298,13 +298,13 @@ than a Turing machine (because it does), but it is fundamentally _extensible_
 through composition and that makes it a lot more powerful[^power] in practice.
 
 [^power]: I have mentioned multiple times that Turing machines and lambda
-  calculus are, from a thepretical perspective, _exactly as powerful as each
+  calculus are, from a theoretical perspective, _exactly as powerful as each
   other_, by which I mean that they can compute the exact same set of numbers, or
   alternatively that they can represent the exact same set of functions. In this
   context, when I write that lambda calculus is _more powerful_, I really mean
   "more pleasant to use for a human", i.e. that the vast majority of these
-  functions is easier to represent in lambda calculus than using Turing machines,
-  even though both are possible.
+  functions are easier to represent in lambda calculus than using Turing machines,
+  even though they _can_ be represented with both.
 
 ## Up next
 
