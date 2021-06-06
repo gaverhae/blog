@@ -12,7 +12,7 @@ present a similarly informal introduction to lambda calculus and the associated
 Lambda calculus is formally defined as performing _reduction operations_ on
 _lambda terms_, where lambda terms are built using these:
 
-- There is an alphabet of symboles representing _variables_ (usually single
+- There is an alphabet of symbols representing _variables_ (usually single
   letters).
 - An expression of the form \\((\\lambda x. M)\\), where \\(x\\) is a variable
   and \\(M\\) is a term, is a function definition, also called an
@@ -77,8 +77,8 @@ Informally, in \\(\lambda x. \lambda y . xyz\\), we say that \\(x\\) and
 \\(y\\) are _bound_, because they correspond to the argument of an enclosing
 abstraction, whereas \\(z\\) is _free_, because it is not bound by an enclosing
 abstraction. Similarly, in \\(\lambda x. ((\lambda y. xyz)y)\\), the innermost
-\\(y\\) is bound, but the last one is _not_, and it is important to realize
-that they are not the same.
+\\(y\\) is bound, but the last one _is not_, and it is important to realize
+that they are not the same \\(y\\).
 
 Let's walk through an example of applying those reductions. Consider the term:
 
@@ -154,8 +154,7 @@ expected across those representations. For example addition is defined as:
 
 Coming up with that definition is definitely not trivial, and it took
 mathematicians a lot of effort to figure this out. But now that it's there we
-can just look it up and use it. This maye have been one of the very first
-library functions.
+can just look it up and use it.
 
 We can compute \\(2 + 1\\) with:
 
@@ -210,8 +209,8 @@ model_, to become a programming language with:
 It should be pretty clear that integers are enough to redefine any other data
 type we want, which means that this yields a useable programming
 language[^pure]. The Lisp family of languages is directly inspired by lambda
-calculus, and Scheme provides a nice notation for our extended lambda calculus.
-For example:
+calculus, and Scheme provides a nice ASCII notation for our extended lambda
+calculus.  For example:
 
 [^pure]: Well, except for the part where it's _pure_; it's a programming
   language that can be "pleasantly" and "productively" used to compute any
@@ -267,36 +266,45 @@ enriched notation.
 
 ## Why lambda calculus?
 
-Last week we looked at Turing machines, which I argued were important _because
-they could be built_. In contrast, lambda calculus is important because _it can
-be reasoned about_ with a human brain. I assert that for two reasons:
+Last week we looked at Turing machines, which I argued were important because
+_they can be built_. In contrast, lambda calculus is important because _it is
+composable_, and that means it can be used to _manage complexity_, which is at
+the heart of everything we want to do in software engineering.
 
-- The fundamental working of lambda calculus evaluation is the same processus
-  as any other arithmetic computation, which most human brains have been
-  trained for.
-- By construction, a lambda term is a tree in which every node is the root of a
-  fully self-sufficient lambda term. This means that one can reason about any
-  subtree independently; this is the fundamental "power of abstraction".
-
-This second point is crucial. This is the reason why we can "abstract away" a
-subtree of a lambda term by saying "this is addition; I know how addition
-works, so from now on I can use my knowledge of addition on integers rather
-than having to keep using \\(\\lambda m.\\lambda n.\\lambda f.\\lambda
-x.mf(nfx)\\).
+In this context, _composable_ refers to the fact that a lambda term is built
+out of other lambda terms, yielding a _tree_ where every subtree is itself a
+valid lambda term. One can reason about individual subtrees without considering
+the entirety of the program. One can also easily reuse subtrees if one is known
+to do a specific task, in the same way we added numbers and \\(+\\) to our
+language above. Once a given lambda term is known to be useful, it is trivial
+to use it in constructing other lambda terms.
 
 In other words, reasoning about lambda calculus is equivalent to reasoning
 about a single lambda term at a time. If you think of a lambda term as a tree,
-you can take any subtree and still be able to reason about it in isolation.
-This decomposability is where the power comes from. In contrast, in order to
-reason about the current state of a Turing machine, you need to know the entire
-program (\\(\\delta\\)), the entire current content of the ribbon, the current
-position of the head and the current state of the machine. There is no obvious,
-general way to think about a subset of a running Turing machine.
+you can take any subtree and still be able to reason about it, and its current
+state at this point in the computation, in isolation. This decomposability is
+where the power comes from.
 
-Furthermore, \\(\\alpha\\)-reduction means that reasoning about lambda terms
-can be generalized. For example, we can recognize that \\(\lambda x.x\\) is
-equal to \\(\lambda y.y\\), which should match our intuition: it's the identity
-function, regardless of what name you give its parameter.
+In contrast, in order to reason about the current
+state of a Turing machine, you need to know the entire program (\\(\\delta\\)),
+the entire current content of the ribbon, the current position of the head and
+the current state of the machine. There is no obvious, general way to think
+about a subset of a running Turing machine. If you find a useful Turing
+machine, such as the 2-bit adder I showed in the [previous post][turing], it is
+completely unclear how to reuse that within another Turing machine.
+
+Lambda calculus may seem like it starts a lot smaller and, in a way, poorer
+than a Turing machine (because it does), but it is fundamentally _extensible_
+through composition and that makes it a lot more powerful[^power] in practice.
+
+[^power]: I have mentioned multiple times that Turing machines and lambda
+  calculus are, from a thepretical perspective, _exactly as powerful as each
+  other_, by which I mean that they can compute the exact same set of numbers, or
+  alternatively that they can represent the exact same set of functions. In this
+  context, when I write that lambda calculus is _more powerful_, I really mean
+  "more pleasant to use for a human", i.e. that the vast majority of these
+  functions is easier to represent in lambda calculus than using Turing machines,
+  even though both are possible.
 
 ## Up next
 
