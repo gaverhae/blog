@@ -1,6 +1,8 @@
 module Chapter6
 where
 
+import Prelude hiding (product, zip, odd, even, (^), and, concat, replicate, (!!), elem, take, sum, last)
+
 -- # Chapter 6 - Recursive functions
 --
 -- ## 6.1 - Basic concepts
@@ -68,7 +70,7 @@ odd n = even (n - 1)
 
 (^) :: Integral a => a -> a -> a
 m ^ 0 = 1
-m ^ (n + 1) = m * m ^ n -- ^ has higher precedence than *
+m ^ n = m * m ^ (n - 1) -- ^ has higher precedence than *
 
 -- 2 ^ 3 = 2 * (2 ^ 2)
 --       = 2 * (2 * (2 ^ 1))
