@@ -271,3 +271,32 @@ readLine = loop []
       _ -> do
         putChar c
         loop (line ++ [c])
+
+-- > 2. Modify the calculator program to indicate the approximate position of
+-- >    an error rather than just sounding a beep, by using the fact that the
+-- >    parser returns the unconsumed part of the input string.
+
+-- > 3. On some systems the game of life may flicker, due to the entire screen
+-- >    being cleared each generation. Modify the game to avoid such flicker by
+-- >    only redisplaying positions whose status changes.
+
+-- > 4. Produce an editor that allows the user to interactively create and
+-- >    modify the content of the board in the game of life.
+
+-- > 5. Produce graphical versions of the calculator and game of life programs,
+-- >    using one of the graphics libraries available from www.haskell.org.
+
+-- > 6. Nim is a game that is played on a board comprising five numbered rows
+-- >    of stars, which is initially set up as follows:
+-- >
+-- >    1: ∗∗∗∗∗
+-- >    2: ****
+-- >    3: ∗∗∗
+-- >    4: ∗∗
+-- >    5: ∗
+-- >
+-- >    Two players take it in turn to remove one or more stars from the end of
+-- >    a single row. The winner is the player who removes the last star or
+-- >    stars from the board. Implement the game of nim in Haskell. Hint:
+-- >    represent the board as a list comprising the number of stars remaining
+-- >    on each row, with the initial board being [ 5, 4, 3, 2, 1 ].
