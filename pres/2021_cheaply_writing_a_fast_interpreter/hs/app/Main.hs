@@ -18,12 +18,6 @@ import qualified Formatting.Formatters
 import GHC.Generics (Generic)
 import qualified System.Clock
 
-newtype Name = Name String
-  deriving (Eq, Ord, Show)
-newtype Value = Value Int
-  deriving (Eq, Show)
-  deriving newtype Num
-
 data Op
   = Add
   | Sub
@@ -32,16 +26,16 @@ data Op
   deriving (Show)
 
 data Exp where
-  Lit :: Value -> Exp
-  Var :: Name -> Exp
-  Set :: Name -> Exp -> Exp
+  Lit :: Int -> Exp
+  Var :: Int -> Exp
+  Set :: Int -> Exp -> Exp
   Bin :: Op -> Exp -> Exp -> Exp
   Do :: [Exp] -> Exp
   While :: Exp -> Exp -> Exp
   Print :: Exp -> Exp
   deriving Show
 
-bin :: Op -> Value -> Value -> Value
+bin :: Op -> Int -> Int -> Int
 bin = \case
   Add -> (+)
   Sub -> (-)
@@ -50,21 +44,16 @@ bin = \case
 
 neil :: Exp
 neil =
-  let x = Name "x"
-      i = Name "i"
-      t = Name "t"
-  in
   Do [
-    Set x (Lit 100),
-    Set i (Lit 1000),
-    While (Bin NotEq (Lit 0) (Var i))
+    Set 0 (Lit 100),
+    Set 1 (Lit 1000),
+    While (Bin NotEq (Lit 0) (Var 1))
       (Do [
-        Set x (Bin Add (Bin Add (Bin Add (Var x) (Lit 4)) (Var x)) (Lit 3)),
-        Set x (Bin Add (Bin Add (Var x) (Lit 2)) (Lit 4)),
-        Set i (Bin Add (Lit (-1)) (Var i))
+        Set 0 (Bin Add (Bin Add (Bin Add (Var 0) (Lit 4)) (Var 0)) (Lit 3)),
+        Set 0 (Bin Add (Bin Add (Var 0) (Lit 2)) (Lit 4)),
+        Set 1 (Bin Add (Lit (-1)) (Var 1))
       ]),
-    Print $ Var x,
-    Print $ Var t
+    Print $ Var 0
     ]
 
 direct :: Env -> TweIO
@@ -74,7 +63,7 @@ direct _ =
   loop :: Int -> Int -> TweIO
   loop x0 i =
     if (0 == i)
-    then put Halt (Value x0)
+    then put Halt x0
     else
     let x1 = x0 + 4 + x0 + 3
         x2 = x1 + 2 + 4
@@ -82,51 +71,46 @@ direct _ =
 
 fact :: Int -> Exp
 fact x =
-  let acc = Name "acc"
-      i = Name "i"
-  in
   Do [
-    Set acc (Lit 1),
-    Set i (Lit (Value x)),
-    While (Bin NotEq (Lit 0) (Var i))
+    Set 0 (Lit 1),
+    Set 1 (Lit x),
+    While (Bin NotEq (Lit 0) (Var 1))
       (Do [
-        Set acc (Bin Mul (Var acc) (Var i)),
-        Set i (Bin Sub (Var i) (Lit 1)),
-        Print (Var acc)
+        Set 0 (Bin Mul (Var 0) (Var 1)),
+        Set 1 (Bin Sub (Var 1) (Lit 1)),
+        Print (Var 0)
       ]),
-    Print (Var acc)
+    Print (Var 0)
   ]
 
 sam :: Exp
 sam =
-  let x = Name "x"
-  in
   Do [
-    Set x (Lit 13),
-    Print (Var x),
-    Set x (Bin Add (Var x) (Var x)),
-    Print (Var x)
+    Set 0 (Lit 13),
+    Print (Var 0),
+    Set 0 (Bin Add (Var 0) (Var 0)),
+    Print (Var 0)
   ]
 
-newtype Env = Env (Data.Map Name Value)
+newtype Env = Env (Data.Map Int Int)
   deriving Show
 data TweIO = Output Int TweIO | Halt
   deriving (Show, Generic, NFData)
 
-bottom :: Value
+bottom :: Int
 bottom = undefined
 
-lookup :: Env -> Name -> Value
+lookup :: Env -> Int -> Int
 lookup (Env m) n = maybe bottom id (Data.Map.lookup n m)
 
-insert :: Env -> Name -> Value -> Env
+insert :: Env -> Int -> Int -> Env
 insert (Env m) n v = Env $ Data.Map.insert n v m
 
-put :: TweIO -> Value -> TweIO
-put io (Value v) = Output v io
+put :: TweIO -> Int -> TweIO
+put io v = Output v io
 
-append :: TweIO -> Value -> TweIO
-append Halt (Value v) = Output v Halt
+append :: TweIO -> Int -> TweIO
+append Halt v = Output v Halt
 append (Output p io) v = Output p (append io v)
 
 mt_env :: Env
@@ -136,7 +120,7 @@ tree_walk_eval :: Exp -> Env -> TweIO
 tree_walk_eval ex env =
   let (_, io, _) = loop ex Halt env in io
   where
-  loop :: Exp -> TweIO -> Env -> (Value, TweIO, Env)
+  loop :: Exp -> TweIO -> Env -> (Int, TweIO, Env)
   loop exp0 out0 env0 =
     case exp0 of
       Lit v -> (v, out0, env0)
@@ -149,7 +133,7 @@ tree_walk_eval ex env =
         ((bin op) v1 v2, out2, env2)
       Do (exps) -> foldl (\(_, out1, env1) exp1 -> loop exp1 out1 env1) (bottom, out0, env0) exps
       While condition body -> do
-        let (Value c, out1, env1) = loop condition out0 env0
+        let (c, out1, env1) = loop condition out0 env0
         if c == 1
         then do
           let (_, out2, env2) = loop body out1 env1
@@ -162,7 +146,7 @@ twe_cont :: Exp -> Env -> TweIO
 twe_cont e env =
   loop e env (\_ _ -> Halt)
   where
-  loop :: Exp -> Env -> (Env -> Value -> TweIO) -> TweIO
+  loop :: Exp -> Env -> (Env -> Int -> TweIO) -> TweIO
   loop exp env cont =
     case exp of
       Lit v -> cont env v
@@ -182,9 +166,9 @@ twe_cont e env =
 data EvalExec a where
   EvalBind :: EvalExec a -> (a -> EvalExec b) -> EvalExec b
   EvalReturn :: a -> EvalExec a
-  EvalLookup :: Name -> EvalExec Value
-  EvalSet :: Name -> Value -> EvalExec ()
-  EvalPrint :: Value -> EvalExec ()
+  EvalLookup :: Int -> EvalExec Int
+  EvalSet :: Int -> Int -> EvalExec ()
+  EvalPrint :: Int -> EvalExec ()
 
 instance Functor EvalExec where fmap = liftM
 instance Applicative EvalExec where pure = return; (<*>) = ap
@@ -194,7 +178,7 @@ twe_mon :: Exp -> Env -> TweIO
 twe_mon exp env =
   exec (eval exp) env (\_ _ -> Halt)
   where
-  eval :: Exp -> EvalExec Value
+  eval :: Exp -> EvalExec Int
   eval = \case
     Lit v -> return v
     Var n -> do
@@ -238,7 +222,7 @@ closure_eval :: Exp -> Env -> TweIO
 closure_eval e =
   let c = compile e in \env -> let (_, _, io) = c (env, Halt) in io
   where
-  compile :: Exp -> (Env, TweIO) -> (Value, Env, TweIO)
+  compile :: Exp -> (Env, TweIO) -> (Int, Env, TweIO)
   compile = \case
     Lit v -> \(env, io) -> (v, env, io)
     Var n -> \(env, io) -> (lookup env n, env, io)
@@ -289,7 +273,7 @@ closure_cont e =
     let (_, io) = f (env, Halt)
     in io
   where
-  compile :: Exp -> (((Env, TweIO) -> (Value, Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)
+  compile :: Exp -> (((Env, TweIO) -> (Int, Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)
   compile exp cont = case exp of
     Lit v -> cont (\(env, io) -> (v, env, io))
     Var n -> cont (\(env, io) -> (lookup env n, env, io))
@@ -324,9 +308,9 @@ closure_cont e =
                                                         in (v, env1, append io1 v)))
 
 data StackOp
-  = StackPush Value
-  | StackSet Name
-  | StackGet Name
+  = StackPush Int
+  | StackSet Int
+  | StackGet Int
   | StackBin Op
   | StackJump Int
   | StackJumpIfZero Int
@@ -366,7 +350,7 @@ stack_exec code env =
   where
   code' :: Data.Vector StackOp
   code' = Data.Vector.fromList code
-  loop :: Int -> [Value] -> Env -> TweIO -> TweIO
+  loop :: Int -> [Int] -> Env -> TweIO -> TweIO
   loop ip stack env io = case (Data.Vector.!) code' ip of
     StackPush v -> loop (ip + 1) (v:stack) env io
     StackSet n -> loop (ip + 1) (tail stack) (insert env n (head stack)) io
@@ -383,7 +367,7 @@ stack_exec_cont :: [StackOp] -> Env -> TweIO
 stack_exec_cont code =
   \env -> (code' Data.Vector.! 0) 0 env []
   where
-  code' :: Data.Vector (Int -> Env -> [Value] -> TweIO)
+  code' :: Data.Vector (Int -> Env -> [Int] -> TweIO)
   code' = Data.Vector.fromList $ (flip map) code $ \case
     StackPush v -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env (v:stack)
     StackSet n -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) (insert env n (head stack)) (tail stack)
@@ -408,12 +392,12 @@ switch = Perf
 main :: IO ()
 main = case switch of
   Test -> do
-    let run e = stack_exec_cont (stack_compile e) (insert mt_env (Name "t") 0)
+    let run e = stack_exec_cont (stack_compile e) (insert mt_env 2 0)
     print $ run sam
     print $ run $ fact 3
     print $ run neil
   Vals -> do
-    let env = insert mt_env (Name "t") 0
+    let env = insert mt_env 2 0
     _ <- for [("tree_walk_eval", tree_walk_eval)
              ,("twe_cont", twe_cont)
              ,("twe_mon", twe_mon)
@@ -443,7 +427,7 @@ main = case switch of
           if n == 0
           then return ()
           else do
-            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f (insert mt_env (Name "t") (Value n))
+            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f (insert mt_env 2 n)
             ntimes f (n - 1)
     let bench s f = do
           ntimes f 3
