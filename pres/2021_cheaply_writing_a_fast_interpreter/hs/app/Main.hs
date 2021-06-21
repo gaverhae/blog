@@ -30,7 +30,7 @@ data Exp where
   Var :: Int -> Exp
   Set :: Int -> Exp -> Exp
   Bin :: Op -> Exp -> Exp -> Exp
-  Do :: [Exp] -> Exp
+  Do :: Exp -> Exp -> Exp
   While :: Exp -> Exp -> Exp
   Print :: Exp -> Exp
   deriving Show
@@ -44,17 +44,20 @@ bin = \case
 
 neil :: Exp
 neil =
-  Do [
-    Set 0 (Lit 100),
-    Set 1 (Lit 1000),
-    While (Bin NotEq (Lit 0) (Var 1))
-      (Do [
-        Set 0 (Bin Add (Bin Add (Bin Add (Var 0) (Lit 4)) (Var 0)) (Lit 3)),
-        Set 0 (Bin Add (Bin Add (Var 0) (Lit 2)) (Lit 4)),
-        Set 1 (Bin Add (Lit (-1)) (Var 1))
-      ]),
-    Print $ Var 0
-    ]
+  (Do (Set 0 (Lit 100))
+      (Do (Set 1 (Lit 1000))
+          (Do (While (Bin NotEq (Lit 0)
+                                (Var 1))
+                     (Do (Set 0 (Bin Add (Bin Add (Bin Add (Var 0)
+                                                           (Lit 4))
+                                                  (Var 0))
+                                         (Lit 3)))
+                         (Do (Set 0 (Bin Add (Bin Add (Var 0)
+                                                      (Lit 2))
+                                             (Lit 4)))
+                             (Set 1 (Bin Add (Lit (-1))
+                                             (Var 1))))))
+              (Print $ Var 0))))
 
 direct :: Env -> TweIO
 direct _ =
@@ -71,26 +74,24 @@ direct _ =
 
 fact :: Int -> Exp
 fact x =
-  Do [
-    Set 0 (Lit 1),
-    Set 1 (Lit x),
-    While (Bin NotEq (Lit 0) (Var 1))
-      (Do [
-        Set 0 (Bin Mul (Var 0) (Var 1)),
-        Set 1 (Bin Sub (Var 1) (Lit 1)),
-        Print (Var 0)
-      ]),
-    Print (Var 0)
-  ]
+  (Do (Set 0 (Lit 1))
+      (Do (Set 1 (Lit x))
+          (Do (While (Bin NotEq (Lit 0)
+                                (Var 1))
+                     (Do (Set 0 (Bin Mul (Var 0)
+                                         (Var 1)))
+                         (Do (Set 1 (Bin Sub (Var 1)
+                                             (Lit 1)))
+                             (Print (Var 0)))))
+              (Print (Var 0)))))
 
 sam :: Exp
 sam =
-  Do [
-    Set 0 (Lit 13),
-    Print (Var 0),
-    Set 0 (Bin Add (Var 0) (Var 0)),
-    Print (Var 0)
-  ]
+  (Do (Set 0 (Lit 13))
+      (Do (Print (Var 0))
+          (Do (Set 0 (Bin Add (Var 0)
+                              (Var 0)))
+              (Print (Var 0)))))
 
 newtype Env = Env (Data.Map Int Int)
   deriving Show
@@ -131,7 +132,9 @@ tree_walk_eval ex env =
         let (v1, out1, env1) = loop e1 out0 env0
         let (v2, out2, env2) = loop e2 out1 env1
         ((bin op) v1 v2, out2, env2)
-      Do (exps) -> foldl (\(_, out1, env1) exp1 -> loop exp1 out1 env1) (bottom, out0, env0) exps
+      Do first rest -> do
+        let (_, out1, env1) = loop first out0 env0
+        loop rest out1 env1
       While condition body -> do
         let (c, out1, env1) = loop condition out0 env0
         if c == 1
@@ -154,9 +157,7 @@ twe_cont e env =
       Print exp -> loop exp env (\env v -> put (cont env v) v)
       Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
       Bin op e1 e2 -> loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env ((bin op) v1 v2)))
-      Do ([]) -> cont env bottom
-      Do (exp:[]) -> loop exp env (\env v -> cont env v)
-      Do (exp:exps) -> loop exp env (\env _ -> loop (Do exps) env (\env v -> cont env v))
+      Do first rest -> loop first env (\env _ -> loop rest env cont)
       While condition body -> loop condition env (\env condition_value ->
         if (1 == condition_value)
         then loop body env (\env _ ->
@@ -192,11 +193,9 @@ twe_mon exp env =
       v1 <- eval e1
       v2 <- eval e2
       return $ (bin op) v1 v2
-    Do [] -> return bottom
-    Do [exp] -> eval exp
-    Do (exp:exps) -> do
-      _ <- eval exp
-      eval (Do exps)
+    Do first rest -> do
+      _ <- eval first
+      eval rest
     While condition body -> do
       c <- eval condition
       if 1 == c
@@ -238,16 +237,12 @@ closure_eval e =
         let (v1, env1, io1) = f1 (env, io)
             (v2, env2, io2) = f2 (env1, io1)
         in ((bin op) v1 v2, env2, io2)
-    Do [] -> \(env, io) -> (bottom, env, io)
-    Do [exp] -> let f = compile exp in \(env, io) -> f (env, io)
-    Do exps ->
-      let fs = foldr (\exp cont -> let f = compile exp
-                                   in \_ (env, io) ->
-                                     let (v1, env1, io1) = f (env, io)
-                                     in cont v1 (env1,io1))
-                     (\v (env, io) -> (v, env, io))
-                     exps
-      in \(env, io) -> fs bottom (env, io)
+    Do first rest ->
+      let f = compile first
+          r = compile rest
+      in \(env0, io0) ->
+        let (_, env1, io1) = f (env0, io0)
+        in r (env1, io1)
     While condition body ->
       let cond = compile condition
           bod = compile body
@@ -288,12 +283,11 @@ closure_cont e =
             let (v1, env1, io1) = f1 (env, io)
                 (v2, env2, io2) = f2 (env1, io1)
             in ((bin op) v1 v2, env2, io2))))
-    Do [] -> undefined
-    Do [exp] -> compile exp (\f -> cont (\(env, io) -> f (env, io)))
-    Do (exp:exps) -> compile (Do exps) (\rest ->
-      compile exp (\f ->
-        cont (\(env, io) -> let (_, env1, io1) = f (env, io)
-                            in rest (env1, io1))))
+    Do first rest -> compile first (\f ->
+      compile rest (\r ->
+        cont (\(env, io) ->
+          let (_, env1, io1) = f (env, io)
+          in r (env1, io1))))
     While condition body ->
       compile condition (\cond ->
         compile body (\bod ->
@@ -331,11 +325,10 @@ stack_compile exp =
       let c1 = loop count e1
           c2 = loop (count + length c1) e2
       in c1 <> c2 <> [StackBin op]
-    Do exps -> snd $ foldl (\(count, code) exp ->
-                              let c = loop count exp
-                              in (count + length c, code <> c))
-                           (count, [])
-                           exps
+    Do first rest ->
+      let c1 = loop count first
+          c2 = loop (count + length c1) rest
+      in c1 <> c2
     While cond body ->
       let cc = loop count cond
           cb = loop (count + length cc + 1) body
