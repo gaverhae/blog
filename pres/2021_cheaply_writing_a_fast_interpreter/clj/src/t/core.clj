@@ -15,13 +15,17 @@
 (def ast
   [:do
    [:set 0 [:lit 100]]
-   [:set 1 [:lit 1000]]
-   [:while [:not= [:lit 0] [:var 1]]
+   [:do
+    [:set 1 [:lit 1000]]
     [:do
-     [:set 0 [:add [:add [:add [:var 0] [:lit 4]] [:var 0]] [:lit 3]]]
-     [:set 0 [:add [:add [:var 0] [:lit 2]] [:lit 4]]]
-     [:set 1 [:add [:lit -1] [:var 1]]]]]
-   [:return [:var 0]]])
+     [:while
+      [:not= [:lit 0] [:var 1]]
+      [:do
+       [:set 0 [:add [:add [:add [:var 0] [:lit 4]] [:var 0]] [:lit 3]]]
+       [:do
+        [:set 0 [:add [:add [:var 0] [:lit 2]] [:lit 4]]]
+        [:set 1 [:add [:lit -1] [:var 1]]]]]]
+     [:return [:var 0]]]]])
 
 (defmacro match
   [expr & cases]
@@ -37,9 +41,8 @@
   [expr]
   (let [h (fn h [expr env]
             (match expr
-              [:do & sub-exprs] (reduce (fn [[_ env] expr] (h expr env))
-                                        [nil env]
-                                        sub-exprs)
+              [:do head tail] (let [[v env] (h head env)]
+                                (h tail env))
               [:set idx e] (let [[v env] (h e env)]
                              [nil (assoc env idx v)])
               [:lit v] [v env]
@@ -65,14 +68,11 @@
   [expr]
   (let [h (fn h [expr]
             (match expr
-              [:do & sub-exprs] (let [do-body (reduce (fn [kont expr]
-                                                        (let [f (h expr)]
-                                                          (fn [env _]
-                                                            (let [[v env] (f env)]
-                                                              (kont env v)))))
-                                                      (fn [env v] [v env])
-                                                      (reverse sub-exprs))]
-                                  (fn [env] (do-body env nil)))
+              [:do head tail] (let [head-body (h head)
+                                    tail-body (h tail)]
+                                (fn [env]
+                                  (let [[v env] (head-body env)]
+                                    (tail-body env))))
               [:set idx e] (let [f (h e)]
                              (fn [env]
                                (let [[v env] (f env)]
@@ -109,13 +109,9 @@
   [ast]
   (let [h (fn h [cur expr]
             (match expr
-              [:do & sub-exprs] (->> sub-exprs
-                                     (reduce (fn [[cur so-far] el]
-                                               (let [code (h cur el)]
-                                                 [(+ cur (count code))
-                                                  (concat so-far code)]))
-                                             [0 []])
-                                     second)
+              [:do head tail] (let [hd (h cur head)
+                                    tl (h (+ cur (count hd)) tail)]
+                                (concat hd tl))
               [:lit v] [[:push v]]
               [:set idx e] (concat (h cur e)
                                    [[:set idx]])
@@ -352,7 +348,8 @@
                                        (max-var e2))
                      [:var i] i
                      [:set i e] (max i (max-var e))
-                     [:do & es] (reduce max (map max-var es))
+                     [:do head tail] (max (max-var head)
+                                          (max-var tail))
                      [:while c b] (max (max-var c)
                                        (max-var b)))) ast)
         run (fn run [s ma]
@@ -385,10 +382,8 @@
                              (h e idx)
                              (mdo [r (h e)
                                    _ [:emit [:loadr idx r]]]))
-              [:do & sub] (if (empty? sub)
-                            [:pure nil]
-                            (mdo [_ (h (first sub))
-                                  _ (h (cons :do (rest sub)))]))
+              [:do head tail] (mdo [_ (h head)
+                                    _ (h tail)])
               [:while cnd bod] (mdo [before-condition [:current-position]
                                      condition (h cnd)
                                      _ [:future]
@@ -741,48 +736,48 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.78e-06"
+"2.91e-06"
 
   (bench (naive-ast-walk ast))
-"5.63e-03"
+"5.80e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"1.99e-03"
+"2.44e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"6.40e-03"
+"7.25e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.06e-03"
+"5.79e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.39e-03"
+"1.68e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.96e-04"
+"7.45e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.91e-04"
+"6.58e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"1.86e-04"
+"2.82e-04"
 
   (def rcj (registers-jump (compile-register-ssa ast)))
   (bench (rcj))
-"3.30e-05"
+"4.45e-05"
 
   (def rcj (registers-loop (compile-register-ssa ast)))
   (bench (rcj))
-"8.08e-06"
+"9.03e-06"
 
   (registers-c (compile-register-ssa ast) 1000000)
-[-13 8045]
+[-13 8647]
 
   )
