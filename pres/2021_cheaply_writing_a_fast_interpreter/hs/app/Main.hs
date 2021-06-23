@@ -25,14 +25,14 @@ data Op
   | NotEq
   deriving (Show)
 
-data Exp where
-  Lit :: Int -> Exp
-  Var :: Int -> Exp
-  Set :: Int -> Exp -> Exp
-  Bin :: Op -> Exp -> Exp -> Exp
-  Do :: Exp -> Exp -> Exp
-  While :: Exp -> Exp -> Exp
-  Print :: Exp -> Exp
+data Exp
+ = Lit Int
+ | Var Int
+ | Set Int Exp
+ | Bin Op Exp Exp
+ | Do Exp Exp
+ | While Exp Exp
+ | Print Exp
   deriving Show
 
 bin :: Op -> Int -> Int -> Int
