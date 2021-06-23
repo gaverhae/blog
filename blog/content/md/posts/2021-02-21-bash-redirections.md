@@ -318,7 +318,7 @@ $
 
 This is not a redirection feature, but it is often used _with_ redirections, so
 I think it is worth mentioning. On any unix system, there is a special device
-file calle `/dev/null` that will accept any write and just discard it
+file called `/dev/null` that will accept any write and just discard it
 immediately. This is useful when you are running a program and only care about
 a subset of its (possibly many) output streams. For example:
 
