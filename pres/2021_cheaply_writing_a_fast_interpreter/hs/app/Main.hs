@@ -2,7 +2,6 @@ module Main (main)
 where
 
 import Prelude hiding (exp,lookup)
-import Control.DeepSeq (NFData)
 import qualified Control.DeepSeq
 import qualified Control.Exception
 import Control.Monad (ap,liftM,void)
@@ -15,7 +14,6 @@ import qualified Data.Vector
 import qualified Formatting
 import qualified Formatting.Clock
 import qualified Formatting.Formatters
-import GHC.Generics (Generic)
 import qualified System.Clock
 
 data Op
@@ -30,7 +28,6 @@ data Exp
  | Bin Op Exp Exp
  | Do Exp Exp
  | While Exp Exp
- | Print Exp
   deriving Show
 
 bin :: Op -> Int -> Int -> Int
@@ -53,25 +50,22 @@ neil =
                                              (Lit 4)))
                              (Set 1 (Bin Add (Lit (-1))
                                              (Var 1))))))
-              (Print $ Var 0))))
+              (Var 0))))
 
-direct :: Env -> TweIO
+direct :: Env -> Int
 direct _ =
   loop 100 1000
   where
-  loop :: Int -> Int -> TweIO
+  loop :: Int -> Int -> Int
   loop x0 i =
     if (0 == i)
-    then put Halt x0
-    else
-    let x1 = x0 + 4 + x0 + 3
-        x2 = x1 + 2 + 4
-    in loop x2 (i - 1)
+    then x0
+    else let x1 = x0 + 4 + x0 + 3
+             x2 = x1 + 2 + 4
+         in loop x2 (i - 1)
 
 newtype Env = Env (Data.Map Int Int)
   deriving Show
-data TweIO = Output Int TweIO | Halt
-  deriving (Show, Generic, NFData)
 
 bottom :: Int
 bottom = undefined
@@ -82,54 +76,44 @@ lookup (Env m) n = maybe bottom id (Data.Map.lookup n m)
 insert :: Env -> Int -> Int -> Env
 insert (Env m) n v = Env $ Data.Map.insert n v m
 
-put :: TweIO -> Int -> TweIO
-put io v = Output v io
-
-append :: TweIO -> Int -> TweIO
-append Halt v = Output v Halt
-append (Output p io) v = Output p (append io v)
-
 mt_env :: Env
 mt_env = Env Data.Map.empty
 
-tree_walk_eval :: Exp -> Env -> TweIO
+tree_walk_eval :: Exp -> Env -> Int
 tree_walk_eval ex env =
-  let (_, io, _) = loop ex Halt env in io
+  let (r, _) = loop ex env in r
   where
-  loop :: Exp -> TweIO -> Env -> (Int, TweIO, Env)
-  loop exp0 out0 env0 =
+  loop :: Exp -> Env -> (Int, Env)
+  loop exp0 env0 =
     case exp0 of
-      Lit v -> (v, out0, env0)
-      Var n -> (lookup env0 n, out0, env0)
-      Set n exp1 -> let (v, out1, env1) = loop exp1 out0 env0
-                    in (v, out1, insert env1 n v)
+      Lit v -> (v, env0)
+      Var n -> (lookup env0 n, env0)
+      Set n exp1 -> let (v, env1) = loop exp1 env0
+                    in (v, insert env1 n v)
       Bin op e1 e2 -> do
-        let (v1, out1, env1) = loop e1 out0 env0
-        let (v2, out2, env2) = loop e2 out1 env1
-        ((bin op) v1 v2, out2, env2)
+        let (v1, env1) = loop e1 env0
+        let (v2, env2) = loop e2 env1
+        ((bin op) v1 v2, env2)
       Do first rest -> do
-        let (_, out1, env1) = loop first out0 env0
-        loop rest out1 env1
+        let (_, env1) = loop first env0
+        loop rest env1
       While condition body -> do
-        let (c, out1, env1) = loop condition out0 env0
+        let (c, env1) = loop condition env0
         if c == 1
         then do
-          let (_, out2, env2) = loop body out1 env1
-          loop (While condition body) out2 env2
-        else (bottom, out1, env1)
-      Print exp1 -> let (v, out1, env1) = loop exp1 out0 env0
-                    in (v, append out1 v, env1)
+          let (_, env2) = loop body env1
+          loop (While condition body) env2
+        else (bottom, env1)
 
-twe_cont :: Exp -> Env -> TweIO
+twe_cont :: Exp -> Env -> Int
 twe_cont e env =
-  loop e env (\_ _ -> Halt)
+  loop e env (\_ r -> r)
   where
-  loop :: Exp -> Env -> (Env -> Int -> TweIO) -> TweIO
+  loop :: Exp -> Env -> (Env -> Int -> Int) -> Int
   loop exp env cont =
     case exp of
       Lit v -> cont env v
       Var n -> cont env (lookup env n)
-      Print exp -> loop exp env (\env v -> put (cont env v) v)
       Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
       Bin op e1 e2 -> loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env ((bin op) v1 v2)))
       Do first rest -> loop first env (\env _ -> loop rest env cont)
@@ -144,15 +128,14 @@ data EvalExec a where
   EvalReturn :: a -> EvalExec a
   EvalLookup :: Int -> EvalExec Int
   EvalSet :: Int -> Int -> EvalExec ()
-  EvalPrint :: Int -> EvalExec ()
 
 instance Functor EvalExec where fmap = liftM
 instance Applicative EvalExec where pure = return; (<*>) = ap
 instance Monad EvalExec where return = EvalReturn; (>>=) = EvalBind
 
-twe_mon :: Exp -> Env -> TweIO
+twe_mon :: Exp -> Env -> Int
 twe_mon exp env =
-  exec (eval exp) env (\_ _ -> Halt)
+  exec (eval exp) env (\_ r -> r)
   where
   eval :: Exp -> EvalExec Int
   eval = \case
@@ -179,102 +162,82 @@ twe_mon exp env =
         eval (While condition body)
       else return bottom
 
-    Print exp -> do
-      v <- eval exp
-      EvalPrint v
-      return v
-
-  exec :: EvalExec a -> Env -> (Env -> a -> TweIO) -> TweIO
+  exec :: EvalExec a -> Env -> (Env -> a -> Int) -> Int
   exec m env cont = case m of
     EvalBind prev step -> exec prev env (\env ret -> exec (step ret) env cont)
     EvalReturn v -> cont env v
     EvalLookup n -> cont env (lookup env n)
-    EvalPrint v -> put (cont env ()) v
     EvalSet n v -> cont (insert env n v) ()
 
-closure_eval :: Exp -> Env -> TweIO
+closure_eval :: Exp -> Env -> Int
 closure_eval e =
-  let c = compile e in \env -> let (_, _, io) = c (env, Halt) in io
+  let c = compile e in \env -> (fst $ c env)
   where
-  compile :: Exp -> (Env, TweIO) -> (Int, Env, TweIO)
+  compile :: Exp -> Env -> (Int, Env)
   compile = \case
-    Lit v -> \(env, io) -> (v, env, io)
-    Var n -> \(env, io) -> (lookup env n, env, io)
+    Lit v -> \env -> (v, env)
+    Var n -> \env -> (lookup env n, env)
     Set n exp ->
       let f = compile exp
-      in \(env, io) ->
-        let (v1, env1, io1) = f (env, io)
-        in (v1, insert env1 n v1, io1)
+      in \env ->
+        let (v1, env1) = f env
+        in (v1, insert env1 n v1)
     Bin op e1 e2 ->
       let f1 = compile e1
           f2 = compile e2
-      in \(env, io) ->
-        let (v1, env1, io1) = f1 (env, io)
-            (v2, env2, io2) = f2 (env1, io1)
-        in ((bin op) v1 v2, env2, io2)
+      in \env ->
+        let (v1, env1) = f1 env
+            (v2, env2) = f2 env1
+        in ((bin op) v1 v2, env2)
     Do first rest ->
       let f = compile first
           r = compile rest
-      in \(env0, io0) ->
-        let (_, env1, io1) = f (env0, io0)
-        in r (env1, io1)
+      in \env ->
+        let (_, env1) = f env
+        in r env1
     While condition body ->
       let cond = compile condition
           bod = compile body
-          loop = \(env, io) ->
-            let (c, env1, io1) = cond (env, io)
+          loop = \env ->
+            let (c, env1) = cond env
             in if 1 == c
-               then let (_, env2, io2) = bod (env1, io1)
-                    in loop (env2, io2)
-               else (bottom, env1, io1)
+               then let (_, env2) = bod env1
+                    in loop (env2)
+               else (bottom, env1)
       in loop
-    Print exp ->
-      let f = compile exp
-      in \(env, io) ->
-        let (v1, env1, io1) = f (env, io)
-        in (v1, env1, append io1 v1)
 
-closure_cont :: Exp -> Env -> TweIO
+closure_cont :: Exp -> Env -> Int
 closure_cont e =
-  let f = compile e (\f (env, io) ->
-        let (_, env1, io1) = f (env, io)
-        in (env1, io1))
-  in \env ->
-    let (_, io) = f (env, Halt)
-    in io
+  let f = compile e (\f env -> f env)
+  in \env -> snd $ f env
   where
-  compile :: Exp -> (((Env, TweIO) -> (Int, Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)) -> (Env, TweIO) -> (Env, TweIO)
+  compile :: Exp -> ((Env -> (Env, Int)) -> Env -> (Env, Int)) -> Env -> (Env, Int)
   compile exp cont = case exp of
-    Lit v -> cont (\(env, io) -> (v, env, io))
-    Var n -> cont (\(env, io) -> (lookup env n, env, io))
+    Lit v -> cont (\env -> (env, v))
+    Var n -> cont (\env -> (env, lookup env n))
     Set n exp -> compile exp (\f ->
-      cont (\(env, io) ->
-        let (v, env1, io1) = f (env, io)
-        in (v, insert env1 n v, io1)))
+      cont (\env ->
+        let (env1, v) = f env
+        in (insert env1 n v, v)))
     Bin op e1 e2 ->
       compile e1 (\f1 ->
         compile e2 (\f2 ->
-          cont (\(env, io) ->
-            let (v1, env1, io1) = f1 (env, io)
-                (v2, env2, io2) = f2 (env1, io1)
-            in ((bin op) v1 v2, env2, io2))))
+          cont (\env ->
+            let (env1, v1) = f1 env
+                (env2, v2) = f2 env1
+            in (env2, (bin op) v1 v2))))
     Do first rest -> compile first (\f ->
-      compile rest (\r ->
-        cont (\(env, io) ->
-          let (_, env1, io1) = f (env, io)
-          in r (env1, io1))))
+      compile rest (\r -> cont (\env -> r (fst $ f env))))
     While condition body ->
       compile condition (\cond ->
         compile body (\bod ->
-          cont (\(env, io) ->
-            let loop = \(env, io) -> let (c, env1, io1) = cond (env, io)
+          cont (\env ->
+            let loop = \env -> let (env1, c) = cond env
                                    in if 1 == c
-                                      then let (_, env2, io2) = bod (env1, io1)
-                                           in loop (env2, io2)
-                                      else (bottom, env1, io1)
-            in loop (env, io))))
-    Print exp -> compile exp (\f -> cont (\(env, io) -> let (v, env1, io1) = f (env, io)
-                                                        in (v, env1, append io1 v)))
+                                      then let (env2, _) = bod env1
+                                           in loop env2
+                                      else (env1, bottom)
+            in loop env)))
 
 data StackOp
   = StackPush Int
@@ -283,7 +246,6 @@ data StackOp
   | StackBin Op
   | StackJump Int
   | StackJumpIfZero Int
-  | StackPrint
   | StackEnd
   deriving (Show)
 
@@ -310,32 +272,30 @@ stack_compile exp =
       in cc <> [StackJumpIfZero (count + length cc + 1 + length cb + 1)]
             <> cb
             <> [StackJump count]
-    Print exp -> loop count exp <> [StackPrint]
 
-stack_exec :: [StackOp] -> Env -> TweIO
+stack_exec :: [StackOp] -> Env -> Int
 stack_exec code env =
-  loop 0 [] env Halt
+  loop 0 [] env
   where
   code' :: Data.Vector StackOp
   code' = Data.Vector.fromList code
-  loop :: Int -> [Int] -> Env -> TweIO -> TweIO
-  loop ip stack env io = case (Data.Vector.!) code' ip of
-    StackPush v -> loop (ip + 1) (v:stack) env io
-    StackSet n -> loop (ip + 1) (tail stack) (insert env n (head stack)) io
-    StackGet n -> loop (ip + 1) (lookup env n : stack) env io
-    StackBin op -> loop (ip + 1) ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack) env io
-    StackJump i -> loop i stack env io
+  loop :: Int -> [Int] -> Env -> Int
+  loop ip stack env = case (Data.Vector.!) code' ip of
+    StackPush v -> loop (ip + 1) (v:stack) env
+    StackSet n -> loop (ip + 1) (tail stack) (insert env n (head stack))
+    StackGet n -> loop (ip + 1) (lookup env n : stack) env
+    StackBin op -> loop (ip + 1) ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack) env
+    StackJump i -> loop i stack env
     StackJumpIfZero i -> if (stack !! 0) == 0
-                         then loop i (tail stack) env io
-                         else loop (ip + 1) (tail stack) env io
-    StackPrint -> loop (ip + 1) (tail stack) env (append io (head stack))
-    StackEnd -> io
+                         then loop i (tail stack) env
+                         else loop (ip + 1) (tail stack) env
+    StackEnd -> head stack
 
-stack_exec_cont :: [StackOp] -> Env -> TweIO
+stack_exec_cont :: [StackOp] -> Env -> Int
 stack_exec_cont code =
   \env -> (code' Data.Vector.! 0) 0 env []
   where
-  code' :: Data.Vector (Int -> Env -> [Int] -> TweIO)
+  code' :: Data.Vector (Int -> Env -> [Int] -> Int)
   code' = Data.Vector.fromList $ (flip map) code $ \case
     StackPush v -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env (v:stack)
     StackSet n -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) (insert env n (head stack)) (tail stack)
@@ -345,8 +305,7 @@ stack_exec_cont code =
     StackJumpIfZero i -> \ip env stack ->
       let next = if (head stack) == 0 then i else ip+1
       in (code' Data.Vector.! next) next env (tail stack)
-    StackPrint -> \ip env stack -> put ((code' Data.Vector.! (ip+1)) (ip+1) env (tail stack)) (head stack)
-    StackEnd -> \_ _ _ -> Halt
+    StackEnd -> \r _ _ -> r
 
 
 data Switch
@@ -386,7 +345,7 @@ main = case switch of
                       Formatting.Clock.timeSpecs
                       Formatting.%
                       raw_string "\n")
-    let ntimes :: (Env -> TweIO) -> Int -> IO ()
+    let ntimes :: (Env -> Int) -> Int -> IO ()
         ntimes f n =
           if n == 0
           then return ()
