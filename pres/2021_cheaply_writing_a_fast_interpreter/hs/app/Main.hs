@@ -20,10 +20,8 @@ import qualified System.Clock
 
 data Op
   = Add
-  | Sub
-  | Mul
   | NotEq
-  deriving (Show)
+  deriving Show
 
 data Exp
  = Lit Int
@@ -38,8 +36,6 @@ data Exp
 bin :: Op -> Int -> Int -> Int
 bin = \case
   Add -> (+)
-  Sub -> (-)
-  Mul -> (*)
   NotEq -> \v1 v2 -> if v1 /= v2 then 1 else 0
 
 neil :: Exp
@@ -71,27 +67,6 @@ direct _ =
     let x1 = x0 + 4 + x0 + 3
         x2 = x1 + 2 + 4
     in loop x2 (i - 1)
-
-fact :: Int -> Exp
-fact x =
-  (Do (Set 0 (Lit 1))
-      (Do (Set 1 (Lit x))
-          (Do (While (Bin NotEq (Lit 0)
-                                (Var 1))
-                     (Do (Set 0 (Bin Mul (Var 0)
-                                         (Var 1)))
-                         (Do (Set 1 (Bin Sub (Var 1)
-                                             (Lit 1)))
-                             (Print (Var 0)))))
-              (Print (Var 0)))))
-
-sam :: Exp
-sam =
-  (Do (Set 0 (Lit 13))
-      (Do (Print (Var 0))
-          (Do (Set 0 (Bin Add (Var 0)
-                              (Var 0)))
-              (Print (Var 0)))))
 
 newtype Env = Env (Data.Map Int Int)
   deriving Show
@@ -386,8 +361,6 @@ main :: IO ()
 main = case switch of
   Test -> do
     let run e = stack_exec_cont (stack_compile e) (insert mt_env 2 0)
-    print $ run sam
-    print $ run $ fact 3
     print $ run neil
   Vals -> do
     let env = insert mt_env 2 0
@@ -400,8 +373,6 @@ main = case switch of
              ]
              (\(n, f) -> do
                putStrLn n
-               print $ f sam env
-               print $ f (fact 3) env
                print $ f neil env)
     pure()
   Perf -> do
