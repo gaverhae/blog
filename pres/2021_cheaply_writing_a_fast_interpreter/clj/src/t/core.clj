@@ -19,13 +19,17 @@
     [:set 1 [:lit 1000]]
     [:do
      [:while
-      [:not= [:lit 0] [:var 1]]
+      [:bin :not= [:lit 0] [:var 1]]
       [:do
-       [:set 0 [:add [:add [:add [:var 0] [:lit 4]] [:var 0]] [:lit 3]]]
+       [:set 0 [:bin :add [:bin :add [:bin :add [:var 0] [:lit 4]] [:var 0]] [:lit 3]]]
        [:do
-        [:set 0 [:add [:add [:var 0] [:lit 2]] [:lit 4]]]
-        [:set 1 [:add [:lit -1] [:var 1]]]]]]
+        [:set 0 [:bin :add [:bin :add [:var 0] [:lit 2]] [:lit 4]]]
+        [:set 1 [:bin :add [:lit -1] [:var 1]]]]]]
      [:return [:var 0]]]]])
+
+(def bin
+  {:add (fn [^long a ^long b] (unchecked-add a b))
+   :not= (fn [^long a ^long b] (if (== a b) 0 1))})
 
 (defmacro match
   [expr & cases]
@@ -46,15 +50,11 @@
               [:set idx e] (let [[v env] (h e env)]
                              [nil (assoc env idx v)])
               [:lit v] [v env]
-              [:not= e1 e2] (let [[v1 env] (h e1 env)
-                                  [v2 env] (h e2 env)]
-                              (if (== v1 v2)
-                                [0 env]
-                                [1 env]))
+              [:bin op e1 e2] (let [f (bin op)
+                                    [v1 env] (h e1 env)
+                                    [v2 env] (h e2 env)]
+                                [(f v1 v2) env])
               [:var idx] [(get env idx) env]
-              [:add e1 e2] (let [[v1 env] (h e1 env)
-                                 [v2 env] (h e2 env)]
-                             [(unchecked-add v1 v2) env])
               [:while e-condition e-body] (loop [env env]
                                             (let [[condition env] (h e-condition env)]
                                               (if (== condition 1)
@@ -78,21 +78,14 @@
                                (let [[v env] (f env)]
                                  [nil (assoc env idx v)])))
               [:lit e] (fn [env] [e env])
-              [:not=  e1 e2] (let [f1 (h e1)
-                                   f2 (h e2)]
-                               (fn [env]
-                                 (let [[v1 env] (f1 env)
-                                       [v2 env] (f2 env)]
-                                   (if (== v1 v2)
-                                     [0 env]
-                                     [1 env]))))
+              [:bin op e1 e2] (let [f (bin op)
+                                    f1 (h e1)
+                                    f2 (h e2)]
+                                (fn [env]
+                                  (let [[v1 env] (f1 env)
+                                        [v2 env] (f2 env)]
+                                    [(f v1 v2) env])))
               [:var idx] (fn [env] [(get env idx) env])
-              [:add e1 e2] (let [f1 (h e1)
-                                 f2 (h e2)]
-                             (fn [env]
-                               (let [[v1 env] (f1 env)
-                                     [v2 env] (f2 env)]
-                                 [(unchecked-add v1 v2) env])))
               [:while e-condition e-body] (let [f-condition (h e-condition)
                                                 f-body (h e-body)]
                                             (fn [env]
@@ -115,13 +108,10 @@
               [:lit v] [[:push v]]
               [:set idx e] (concat (h cur e)
                                    [[:set idx]])
-              [:add e1 e2] (let [left (h cur e1)
-                                 right (h (+ cur (count left)) e2)]
-                             (concat left right [[:add]]))
+              [:bin op e1 e2] (let [left (h cur e1)
+                                    right (h (+ cur (count left)) e2)]
+                                (concat left right [[:bin op]]))
               [:var idx] [[:get idx]]
-              [:not= e1 e2] (let [left (h cur e1)
-                                  right (h (+ cur (count left)) e2)]
-                              (concat left right [[:not=]]))
               [:while cnd bod] (let [condition (h cur cnd)
                                      body (h (+ cur 1 (count condition)) bod)]
                                  (concat condition
@@ -144,16 +134,12 @@
       (match op
         [:push val] (recur (inc pc) (conj stack val))
         [:get idx] (recur (inc pc) (conj stack (stack idx)))
-        [:not=] (let [p1 (peek stack)
-                      stack (pop stack)
-                      p2 (peek stack)
-                      stack (pop stack)]
-                  (recur (inc pc) (conj stack (if (== p1 p2) 0 1))))
-        [:add] (let [p1 (peek stack)
-                     stack (pop stack)
-                     p2 (peek stack)
-                     stack (pop stack)]
-                 (recur (inc pc) (conj stack (unchecked-add p1 p2))))
+        [:bin op] (let [f (bin op)
+                        p1 (peek stack)
+                        stack (pop stack)
+                        p2 (peek stack)
+                        stack (pop stack)]
+                    (recur (inc pc) (conj stack (f p1 p2))))
         [:set idx] (let [p (peek stack)
                          stack (pop stack)]
                      (recur (inc pc) (assoc stack idx p)))
@@ -178,18 +164,13 @@
                          (let [p (peek stack)
                                stack (pop stack)]
                            [(inc ip) (assoc stack idx p)]))
-            [:add] (fn [^long ip stack]
-                     (let [p1 (peek stack)
-                           stack (pop stack)
-                           p2 (peek stack)
-                           stack (pop stack)]
-                       [(inc ip) (conj stack (unchecked-add p2 p1))]))
-            [:not=] (fn [^long ip stack]
-                      (let [p1 (peek stack)
-                            stack (pop stack)
-                            p2 (peek stack)
-                            stack (pop stack)]
-                        [(inc ip) (conj stack (if (== p1 p2) 0 1))]))
+            [:bin op] (fn [^long ip stack]
+                        (let [f (bin op)
+                              p1 (peek stack)
+                              stack (pop stack)
+                              p2 (peek stack)
+                              stack (pop stack)]
+                          [(inc ip) (conj stack (f p2 p1))]))
             [:jump-if-zero to] (fn [^long ip stack]
                                  (let [p ^long (peek stack)
                                        stack (pop stack)
@@ -222,12 +203,10 @@
                          (fn ^long [^long ip ^java.util.Stack stack]
                            (.set stack idx (.pop stack))
                            (unchecked-inc ip)))
-            [:add] (fn ^long [^long ip ^java.util.Stack stack]
-                     (.push stack (unchecked-add (.pop stack) (.pop stack)))
-                     (unchecked-inc ip))
-            [:not=] (fn ^long [^long ip ^java.util.Stack stack]
-                      (.push stack (if (== (.pop stack) (.pop stack)) 0 1))
-                      (unchecked-inc ip))
+            [:bin op] (let [f (bin op)]
+                        (fn ^long [^long ip ^java.util.Stack stack]
+                          (.push stack (f (.pop stack) (.pop stack)))
+                          (unchecked-inc ip)))
             [:jump-if-zero to] (fn ^long [^long ip ^java.util.Stack stack]
                                  (if (zero? (.pop stack))
                                    (long to)
@@ -267,10 +246,9 @@
                                             (recur ~(inc idx)))
                             [:set i] `(do (.set ~stack ~i (.pop ~stack))
                                             (recur ~(inc idx)))
-                            [:add] `(do (.push ~stack (unchecked-add (.pop ~stack) (.pop ~stack)))
-                                        (recur ~(inc idx)))
-                            [:not=] `(do (.push ~stack (if (== (.pop ~stack) (.pop ~stack)) 0 1))
-                                         (recur ~(inc idx)))
+                            [:bin op] (let [f (bin op)]
+                                        `(do (.push ~stack (~f (.pop ~stack) (.pop ~stack)))
+                                             (recur ~(inc idx))))
                             [:jump-if-zero to] `(do (if (zero? (.pop ~stack))
                                                       (recur ~to)
                                                       (recur ~(inc idx))))
@@ -306,14 +284,10 @@
                                             [:push v] `(.push ~stack ~v)
                                             [:get i] `(.push ~stack (.get ~stack ~i))
                                             [:set i] `(.set ~stack ~i (.pop ~stack))
-                                            [:add] `(.push ~stack
-                                                           (unchecked-add (.pop ~stack)
-                                                                          (.pop ~stack)))
-                                            [:not=] `(.push ~stack
-                                                            (if (== (.pop ~stack)
-                                                                    (.pop ~stack))
-                                                              0
-                                                              1))
+                                            [:bin op] (let [f (bin op)]
+                                                        `(.push ~stack
+                                                                (~f (.pop ~stack)
+                                                                    (.pop ~stack))))
                                             [:jump-if-zero to tail] `(if (zero? (.pop ~stack))
                                                                   (recur ~to)
                                                                   (do ~@(map compile-op tail)))
@@ -342,10 +316,8 @@
                    (match op
                      [:lit _] 0
                      [:return e] (max-var e)
-                     [:not= e1 e2] (max (max-var e1)
-                                        (max-var e2))
-                     [:add e1 e2] (max (max-var e1)
-                                       (max-var e2))
+                     [:bin op e1 e2] (max (max-var e1)
+                                          (max-var e2))
                      [:var i] i
                      [:set i e] (max i (max-var e))
                      [:do head tail] (max (max-var head)
@@ -378,7 +350,7 @@
                          (mdo [r [:free-register]
                                _ [:hoist r v]
                                _ [:pure r]]))
-              [:set idx e] (if (#{:lit :add :not=} (first e))
+              [:set idx e] (if (#{:lit :bin} (first e))
                              (h e idx)
                              (mdo [r (h e)
                                    _ [:emit [:loadr idx r]]]))
@@ -391,16 +363,11 @@
                                      _ [:emit [:jump (inc before-condition)]]
                                      _ [:resolve (fn [pos] [:jump-if-zero condition pos])]])
               [:var idx] [:pure idx]
-              [:add e1 e2] (mdo [left (h e1)
-                                 right (h e2)
-                                 r (if ret [:pure ret] [:free-register])
-                                 _ [:emit [:add r left right]]
-                                 _ [:pure r]])
-              [:not= e1 e2] (mdo [left (h e1)
-                                  right (h e2)
-                                  r (if ret [:pure ret] [:free-register])
-                                  _ [:emit [:not= r left right]]
-                                  _ [:pure r]])))]
+              [:bin op e1 e2] (mdo [left (h e1)
+                                    right (h e2)
+                                    r (if ret [:pure ret] [:free-register])
+                                    _ [:emit [[:bin op] r left right]]
+                                    _ [:pure r]])))]
     (-> (run {:nested (), :code [], :hoisted {}, :reg (inc max-var)}
              (h ast))
         first
@@ -438,8 +405,8 @@
                                               :loadr 2
                                               :jump-if-zero 3
                                               :jump 4
-                                              :add 5
-                                              :not= 6))
+                                              [:bin :add] 5
+                                              [:bin :not=] 6))
                                   (doseq [n (range 1 (count op))]
                                     (aset r n (long (get op n))))
                                   r)))
@@ -500,14 +467,14 @@
                                                                       (recur (int ~to))
                                                                       (recur (int ~(+ ep (count segment)))))
                                               [:jump to] `(recur (int ~to))
-                                              [:add to r1 r2] `(aset ~registers (int ~to)
-                                                                     (unchecked-add
-                                                                       ~(re-get r1)
-                                                                       ~(re-get r2)))
-                                              [:not= to r1 r2] `(aset ~registers (int ~to)
-                                                                      (if (== ~(re-get r1)
-                                                                              ~(re-get r2))
-                                                                        0 1)))))
+                                              [[:bin :add] to r1 r2] `(aset ~registers (int ~to)
+                                                                            (unchecked-add
+                                                                              ~(re-get r1)
+                                                                              ~(re-get r2)))
+                                              [[:bin :not=] to r1 r2] `(aset ~registers (int ~to)
+                                                                             (if (== ~(re-get r1)
+                                                                                     ~(re-get r2))
+                                                                               0 1)))))
                                      (cons 'do))]))))
         max-registers (max (->> hoisted keys (reduce max))
                            (->> code
@@ -570,11 +537,12 @@
                                                       (match op
                                                         [:load _ v] v
                                                         [:loadr _ from] (re-get from)
-                                                        [:add _ r1 r2] `(unchecked-add ~(re-get r1)
-                                                                                       ~(re-get r2))
-                                                        [:not= _ r1 r2] `(if (== ~(re-get r1)
+                                                        [[:bin :add] _ r1 r2] `(unchecked-add
+                                                                                 ~(re-get r1)
                                                                                  ~(re-get r2))
-                                                                           0 1))])))]
+                                                        [[:bin :not=] _ r1 r2] `(if (== ~(re-get r1)
+                                                                                    ~(re-get r2))
+                                                                                  0 1))])))]
                                 ~(match (last segment)
                                    [:jump to] (rec `(int ~(reindex to)))
                                    [:jump-if-zero r to] (rec `(if (zero? ~(re-get r))
@@ -597,8 +565,8 @@
                           (match op
                             [:load to _] to
                             [:loadr to _] to
-                            [:add to _ _] to
-                            [:not= to _ _] to
+                            [[:bin :add] to _ _] to
+                            [[:bin :not=] to _ _] to
                             [:jump _] nil
                             [:jump-if-zero _ _] nil
                             [:return _] nil))
@@ -622,8 +590,10 @@
                            (match op
                              [:load r v] (str (reg r) " = " v ";")
                              [:loadr to from] (str (reg to) " = " (reg from) ";")
-                             [:add to arg1 arg2] (str (reg to) " = " (reg arg1) " + " (reg arg2) ";")
-                             [:not= to arg1 arg2] (str (reg to) " = " (reg arg1) " == " (reg arg2) " ? 0 : 1;")
+                             [[:bin :add] to arg1 arg2]
+                             (str (reg to) " = " (reg arg1) " + " (reg arg2) ";")
+                             [[:bin :not=] to arg1 arg2]
+                             (str (reg to) " = " (reg arg1) " == " (reg arg2) " ? 0 : 1;")
                              [:jump to] (str "goto LABEL_" to ";")
                              [:jump-if-zero r to] (str "if (" (reg r) " == 0) { goto LABEL_" to "; }")
                              [:return r] (str "return " (reg r) ";")))))
