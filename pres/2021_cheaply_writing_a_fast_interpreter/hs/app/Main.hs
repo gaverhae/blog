@@ -35,8 +35,8 @@ bin = \case
   Add -> (+)
   NotEq -> \v1 v2 -> if v1 /= v2 then 1 else 0
 
-neil :: Exp
-neil =
+ast :: Exp
+ast =
   (Do (Set 0 (Lit 100))
       (Do (Set 1 (Lit 1000))
           (Do (While (Bin NotEq (Lit 0)
@@ -320,7 +320,7 @@ main :: IO ()
 main = case switch of
   Test -> do
     let run e = stack_exec_cont (stack_compile e) (insert mt_env 2 0)
-    print $ run neil
+    print $ run ast
   Vals -> do
     let env = insert mt_env 2 0
     _ <- for [("tree_walk_eval", tree_walk_eval)
@@ -332,7 +332,7 @@ main = case switch of
              ]
              (\(n, f) -> do
                putStrLn n
-               print $ f neil env)
+               print $ f ast env)
     pure()
   Perf -> do
     let now = System.Clock.getTime System.Clock.Monotonic
@@ -359,15 +359,15 @@ main = case switch of
           end <- now
           printDur s start end
     bench "direct" direct
-    bench "tree_walk_eval" (tree_walk_eval neil)
-    bench "twe_cont" (twe_cont neil)
-    bench "twe_mon" (twe_mon neil)
-    let ce = closure_eval neil
+    bench "tree_walk_eval" (tree_walk_eval ast)
+    bench "twe_cont" (twe_cont ast)
+    bench "twe_mon" (twe_mon ast)
+    let ce = closure_eval ast
     bench "closure_eval" ce
-    let cc = closure_cont neil
+    let cc = closure_cont ast
     bench "closure_cont" cc
-    let se = let ops = stack_compile neil in stack_exec ops
+    let se = let ops = stack_compile ast in stack_exec ops
     bench "stack_exec" se
-    let sec = let ops = stack_compile neil in stack_exec_cont ops
+    let sec = let ops = stack_compile ast in stack_exec_cont ops
     bench "stack_exec_cont" sec
     pure ()
