@@ -37,19 +37,26 @@ bin = \case
 
 ast :: Exp
 ast =
+  -- x = 100
   (Do (Set 0 (Lit 100))
+      -- i = 1000
       (Do (Set 1 (Lit 1000))
+          -- for (; i != 0;)
           (Do (While (Bin NotEq (Lit 0)
                                 (Var 1))
+                     -- x = (((x + 4) + x) + 3)
                      (Do (Set 0 (Bin Add (Bin Add (Bin Add (Var 0)
                                                            (Lit 4))
                                                   (Var 0))
                                          (Lit 3)))
+                         -- x = ((x + 2) + 4)
                          (Do (Set 0 (Bin Add (Bin Add (Var 0)
                                                       (Lit 2))
                                              (Lit 4)))
+                             -- i = i + (-1)
                              (Set 1 (Bin Add (Lit (-1))
                                              (Var 1))))))
+              -- return x
               (Var 0))))
 
 direct :: Env -> Int
