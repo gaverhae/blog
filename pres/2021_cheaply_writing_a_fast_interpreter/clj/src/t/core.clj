@@ -21,11 +21,14 @@
      [:while
       [:bin :not= [:lit 0] [:var 1]]
       [:do
-       [:set 0 [:bin :add [:bin :add [:bin :add [:var 0] [:lit 4]] [:var 0]] [:lit 3]]]
+       [:set 0 [:bin :add [:bin :add [:bin :add [:var 0] [:lit 4]]
+                                     [:var 0]]
+                          [:lit 3]]]
        [:do
-        [:set 0 [:bin :add [:bin :add [:var 0] [:lit 2]] [:lit 4]]]
+        [:set 0 [:bin :add [:bin :add [:var 0] [:lit 2]]
+                           [:lit 4]]]
         [:set 1 [:bin :add [:lit -1] [:var 1]]]]]]
-     [:return [:var 0]]]]])
+     [:var 0]]]])
 
 (def bin
   {:add (fn [^long a ^long b] (unchecked-add a b))
@@ -60,8 +63,7 @@
                                               (if (== condition 1)
                                                 (let [[_ env] (h e-body env)]
                                                   (recur env))
-                                                [nil env])))
-              [:return e] (h e env)))]
+                                                [nil env])))))]
     (first (h expr {}))))
 
 (defn compile-to-closure
@@ -93,8 +95,7 @@
                                                 (if (== condition 1)
                                                   (let [[_ env] (f-body env)]
                                                     (recur env))
-                                                  [nil env]))))
-              [:return e] (h e)))
+                                                  [nil env]))))))
         cc (h expr)]
     #(first (cc {}))))
 
@@ -121,10 +122,10 @@
                                                             (count body)
                                                             1)]]
                                          body
-                                         [[:jump cur]]))
-              [:return e] (let [r (h cur e)]
-                            (concat r [[:end]]))))]
-    (vec (h 0 ast))))
+                                         [[:jump cur]]))))]
+    (-> (h 0 ast)
+        vec
+        (conj [:end]))))
 
 (defn run-stack
   [code]
@@ -315,7 +316,6 @@
   (let [max-var ((fn max-var [op]
                    (match op
                      [:lit _] 0
-                     [:return e] (max-var e)
                      [:bin op e1 e2] (max (max-var e1)
                                           (max-var e2))
                      [:var i] i
@@ -343,8 +343,6 @@
                               nil]))
         h (fn h [op & [ret]]
             (match op
-              [:return e] (mdo [r (h e)
-                                _ [:emit [:return r]]])
               [:lit v] (if ret
                          [:emit [:load ret v]]
                          (mdo [r [:free-register]
@@ -368,10 +366,11 @@
                                     r (if ret [:pure ret] [:free-register])
                                     _ [:emit [[:bin op] r left right]]
                                     _ [:pure r]])))]
-    (-> (run {:nested (), :code [], :hoisted {}, :reg (inc max-var)}
-             (h ast))
-        first
-        (dissoc :nested :reg))))
+    (let [[s a] (run {:nested (), :code [], :hoisted {}, :reg (inc max-var)}
+                     (h ast))]
+      (-> s
+          (update :code conj [:return a])
+          (dissoc :nested :reg)))))
 
 (defmacro match-arr
   [expr & cases]
