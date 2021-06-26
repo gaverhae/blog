@@ -59,7 +59,7 @@ ast =
               -- return x
               (Var 0))))
 
-direct :: Env -> Int
+direct :: () -> Int
 direct _ =
   loop 100 1000
   where
@@ -86,9 +86,9 @@ insert (Env m) n v = Env $ Data.Map.insert n v m
 mt_env :: Env
 mt_env = Env Data.Map.empty
 
-tree_walk_eval :: Exp -> Env -> Int
-tree_walk_eval ex env =
-  let (r, _) = loop ex env in r
+naive_ast_walk :: Exp -> Int
+naive_ast_walk ex =
+  let (r, _) = loop ex mt_env in r
   where
   loop :: Exp -> Env -> (Int, Env)
   loop exp0 env0 =
@@ -140,9 +140,9 @@ instance Functor EvalExec where fmap = liftM
 instance Applicative EvalExec where pure = return; (<*>) = ap
 instance Monad EvalExec where return = EvalReturn; (>>=) = EvalBind
 
-twe_mon :: Exp -> Env -> Int
-twe_mon exp env =
-  exec (eval exp) env (\_ r -> r)
+twe_mon :: Exp -> Int
+twe_mon exp =
+  exec (eval exp) mt_env (\_ r -> r)
   where
   eval :: Exp -> EvalExec Int
   eval = \case
@@ -329,17 +329,16 @@ main = case switch of
     let run e = stack_exec_cont (stack_compile e) (insert mt_env 2 0)
     print $ run ast
   Vals -> do
-    let env = insert mt_env 2 0
-    _ <- for [("tree_walk_eval", tree_walk_eval)
-             ,("twe_cont", twe_cont)
+    _ <- for [("naive_ast_walk", naive_ast_walk)
+             ,("twe_cont", \ast -> twe_cont ast mt_env)
              ,("twe_mon", twe_mon)
-             ,("closure_eval", closure_eval)
-             ,("closure_cont", closure_cont)
-             ,("stack_exec", \e -> stack_exec (stack_compile e))
+             ,("closure_eval", \ast -> closure_eval ast mt_env)
+             ,("closure_cont", \ast -> closure_cont ast mt_env)
+             ,("stack_exec", \ast -> stack_exec (stack_compile ast) mt_env)
              ]
              (\(n, f) -> do
                putStrLn n
-               print $ f ast env)
+               print $ f ast)
     pure()
   Perf -> do
     let now = System.Clock.getTime System.Clock.Monotonic
@@ -352,29 +351,32 @@ main = case switch of
                       Formatting.Clock.timeSpecs
                       Formatting.%
                       raw_string "\n")
-    let ntimes :: (Env -> Int) -> Int -> IO ()
+    let ntimes :: (() -> Int) -> Int -> IO ()
         ntimes f n =
           if n == 0
           then return ()
           else do
-            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f (insert mt_env 2 n)
+            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f ()
             ntimes f (n - 1)
     let bench s f = do
+          start <- now
           ntimes f 3
+          end <- now
+          printDur s start end
           start <- now
           ntimes f 10
           end <- now
           printDur s start end
     bench "direct" direct
-    bench "tree_walk_eval" (tree_walk_eval ast)
-    bench "twe_cont" (twe_cont ast)
-    bench "twe_mon" (twe_mon ast)
+    bench "naive_ast_walk" (\_ -> naive_ast_walk ast)
+    bench "twe_cont" (\_ -> twe_cont ast mt_env)
+    bench "twe_mon" (\_ -> twe_mon ast)
     let ce = closure_eval ast
-    bench "closure_eval" ce
+    bench "closure_eval" (\_ -> ce mt_env)
     let cc = closure_cont ast
-    bench "closure_cont" cc
+    bench "closure_cont" (\_ -> cc mt_env)
     let se = let ops = stack_compile ast in stack_exec ops
-    bench "stack_exec" se
+    bench "stack_exec" (\_ -> se mt_env)
     let sec = let ops = stack_compile ast in stack_exec_cont ops
-    bench "stack_exec_cont" sec
+    bench "stack_exec_cont" (\_ -> sec mt_env)
     pure ()
