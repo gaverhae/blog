@@ -1,4 +1,4 @@
-{:title "My web presence"
+{:title "Me, around the web"
  :layout :page
  :navbar? false}
 
