@@ -109,7 +109,7 @@ naive_ast_walk ex =
         if c == 1
         then do
           let (_, env2) = loop body env1
-          loop (While condition body) env2
+          loop exp0 env2
         else (bottom, env1)
 
 twe_cont :: Exp -> Env -> Int
