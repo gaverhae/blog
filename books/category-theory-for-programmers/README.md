@@ -945,3 +945,31 @@ I don't know C++. Changing keys to a map seems dangerous, but maybe a simple
 list of pairs (allowing repetition of keys) could be made into a bifunctor.
 
 ### Chapter 9 - Function Types
+
+A set of morphisms in a category is called a hom-set. In Set, a hom-set is an
+object, but that is not necessarily the case in other categories.
+
+#### 9.1 - Universal Construction
+
+In order to _find_ the object that represent a function type, we can start by
+picking out the two objects that represent its argument and result type (_a_
+and _ b_), and then a _candidate_ object to represent the function type, say
+_z_. We can try to _evaluate_ the functions by picking the object that
+represents the product of _z_ and _a_ and picking a morphism between _that_
+object and _b_.
+
+The choice _(z, g)_ is _better_ than the choice _(z', g')_ if and only if there
+exists a morphism _h_ such that _g' = g . (h x id)_.
+
+The best such object _z_ is the function type, and we'll call the corresponding
+_g_ _eval_ by reference to:
+
+```haskell
+eval :: (a -> b) -> a -> b
+eval f a = f a
+```
+
+In general, there is no guarantee that such an object exists. In Set, it always
+does, and is isomorphic to the hom-set Set(a, b).
+
+#### 9.2 - Currying
