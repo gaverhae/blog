@@ -973,3 +973,12 @@ In general, there is no guarantee that such an object exists. In Set, it always
 does, and is isomorphic to the hom-set Set(a, b).
 
 #### 9.2 - Currying
+
+We can think of the candidate morphisms _g_ as functions of the two variables
+(or more precisely variable types) _z_ and _a_. The universal construction we
+just went through tells us that for any such `g`, there is an `h` such that
+`h :: z -> (a -> b)`, where ` a -> b` is the name we give to the function type.
+In this context, `h` is called the _curried_ version of `g`, and `g` is the
+_uncurried_ version of `h`. There is a one-to-one correspondence between them.
+
+#### 9.3 - Exponentials
