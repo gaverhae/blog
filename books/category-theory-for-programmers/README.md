@@ -982,3 +982,21 @@ In this context, `h` is called the _curried_ version of `g`, and `g` is the
 _uncurried_ version of `h`. There is a one-to-one correspondence between them.
 
 #### 9.3 - Exponentials
+
+The function object `a -> b` can also be denoted _b^a_. This notation reflects
+the size of the set: there are _|b|^|a|_ possible functions from _a_ to _b_.
+
+#### 9.4 - Cartesian closed category
+
+A _Cartesian closed_ category is one that has:
+
+- A terminal object,
+- A product for any pair of object, and
+- An exponential for any pair of object.
+
+Set is an example of a Cartesian closed category. If a Cartesian closed
+category also has an initial object and a coproduct, and if product is
+distributed over coproduct, it is called a bicartesian closed category. Again,
+Set is one of those.
+
+#### 9.5 - Exponentials and Algebraic Data Types
