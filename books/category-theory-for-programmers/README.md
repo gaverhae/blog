@@ -1000,3 +1000,31 @@ distributed over coproduct, it is called a bicartesian closed category. Again,
 Set is one of those.
 
 #### 9.5 - Exponentials and Algebraic Data Types
+
+If we denote the initial object as 0 and the terminal object as 1, the
+exponential notation still holds:
+
+- _a^0 = 1_, i.e. there is only one function from void to any type.
+- _1^a = 1_, i.e. there is only one function from any type to unit. This is
+  also the definition of the terminal object (`()`).
+- _a^1 = a_, i.e. the set of morphisms from unit to a is isomorphic to a.
+- _a^(b+c) = a^b . a^c_, i.e. a function that can act on the union of two types
+  is the same as two functions, each acting on one type. In a way, this is
+  saying that
+  ```haskell
+  f :: Either Int Double -> ...
+  f (Left i) = ...
+  f (Right d) = ...
+  ```
+  is the same as
+  ```haskell
+  f :: Either Int Double -> ...
+  f e = case e of
+    Left i -> ...
+    Right d -> ...
+  ```
+- _(a^b)^c = a^(bc)_, i.e. currying.
+- _(a . b)^c = a^c . b^c_, i.e. `c -> (a, b)` can be thought of as two
+  functions `c -> a` and `c -> b`.
+
+#### 9.6 - Curry-Howard Isomorphism
