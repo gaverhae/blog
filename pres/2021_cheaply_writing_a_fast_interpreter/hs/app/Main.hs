@@ -3,12 +3,10 @@ where
 
 import Prelude hiding (exp,lookup)
 import qualified Control.DeepSeq
-import qualified Control.Exception
-import Control.Monad (ap,liftM,void)
+import Control.Monad (ap,liftM,void,forM)
 import qualified Data.Map as Data (Map)
 import qualified Data.Map
 import qualified Data.Text.Lazy.Builder
-import Data.Traversable (for)
 import qualified Data.Vector as Data (Vector)
 import qualified Data.Vector
 import qualified Formatting
@@ -112,8 +110,8 @@ naive_ast_walk ex =
           loop exp0 env2
         else (bottom, env1)
 
-twe_cont :: Exp -> Env -> Int
-twe_cont e env =
+_twe_cont :: Exp -> Env -> Int
+_twe_cont e env =
   loop e env (\_ r -> r)
   where
   loop :: Exp -> Env -> (Env -> Int -> Int) -> Int
@@ -176,8 +174,8 @@ twe_mon exp =
     EvalLookup n -> cont env (lookup env n)
     EvalSet n v -> cont (insert env n v) ()
 
-closure_eval :: Exp -> Env -> Int
-closure_eval e =
+_closure_eval :: Exp -> Env -> Int
+_closure_eval e =
   let c = compile e in \env -> (fst $ c env)
   where
   compile :: Exp -> Env -> (Int, Env)
@@ -213,8 +211,8 @@ closure_eval e =
                else (bottom, env1)
       in loop
 
-closure_cont :: Exp -> Env -> Int
-closure_cont e =
+_closure_cont :: Exp -> Env -> Int
+_closure_cont e =
   let f = compile e (\f env -> f env)
   in \env -> snd $ f env
   where
@@ -256,8 +254,8 @@ data StackOp
   | StackEnd
   deriving (Show)
 
-stack_compile :: Exp -> [StackOp]
-stack_compile exp =
+_stack_compile :: Exp -> [StackOp]
+_stack_compile exp =
   loop 0 exp <> [StackEnd]
   where
   loop :: Int -> Exp -> [StackOp]
@@ -280,8 +278,8 @@ stack_compile exp =
             <> cb
             <> [StackJump count]
 
-stack_exec :: [StackOp] -> Env -> Int
-stack_exec code env =
+_stack_exec :: [StackOp] -> Env -> Int
+_stack_exec code env =
   loop 0 [] env
   where
   code' :: Data.Vector StackOp
@@ -298,8 +296,8 @@ stack_exec code env =
                          else loop (ip + 1) (tail stack) env
     StackEnd -> head stack
 
-stack_exec_cont :: [StackOp] -> Env -> Int
-stack_exec_cont code =
+_stack_exec_cont :: [StackOp] -> Env -> Int
+_stack_exec_cont code =
   \env -> (code' Data.Vector.! 0) 0 env []
   where
   code' :: Data.Vector (Int -> Env -> [Int] -> Int)
@@ -314,69 +312,49 @@ stack_exec_cont code =
       in (code' Data.Vector.! next) next env (tail stack)
     StackEnd -> \r _ _ -> r
 
-
-data Switch
-  = Perf
-  | Vals
-  | Test
-
-switch :: Switch
-switch = Perf
+bench :: Control.DeepSeq.NFData a => (String, () -> a) -> IO ()
+bench (name, f) = do
+  let now = System.Clock.getTime System.Clock.Monotonic
+  let raw_string = Formatting.now . Data.Text.Lazy.Builder.fromString
+  let printDur = Formatting.fprint
+                   (Formatting.Formatters.string
+                    Formatting.%
+                    raw_string " ("
+                    Formatting.%
+                    Formatting.Formatters.shown
+                    Formatting.%
+                    raw_string " runs): "
+                    Formatting.%
+                    Formatting.Clock.timeSpecs
+                    Formatting.%
+                    raw_string " ("
+                    Formatting.%
+                    Formatting.Formatters.string
+                    Formatting.%
+                    raw_string " μs/run)\n")
+  let ntimes :: Int -> IO ()
+      ntimes 0 = return ()
+      ntimes n = Control.DeepSeq.deepseq (f ()) (ntimes (n - 1))
+  let per_run t1 t2 n = do
+        let i1 = System.Clock.toNanoSecs t1
+            i2 = System.Clock.toNanoSecs t2
+        show $ ((i2 - i1) `div` n `div` 1000)
+  start <- now
+  ntimes 3
+  end <- now
+  printDur name (3::Int) start end (per_run start end 3)
+  start <- now
+  ntimes 30
+  end <- now
+  printDur name (30::Int) start end (per_run start end 30)
 
 main :: IO ()
-main = case switch of
-  Test -> do
-    let run e = stack_exec_cont (stack_compile e) (insert mt_env 2 0)
-    print $ run ast
-  Vals -> do
-    _ <- for [("naive_ast_walk", naive_ast_walk)
-             ,("twe_cont", \ast -> twe_cont ast mt_env)
-             ,("twe_mon", twe_mon)
-             ,("closure_eval", \ast -> closure_eval ast mt_env)
-             ,("closure_cont", \ast -> closure_cont ast mt_env)
-             ,("stack_exec", \ast -> stack_exec (stack_compile ast) mt_env)
-             ]
-             (\(n, f) -> do
-               putStrLn n
-               print $ f ast)
-    pure()
-  Perf -> do
-    let now = System.Clock.getTime System.Clock.Monotonic
-    let raw_string = Formatting.now . Data.Text.Lazy.Builder.fromString
-    let printDur = Formatting.fprint
-                     (Formatting.Formatters.string
-                      Formatting.%
-                      raw_string ": "
-                      Formatting.%
-                      Formatting.Clock.timeSpecs
-                      Formatting.%
-                      raw_string "\n")
-    let ntimes :: (() -> Int) -> Int -> IO ()
-        ntimes f n =
-          if n == 0
-          then return ()
-          else do
-            void $ Control.Exception.evaluate $ Control.DeepSeq.rnf $ f ()
-            ntimes f (n - 1)
-    let bench s f = do
-          start <- now
-          ntimes f 3
-          end <- now
-          printDur s start end
-          start <- now
-          ntimes f 10
-          end <- now
-          printDur s start end
-    bench "direct" direct
-    bench "naive_ast_walk" (\_ -> naive_ast_walk ast)
-    bench "twe_cont" (\_ -> twe_cont ast mt_env)
-    bench "twe_mon" (\_ -> twe_mon ast)
-    let ce = closure_eval ast
-    bench "closure_eval" (\_ -> ce mt_env)
-    let cc = closure_cont ast
-    bench "closure_cont" (\_ -> cc mt_env)
-    let se = let ops = stack_compile ast in stack_exec ops
-    bench "stack_exec" (\_ -> se mt_env)
-    let sec = let ops = stack_compile ast in stack_exec_cont ops
-    bench "stack_exec_cont" (\_ -> sec mt_env)
-    pure ()
+main = do
+  let functions = [
+          ("direct", direct),
+          ("naive_ast_walk", \() -> naive_ast_walk ast),
+          ("twe_mon", \() -> twe_mon ast)
+        ]
+  print $ (map (\(_, f) -> f ()) functions)
+  void $ forM functions bench
+  pure ()
