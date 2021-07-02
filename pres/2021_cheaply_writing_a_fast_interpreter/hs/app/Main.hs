@@ -174,36 +174,36 @@ twe_mon exp =
     EvalLookup n -> cont env (lookup env n)
     EvalSet n v -> cont (insert env n v) ()
 
-_closure_eval :: Exp -> Env -> Int
-_closure_eval e =
-  let c = compile e in \env -> (fst $ c env)
+compile_to_closure :: Exp -> () -> Int
+compile_to_closure e =
+  let !c = compile e in \() -> (fst $ c mt_env)
   where
   compile :: Exp -> Env -> (Int, Env)
   compile = \case
     Lit v -> \env -> (v, env)
     Var n -> \env -> (lookup env n, env)
     Set n exp ->
-      let f = compile exp
+      let !f = compile exp
       in \env ->
         let (v1, env1) = f env
         in (v1, insert env1 n v1)
     Bin op e1 e2 ->
-      let f1 = compile e1
-          f2 = compile e2
+      let !f1 = compile e1
+          !f2 = compile e2
       in \env ->
         let (v1, env1) = f1 env
             (v2, env2) = f2 env1
         in ((bin op) v1 v2, env2)
     Do first rest ->
-      let f = compile first
-          r = compile rest
+      let !f = compile first
+          !r = compile rest
       in \env ->
         let (_, env1) = f env
         in r env1
     While condition body ->
-      let cond = compile condition
-          bod = compile body
-          loop = \env ->
+      let !cond = compile condition
+          !bod = compile body
+          !loop = \env ->
             let (c, env1) = cond env
             in if 1 == c
                then let (_, env2) = bod env1
@@ -353,7 +353,8 @@ main = do
   let functions = [
           ("direct", direct),
           ("naive_ast_walk", \() -> naive_ast_walk ast),
-          ("twe_mon", \() -> twe_mon ast)
+          ("twe_mon", \() -> twe_mon ast),
+          ("compile_to_closure", compile_to_closure ast)
         ]
   print $ (map (\(_, f) -> f ()) functions)
   void $ forM functions bench

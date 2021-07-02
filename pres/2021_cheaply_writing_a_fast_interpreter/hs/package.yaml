@@ -38,3 +38,4 @@ executables:
     - DeriveGeneric
     - GeneralizedNewtypeDeriving
     - DerivingStrategies
+    - BangPatterns
