@@ -48,16 +48,16 @@
   [expr]
   (let [h (fn h [expr env]
             (match expr
-              [:do head tail] (let [[v env] (h head env)]
-                                (h tail env))
-              [:set idx e] (let [[v env] (h e env)]
-                             [nil (assoc env idx v)])
               [:lit v] [v env]
+              [:var idx] [(get env idx) env]
+              [:set idx e] (let [[v env] (h e env)]
+                             [v (assoc env idx v)])
               [:bin op e1 e2] (let [f (bin op)
                                     [v1 env] (h e1 env)
                                     [v2 env] (h e2 env)]
                                 [(f v1 v2) env])
-              [:var idx] [(get env idx) env]
+              [:do head tail] (let [[v env] (h head env)]
+                                (h tail env))
               [:while e-condition e-body] (loop [env env]
                                             (let [[condition env] (h e-condition env)]
                                               (if (== condition 1)
@@ -70,16 +70,12 @@
   [expr]
   (let [h (fn h [expr]
             (match expr
-              [:do head tail] (let [head-body (h head)
-                                    tail-body (h tail)]
-                                (fn [env]
-                                  (let [[v env] (head-body env)]
-                                    (tail-body env))))
+              [:lit e] (fn [env] [e env])
+              [:var idx] (fn [env] [(get env idx) env])
               [:set idx e] (let [f (h e)]
                              (fn [env]
                                (let [[v env] (f env)]
-                                 [nil (assoc env idx v)])))
-              [:lit e] (fn [env] [e env])
+                                 [v (assoc env idx v)])))
               [:bin op e1 e2] (let [f (bin op)
                                     f1 (h e1)
                                     f2 (h e2)]
@@ -87,7 +83,11 @@
                                   (let [[v1 env] (f1 env)
                                         [v2 env] (f2 env)]
                                     [(f v1 v2) env])))
-              [:var idx] (fn [env] [(get env idx) env])
+              [:do head tail] (let [head-body (h head)
+                                    tail-body (h tail)]
+                                (fn [env]
+                                  (let [[v env] (head-body env)]
+                                    (tail-body env))))
               [:while e-condition e-body] (let [f-condition (h e-condition)
                                                 f-body (h e-body)]
                                             (fn [env]
@@ -705,48 +705,48 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.91e-06"
+"2.68e-06"
 
   (bench (naive-ast-walk ast))
-"5.80e-03"
+"5.38e-03"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"2.44e-03"
+"1.96e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"7.25e-03"
+"6.68e-03"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.79e-03"
+"5.33e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.68e-03"
+"1.36e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"7.45e-04"
+"6.09e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"6.58e-04"
+"5.39e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"2.82e-04"
+"1.85e-04"
 
   (def rcj (registers-jump (compile-register-ssa ast)))
   (bench (rcj))
-"4.45e-05"
+"3.23e-05"
 
   (def rcj (registers-loop (compile-register-ssa ast)))
   (bench (rcj))
-"9.03e-06"
+"7.86e-06"
 
   (registers-c (compile-register-ssa ast) 1000000)
-[-13 8647]
+[-13 8075]
 
   )
