@@ -110,9 +110,9 @@ naive_ast_walk ex =
           loop exp0 env2
         else (bottom, env1)
 
-_twe_cont :: Exp -> Env -> Int
-_twe_cont e env =
-  loop e env (\_ r -> r)
+twe_cont :: Exp -> Int
+twe_cont e =
+  loop e mt_env (\_ r -> r)
   where
   loop :: Exp -> Env -> (Env -> Int -> Int) -> Int
   loop exp env cont =
@@ -120,12 +120,13 @@ _twe_cont e env =
       Lit v -> cont env v
       Var n -> cont env (lookup env n)
       Set n exp -> loop exp env (\env v -> cont (insert env n v) v)
-      Bin op e1 e2 -> loop e1 env (\env v1 -> loop e2 env (\env v2 -> cont env ((bin op) v1 v2)))
+      Bin op e1 e2 -> loop e1 env (\env v1 ->
+        loop e2 env (\env v2 ->
+          cont env ((bin op) v1 v2)))
       Do first rest -> loop first env (\env _ -> loop rest env cont)
       While condition body -> loop condition env (\env condition_value ->
         if (1 == condition_value)
-        then loop body env (\env _ ->
-          loop (While condition body) env (\env v -> cont env v))
+        then loop body env (\env _ -> loop exp env cont)
         else cont env bottom)
 
 data EvalExec a where
@@ -354,7 +355,8 @@ main = do
           ("direct", direct),
           ("naive_ast_walk", \() -> naive_ast_walk ast),
           ("twe_mon", \() -> twe_mon ast),
-          ("compile_to_closure", compile_to_closure ast)
+          ("compile_to_closure", compile_to_closure ast),
+          ("twe_cont", \() -> twe_cont ast)
         ]
   print $ (map (\(_, f) -> f ()) functions)
   void $ forM functions bench
