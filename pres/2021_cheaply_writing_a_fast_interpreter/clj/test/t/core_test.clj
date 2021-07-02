@@ -5,6 +5,7 @@
 (deftest ast-walks
   (is (= -13 (t/baseline)))
   (is (= -13 (t/naive-ast-walk t/ast)))
+  (is (= -13 (trampoline (t/twe-cont t/ast))))
   (is (= -13 ((t/compile-to-closure t/ast)))))
 
 (def stack-code

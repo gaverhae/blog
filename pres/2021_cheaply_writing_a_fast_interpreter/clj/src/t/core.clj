@@ -99,6 +99,27 @@
         cc (h expr)]
     #(first (cc {}))))
 
+(defn twe-cont
+  [expr]
+  (let [h (fn h [expr env cont]
+            #(match expr
+               [:lit v] (cont env v)
+               [:var idx] (cont env (get env idx))
+               [:set idx e] (h e env (fn [env v] (cont (assoc env idx v) v)))
+               [:bin op e1 e2] (h e1 env
+                                  (fn [env v1]
+                                    (h e2 env
+                                       (fn [env v2]
+                                         (cont env ((bin op) v1 v2))))))
+               [:do head tail] (h head env (fn [env _] (h tail env cont)))
+               [:while e-condition e-body]
+               (h e-condition env
+                 (fn [env c]
+                   (if (== 1 c)
+                     (h e-body env (fn [env _] (h expr env cont)))
+                     (cont env nil))))))]
+    (h expr {} (fn [_ v] v))))
+
 (defn compile-stack
   [ast]
   (let [h (fn h [cur expr]
@@ -713,6 +734,9 @@
   (def cc (compile-to-closure ast))
   (bench (cc))
 "1.96e-03"
+
+  (bench (trampoline (twe-cont ast)))
+"6.55e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
