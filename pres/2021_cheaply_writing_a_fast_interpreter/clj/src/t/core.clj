@@ -66,6 +66,43 @@
                                                 [nil env])))))]
     (first (h expr {}))))
 
+(defmacro mdo
+  [bindings]
+  (if (#{0 1} (count bindings))
+    (throw (RuntimeException. "invalid number of elements in mdo bindings"))
+    (let [[n v & r] bindings]
+      (if (empty? r)
+        v
+        [:bind v `(fn [~n] (mdo ~r))]))))
+
+(defn twe-mon
+  [expr]
+  (let [eval (fn eval [exp]
+               (match exp
+                 [:lit v] [:return v]
+                 [:var n] (mdo [v [:lookup n]
+                                _ [:return v]])
+                 [:set n e] (mdo [v (eval e)
+                                  _ [:set n v]
+                                  _ [:return v]])
+                 [:bin op e1 e2] (mdo [v1 (eval e1)
+                                       v2 (eval e2)
+                                       _ [:return ((bin op) v1 v2)]])
+                 [:do head tail] (mdo [_ (eval head)
+                                       _ (eval tail)])
+                 [:while condition body] (mdo [c (eval condition)
+                                               _ (if (== 1 c)
+                                                   (mdo [_ (eval body)
+                                                         _ (eval exp)])
+                                                   [:return nil])])))
+        exec (fn exec [m env cont]
+               #(match m
+                  [:bind ma f] (exec ma env (fn [env ret] (exec (f ret) env cont)))
+                  [:return a] (cont env a)
+                  [:lookup n] (cont env (env n))
+                  [:set n v] (cont (assoc env n v) nil)))]
+    (trampoline (exec (eval expr) {} (fn [_ v] v)))))
+
 (defn compile-to-closure
   [expr]
   (let [h (fn h [expr]
@@ -322,15 +359,6 @@
                (.push ~stack 0)
                (loop [~ip (long 0)]
                  ~(concat ['case ip] segments)))))))
-
-(defmacro mdo
-  [bindings]
-  (if (#{0 1} (count bindings))
-    (throw (RuntimeException. "invalid number of elements in mdo bindings"))
-    (let [[n v & r] bindings]
-      (if (empty? r)
-        v
-        [:bind v `(fn [~n] (mdo ~r))]))))
 
 (defn compile-register-ssa
   [ast]
@@ -730,6 +758,9 @@
 
   (bench (naive-ast-walk ast))
 "5.38e-03"
+
+  (bench (twe-mon ast))
+"1.99e-02"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
