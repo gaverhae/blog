@@ -212,10 +212,10 @@ compile_to_closure e =
                else (bottom, env1)
       in loop
 
-_closure_cont :: Exp -> Env -> Int
-_closure_cont e =
+closure_cont :: Exp -> () -> Int
+closure_cont e =
   let f = compile e (\f env -> f env)
-  in \env -> snd $ f env
+  in \() -> snd $ f mt_env
   where
   compile :: Exp -> ((Env -> (Env, Int)) -> Env -> (Env, Int)) -> Env -> (Env, Int)
   compile exp cont = case exp of
@@ -356,7 +356,8 @@ main = do
           ("naive_ast_walk", \() -> naive_ast_walk ast),
           ("twe_mon", \() -> twe_mon ast),
           ("compile_to_closure", compile_to_closure ast),
-          ("twe_cont", \() -> twe_cont ast)
+          ("twe_cont", \() -> twe_cont ast),
+          ("closure_cont", closure_cont ast)
         ]
   print $ (map (\(_, f) -> f ()) functions)
   void $ forM functions bench
