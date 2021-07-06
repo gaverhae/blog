@@ -986,7 +986,7 @@ _uncurried_ version of `h`. There is a one-to-one correspondence between them.
 The function object `a -> b` can also be denoted _b^a_. This notation reflects
 the size of the set: there are _|b|^|a|_ possible functions from _a_ to _b_.
 
-#### 9.4 - Cartesian closed category
+#### 9.4 - Cartesian Closed Category
 
 A _Cartesian closed_ category is one that has:
 
@@ -1028,3 +1028,29 @@ exponential notation still holds:
   functions `c -> a` and `c -> b`.
 
 #### 9.6 - Curry-Howard Isomorphism
+
+The Curry-Howard isomorphism establishes a correspondence between types and
+logic. In this view, `()` is true and `Void` is false, product types are
+conjunction and sum types are disjunction. Function types are implication: `a
+-> b` can be read as "if _a_ then _b_".
+
+In that view, any type can be seen as a proposition, and the proposition is
+true if the type is inhabited. For function types, this means that implementing
+a function is proving a theorem, specifically the theorem that this type is
+inhabited, with the proof being an existence proof: here is an inhabitant.
+
+The Curry-Howard isomorphism can be used, for example, to explain why you can't
+write a function of type `Either a b -> a` (because we know from logic that "_a
+v b => a_" is false).
+
+### Chapter 10 - Natural Transformations
+
+Consider two functors _F_ and _G_ between categories _C_ and _D_. A _natural
+transformation_ _N_ is a selection of (existing) morphisms in _D_ such that for
+every object _c_ in _C_, _F(c)_ is mapped to _G(c)_, and for every morphism _f_
+between _a_ and _b_ in _C_, _G(f) . N(a) = N(b) . F(f)_.
+
+A _natural isomorphism_ is a natural transformation whose components (morphisms
+in _D_) are all isomorphisms.
+
+#### 10.1 - Polymorphic Functions
