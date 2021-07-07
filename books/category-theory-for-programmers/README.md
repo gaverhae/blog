@@ -1054,3 +1054,9 @@ A _natural isomorphism_ is a natural transformation whose components (morphisms
 in _D_) are all isomorphisms.
 
 #### 10.1 - Polymorphic Functions
+
+In Haskell, any function of type `F a -> G a` where both `F` and `G` are
+`Functor` instances is a natural transformation. The naturality condition,
+`fmap f . alpha = alpha . fmap f`, holds automatically.
+
+#### 10.2 - Beyond Naturality
