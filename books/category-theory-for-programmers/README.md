@@ -1060,3 +1060,19 @@ In Haskell, any function of type `F a -> G a` where both `F` and `G` are
 `fmap f . alpha = alpha . fmap f`, holds automatically.
 
 #### 10.2 - Beyond Naturality
+
+Contravariant functors also have an "opposite naturality condition" for natural
+transformations in the opposite category, which in Hask translates as:
+
+```haskell
+contramap f . beta = beta . contramap f
+```
+
+where beta is a function of type `C a -> D b`, where `C` and `D` are both
+instances of `Contravariant`.
+```
+Not all polymorphic functions are natural transformations: `a -> a` is not a
+functor because there is no `fmap` or `contramap` for it. Therefore, `(a -> a)
+-> f a` where `f` is a functor is not a natural transformation.
+
+#### 10.3 - Functor Category
