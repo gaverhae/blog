@@ -1076,3 +1076,20 @@ functor because there is no `fmap` or `contramap` for it. Therefore, `(a -> a)
 -> f a` where `f` is a functor is not a natural transformation.
 
 #### 10.3 - Functor Category
+
+For any pair of categories _C_ and _D_, we can form a new category by selecting
+as objects all of the functors from C to D and as morphisms all of the natural
+trasnformations on those functors.
+
+Natural transformations automatically compose because they are themselves made
+out of morphisms in C and D. There is also a natural identity in the natural
+transformation whose components are the identity morphisms in D.
+
+If we pick all of the small categories as objects, and use functors as
+morphisms, we can form the category Cat. A hom-set in Cat is a set of functors.
+That hom-set is also, as we just discussed, a category of functors, with
+natural transformations as its morphisms. It follows that Cat is a Cartesian
+closed category in which there is an exponential D^C for any pair of categories
+C, D.
+
+#### 10.4 - 2-Categories
