@@ -255,8 +255,8 @@ data StackOp
   | StackEnd
   deriving (Show)
 
-_stack_compile :: Exp -> [StackOp]
-_stack_compile exp =
+compile_stack :: Exp -> [StackOp]
+compile_stack exp =
   loop 0 exp <> [StackEnd]
   where
   loop :: Int -> Exp -> [StackOp]
@@ -279,14 +279,36 @@ _stack_compile exp =
             <> cb
             <> [StackJump count]
 
-_stack_exec :: [StackOp] -> Env -> Int
-_stack_exec code env =
-  loop 0 [] env
+exec_stack :: [StackOp] -> () -> Int
+exec_stack code =
+  \() -> loop 0 []
   where
-  code' :: Data.Vector StackOp
-  code' = Data.Vector.fromList code
+  loop :: Int -> [Int] -> Int
+  loop ip stack = case code !! ip of
+    StackPush v -> loop (ip + 1) (v:stack)
+    StackSet n -> loop (ip + 1) (set (tail stack) n (head stack))
+    StackGet n -> loop (ip + 1) ((get stack n) : stack)
+    StackBin op -> loop (ip + 1) ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack)
+    StackJump i -> loop i stack
+    StackJumpIfZero i -> if (stack !! 0) == 0
+                         then loop i (tail stack)
+                         else loop (ip + 1) (tail stack)
+    StackEnd -> head stack
+  get :: [a] -> Int -> a
+  get ls pos = (reverse ls) !! pos
+  set :: [a] -> Int -> a -> [a]
+  set ls pos val =
+    let r = reverse ls
+    in reverse (take pos r ++ val : drop (pos+1) r)
+
+_exec_stack_vectors :: [StackOp] -> () -> Int
+_exec_stack_vectors ls_code =
+  \() -> loop 0 [] mt_env
+  where
+  code :: Data.Vector StackOp
+  code = Data.Vector.fromList ls_code
   loop :: Int -> [Int] -> Env -> Int
-  loop ip stack env = case (Data.Vector.!) code' ip of
+  loop ip stack env = case (Data.Vector.!) code ip of
     StackPush v -> loop (ip + 1) (v:stack) env
     StackSet n -> loop (ip + 1) (tail stack) (insert env n (head stack))
     StackGet n -> loop (ip + 1) (lookup env n : stack) env
@@ -357,7 +379,8 @@ main = do
           ("twe_mon", \() -> twe_mon ast),
           ("compile_to_closure", compile_to_closure ast),
           ("twe_cont", \() -> twe_cont ast),
-          ("closure_cont", closure_cont ast)
+          ("closure_cont", closure_cont ast),
+          ("exec_stack", exec_stack (compile_stack ast))
         ]
   print $ (map (\(_, f) -> f ()) functions)
   void $ forM functions bench
