@@ -212,8 +212,8 @@ compile_to_closure e =
                else (bottom, env1)
       in loop
 
-closure_cont :: Exp -> () -> Int
-closure_cont e =
+_closure_cont :: Exp -> () -> Int
+_closure_cont e =
   let f = compile e (\f env -> f env)
   in \() -> snd $ f mt_env
   where
@@ -379,7 +379,7 @@ main = do
           ("twe_mon", \() -> twe_mon ast),
           ("compile_to_closure", compile_to_closure ast),
           ("twe_cont", \() -> twe_cont ast),
-          ("closure_cont", closure_cont ast),
+          --("closure_cont", closure_cont ast),
           ("exec_stack", exec_stack (compile_stack ast))
         ]
   print $ (map (\(_, f) -> f ()) functions)
