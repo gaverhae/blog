@@ -161,16 +161,16 @@
   [ast]
   (let [h (fn h [cur expr]
             (match expr
-              [:do head tail] (let [hd (h cur head)
-                                    tl (h (+ cur (count hd)) tail)]
-                                (concat hd tl))
               [:lit v] [[:push v]]
+              [:var idx] [[:get idx]]
               [:set idx e] (concat (h cur e)
                                    [[:set idx]])
               [:bin op e1 e2] (let [left (h cur e1)
                                     right (h (+ cur (count left)) e2)]
                                 (concat left right [[:bin op]]))
-              [:var idx] [[:get idx]]
+              [:do head tail] (let [hd (h cur head)
+                                    tl (h (+ cur (count hd)) tail)]
+                                (concat hd tl))
               [:while cnd bod] (let [condition (h cur cnd)
                                      body (h (+ cur 1 (count condition)) bod)]
                                  (concat condition
@@ -192,6 +192,9 @@
     (let [op (code pc)]
       (match op
         [:push val] (recur (inc pc) (conj stack val))
+        [:set idx] (let [p (peek stack)
+                         stack (pop stack)]
+                     (recur (inc pc) (assoc stack idx p)))
         [:get idx] (recur (inc pc) (conj stack (stack idx)))
         [:bin op] (let [f (bin op)
                         p1 (peek stack)
@@ -199,15 +202,12 @@
                         p2 (peek stack)
                         stack (pop stack)]
                     (recur (inc pc) (conj stack (f p1 p2))))
-        [:set idx] (let [p (peek stack)
-                         stack (pop stack)]
-                     (recur (inc pc) (assoc stack idx p)))
+        [:jump to] (recur (long to) stack)
         [:jump-if-zero to] (let [p (peek stack)
                                  stack (pop stack)]
                              (if (zero? p)
                                (recur (long to) stack)
                                (recur (inc pc) stack)))
-        [:jump to] (recur (long to) stack)
         [:end] (peek stack)))))
 
 (defn stack-exec-cont
