@@ -286,20 +286,20 @@ exec_stack code =
   loop :: Int -> [Int] -> Int
   loop ip stack = case code !! ip of
     StackPush v -> loop (ip + 1) (push stack v)
-    StackSet n -> loop (ip + 1) (set (pop stack) n (peek stack))
+    StackSet n -> let (v, s) = pop stack
+                  in loop (ip + 1) (set s n v)
     StackGet n -> loop (ip + 1) (push stack (get stack n))
-    StackBin op -> let (a1, s1) = (peek stack, pop stack)
-                       (a2, s2) = (peek s1, pop s1)
+    StackBin op -> let (a1, s1) = pop stack
+                       (a2, s2) = pop s1
                    in loop (ip + 1) (push s2 ((bin op) a2 a1))
     StackJump i -> loop i stack
-    StackJumpIfZero i -> if (peek stack) == 0
-                         then loop i (pop stack)
-                         else loop (ip + 1) (pop stack)
-    StackEnd -> peek stack
-  pop :: [a] -> [a]
-  pop = tail
-  peek :: [a] -> a
-  peek = head
+    StackJumpIfZero i -> let (v, s) = pop stack
+                         in if v == 0
+                            then loop i s
+                            else loop (ip + 1) s
+    StackEnd -> fst (pop stack)
+  pop :: [a] -> (a, [a])
+  pop ls = (head ls, tail ls)
   push :: [a] -> a -> [a]
   push ls a = a : ls
   get :: [a] -> Int -> a
