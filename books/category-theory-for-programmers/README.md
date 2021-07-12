@@ -1093,3 +1093,10 @@ closed category in which there is an exponential D^C for any pair of categories
 C, D.
 
 #### 10.4 - 2-Categories
+
+In Cat, morphisms are functors, which means that hom-sets are categories, where
+the morphisms are natural transformations. Such a category, where there are
+morphisms between morphisms (2-morphisms), is called a 2-category. It all
+composes as expected.
+
+#### 10.6 - Challenges
