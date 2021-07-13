@@ -125,10 +125,8 @@ pre code {
     padding: 0.5em;
     overflow-wrap: normal;
     white-space: pre;
-}
-
-code {
-    color: #428bca;
+    background-color: #002b36;
+    color: #93a1a1;
 }
 
 table {
