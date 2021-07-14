@@ -39,3 +39,4 @@ executables:
     - GeneralizedNewtypeDeriving
     - DerivingStrategies
     - BangPatterns
+    - ScopedTypeVariables

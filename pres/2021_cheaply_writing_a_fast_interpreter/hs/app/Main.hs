@@ -4,11 +4,13 @@ where
 import Prelude hiding (exp,lookup)
 import qualified Control.DeepSeq
 import Control.Monad (ap,liftM,void,forM)
+import qualified Control.Monad.ST
 import qualified Data.Map as Data (Map)
 import qualified Data.Map
 import qualified Data.Text.Lazy.Builder
 import qualified Data.Vector as Data (Vector)
 import qualified Data.Vector
+import qualified Data.Vector.Unboxed.Mutable
 import qualified Formatting
 import qualified Formatting.Clock
 import qualified Formatting.Formatters
@@ -309,23 +311,59 @@ exec_stack code =
     let r = reverse ls
     in reverse (take pos r ++ val : drop (pos+1) r)
 
-_exec_stack_vectors :: [StackOp] -> () -> Int
-_exec_stack_vectors ls_code =
-  \() -> loop 0 [] mt_env
+exec_stack_2 :: [StackOp] -> () -> Int
+exec_stack_2 ls_code =
+  \() -> Control.Monad.ST.runST $ do
+    init_stack <- Data.Vector.Unboxed.Mutable.unsafeNew 256
+    go init_stack
   where
   code :: Data.Vector StackOp
-  code = Data.Vector.fromList ls_code
-  loop :: Int -> [Int] -> Env -> Int
-  loop ip stack env = case (Data.Vector.!) code ip of
-    StackPush v -> loop (ip + 1) (v:stack) env
-    StackSet n -> loop (ip + 1) (tail stack) (insert env n (head stack))
-    StackGet n -> loop (ip + 1) (lookup env n : stack) env
-    StackBin op -> loop (ip + 1) ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack) env
-    StackJump i -> loop i stack env
-    StackJumpIfZero i -> if (stack !! 0) == 0
-                         then loop i (tail stack) env
-                         else loop (ip + 1) (tail stack) env
-    StackEnd -> head stack
+  !code = Data.Vector.fromList ls_code
+  go :: forall s. Data.Vector.Unboxed.Mutable.MVector s Int -> Control.Monad.ST.ST s Int
+  go stack = do
+    loop 0 0
+    where
+    loop :: Int -> Int -> Control.Monad.ST.ST s Int
+    loop ip top = case (Data.Vector.!) code ip of
+      StackPush v -> do
+        top <- push top v
+        loop (ip + 1) top
+      StackSet n -> do
+        (v, top) <- pop top
+        set n v
+        loop (ip + 1) (max top (n + 1))
+      StackGet n -> do
+        v <- get n
+        top <- push top v
+        loop (ip + 1) top
+      StackBin op -> do
+        (a1, top) <- pop top
+        (a2, top) <- pop top
+        top <- push top ((bin op) a2 a1)
+        loop (ip + 1) top
+      StackJump i -> loop i top
+      StackJumpIfZero i -> do
+        (v, top) <- pop top
+        if v == 0
+        then loop i top
+        else loop (ip + 1) top
+      StackEnd -> do
+        (v, _) <- pop top
+        return v
+    pop :: Int -> Control.Monad.ST.ST s (Int, Int)
+    pop top = do
+      v <- Data.Vector.Unboxed.Mutable.read stack (top - 1)
+      return (v, top - 1)
+    push :: Int -> Int -> Control.Monad.ST.ST s Int
+    push top v = do
+      Data.Vector.Unboxed.Mutable.write stack top v
+      return (top + 1)
+    get :: Int -> Control.Monad.ST.ST s Int
+    get top = do
+      v <- Data.Vector.Unboxed.Mutable.read stack top
+      return v
+    set :: Int -> Int -> Control.Monad.ST.ST s ()
+    set pos val = Data.Vector.Unboxed.Mutable.write stack pos val
 
 _stack_exec_cont :: [StackOp] -> Env -> Int
 _stack_exec_cont code =
@@ -388,7 +426,8 @@ main = do
           ("compile_to_closure", compile_to_closure ast),
           ("twe_cont", \() -> twe_cont ast),
           --("closure_cont", closure_cont ast),
-          ("exec_stack", exec_stack (compile_stack ast))
+          ("exec_stack", exec_stack (compile_stack ast)),
+          ("exec_stack_2", exec_stack_2 (compile_stack ast))
         ]
   print $ (map (\(_, f) -> f ()) functions)
   void $ forM functions bench
