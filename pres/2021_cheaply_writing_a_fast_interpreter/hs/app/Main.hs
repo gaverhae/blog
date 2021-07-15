@@ -59,7 +59,7 @@ ast =
               -- return x
               (Var 0))))
 
-direct :: () -> Int
+direct :: Int -> Int
 direct _ =
   loop 100 1000
   where
@@ -86,9 +86,9 @@ insert (Env m) n v = Env $ Data.Map.insert n v m
 mt_env :: Env
 mt_env = Env Data.Map.empty
 
-naive_ast_walk :: Exp -> Int
+naive_ast_walk :: Exp -> Int -> Int
 naive_ast_walk ex =
-  let (r, _) = loop ex mt_env in r
+  \_ -> let (r, _) = loop ex mt_env in r
   where
   loop :: Exp -> Env -> (Int, Env)
   loop exp0 env0 =
@@ -112,9 +112,9 @@ naive_ast_walk ex =
           loop exp0 env2
         else (bottom, env1)
 
-twe_cont :: Exp -> Int
+twe_cont :: Exp -> Int -> Int
 twe_cont e =
-  loop e mt_env (\_ r -> r)
+  \_ -> loop e mt_env (\_ r -> r)
   where
   loop :: Exp -> Env -> (Env -> Int -> Int) -> Int
   loop exp env cont =
@@ -141,9 +141,9 @@ instance Functor EvalExec where fmap = liftM
 instance Applicative EvalExec where pure = return; (<*>) = ap
 instance Monad EvalExec where return = EvalReturn; (>>=) = EvalBind
 
-twe_mon :: Exp -> Int
+twe_mon :: Exp -> Int -> Int
 twe_mon exp =
-  exec (eval exp) mt_env (\_ r -> r)
+  \_ -> exec (eval exp) mt_env (\_ r -> r)
   where
   eval :: Exp -> EvalExec Int
   eval = \case
@@ -177,9 +177,9 @@ twe_mon exp =
     EvalLookup n -> cont env (lookup env n)
     EvalSet n v -> cont (insert env n v) ()
 
-compile_to_closure :: Exp -> () -> Int
+compile_to_closure :: Exp -> Int -> Int
 compile_to_closure e =
-  let !c = compile e in \() -> (fst $ c mt_env)
+  let !c = compile e in \_ -> (fst $ c mt_env)
   where
   compile :: Exp -> Env -> (Int, Env)
   compile = \case
@@ -214,10 +214,10 @@ compile_to_closure e =
                else (bottom, env1)
       in loop
 
-_closure_cont :: Exp -> () -> Int
-_closure_cont e =
+closure_cont :: Exp -> Int -> Int
+closure_cont e =
   let f = compile e (\f env -> f env)
-  in \() -> snd $ f mt_env
+  in \_ -> snd $ f mt_env
   where
   compile :: Exp -> ((Env -> (Env, Int)) -> Env -> (Env, Int)) -> Env -> (Env, Int)
   compile exp cont = case exp of
@@ -281,9 +281,9 @@ compile_stack exp =
             <> cb
             <> [StackJump count]
 
-exec_stack :: [StackOp] -> () -> Int
+exec_stack :: [StackOp] -> Int -> Int
 exec_stack code =
-  \() -> loop 0 []
+  \_ -> loop 0 []
   where
   loop :: Int -> [Int] -> Int
   loop ip stack = case code !! ip of
@@ -311,9 +311,9 @@ exec_stack code =
     let r = reverse ls
     in reverse (take pos r ++ val : drop (pos+1) r)
 
-exec_stack_2 :: [StackOp] -> () -> Int
+exec_stack_2 :: [StackOp] -> Int -> Int
 exec_stack_2 ls_code =
-  \() -> Control.Monad.ST.runST $ do
+  \_ -> Control.Monad.ST.runST $ do
     init_stack <- Data.Vector.Unboxed.Mutable.unsafeNew 256
     go init_stack
   where
@@ -365,9 +365,9 @@ exec_stack_2 ls_code =
     set :: Int -> Int -> Control.Monad.ST.ST s ()
     set pos val = Data.Vector.Unboxed.Mutable.write stack pos val
 
-_stack_exec_cont :: [StackOp] -> Env -> Int
-_stack_exec_cont code =
-  \env -> (code' Data.Vector.! 0) 0 env []
+stack_exec_cont :: [StackOp] -> Int -> Int
+stack_exec_cont code =
+  \_ -> (code' Data.Vector.! 0) 0 mt_env []
   where
   code' :: Data.Vector (Int -> Env -> [Int] -> Int)
   code' = Data.Vector.fromList $ (flip map) code $ \case
@@ -381,7 +381,7 @@ _stack_exec_cont code =
       in (code' Data.Vector.! next) next env (tail stack)
     StackEnd -> \r _ _ -> r
 
-bench :: Control.DeepSeq.NFData a => (String, () -> a) -> IO ()
+bench :: Control.DeepSeq.NFData a => (String, Int -> a) -> IO ()
 bench (name, f) = do
   let now = System.Clock.getTime System.Clock.Monotonic
   let raw_string = Formatting.now . Data.Text.Lazy.Builder.fromString
@@ -403,7 +403,7 @@ bench (name, f) = do
                     raw_string " μs/run)\n")
   let ntimes :: Int -> IO ()
       ntimes 0 = return ()
-      ntimes n = Control.DeepSeq.deepseq (f ()) (ntimes (n - 1))
+      ntimes n = Control.DeepSeq.deepseq (f n) (ntimes (n - 1))
   let per_run t1 t2 n = do
         let i1 = System.Clock.toNanoSecs t1
             i2 = System.Clock.toNanoSecs t2
@@ -421,14 +421,15 @@ main :: IO ()
 main = do
   let functions = [
           ("direct", direct),
-          ("naive_ast_walk", \() -> naive_ast_walk ast),
-          ("twe_mon", \() -> twe_mon ast),
+          ("naive_ast_walk", naive_ast_walk ast),
+          ("twe_mon", twe_mon ast),
           ("compile_to_closure", compile_to_closure ast),
-          ("twe_cont", \() -> twe_cont ast),
-          --("closure_cont", closure_cont ast),
+          ("twe_cont", twe_cont ast),
+          ("closure_cont", closure_cont ast),
           ("exec_stack", exec_stack (compile_stack ast)),
-          ("exec_stack_2", exec_stack_2 (compile_stack ast))
+          ("exec_stack_2", exec_stack_2 (compile_stack ast)),
+          ("stack_exec_cont", stack_exec_cont (compile_stack ast))
         ]
-  print $ (map (\(_, f) -> f ()) functions)
+  print $ (map (\(_, f) -> f 0) functions)
   void $ forM functions bench
   pure ()
