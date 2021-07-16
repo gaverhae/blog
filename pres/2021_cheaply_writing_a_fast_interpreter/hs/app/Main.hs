@@ -60,12 +60,12 @@ ast =
               (Var 0))))
 
 direct :: Int -> Int
-direct _ =
-  loop 100 1000
+direct n =
+  loop 100 (n + 1000)
   where
   loop :: Int -> Int -> Int
   loop x0 i =
-    if (0 == i)
+    if (n == i)
     then x0
     else let x1 = x0 + 4 + x0 + 3
              x2 = x1 + 2 + 4
@@ -88,7 +88,7 @@ mt_env = Env Data.Map.empty
 
 naive_ast_walk :: Exp -> Int -> Int
 naive_ast_walk ex =
-  \_ -> let (r, _) = loop ex mt_env in r
+  \n -> let (r, _) = loop ex (insert mt_env 13 n) in r
   where
   loop :: Exp -> Env -> (Int, Env)
   loop exp0 env0 =
@@ -114,7 +114,7 @@ naive_ast_walk ex =
 
 twe_cont :: Exp -> Int -> Int
 twe_cont e =
-  \_ -> loop e mt_env (\_ r -> r)
+  \n -> loop e (insert mt_env 13 n) (\_ r -> r)
   where
   loop :: Exp -> Env -> (Env -> Int -> Int) -> Int
   loop exp env cont =
@@ -143,7 +143,7 @@ instance Monad EvalExec where return = EvalReturn; (>>=) = EvalBind
 
 twe_mon :: Exp -> Int -> Int
 twe_mon exp =
-  \_ -> exec (eval exp) mt_env (\_ r -> r)
+  \n -> exec (eval exp) (insert mt_env 13 n) (\_ r -> r)
   where
   eval :: Exp -> EvalExec Int
   eval = \case
@@ -179,7 +179,7 @@ twe_mon exp =
 
 compile_to_closure :: Exp -> Int -> Int
 compile_to_closure e =
-  let !c = compile e in \_ -> (fst $ c mt_env)
+  let !c = compile e in \n -> (fst $ c (insert mt_env 13 n))
   where
   compile :: Exp -> Env -> (Int, Env)
   compile = \case
@@ -217,7 +217,7 @@ compile_to_closure e =
 closure_cont :: Exp -> Int -> Int
 closure_cont e =
   let f = compile e (\f env -> f env)
-  in \_ -> snd $ f mt_env
+  in \n -> snd $ f (insert mt_env 13 n)
   where
   compile :: Exp -> ((Env -> (Env, Int)) -> Env -> (Env, Int)) -> Env -> (Env, Int)
   compile exp cont = case exp of
@@ -283,7 +283,7 @@ compile_stack exp =
 
 exec_stack :: [StackOp] -> Int -> Int
 exec_stack code =
-  \_ -> loop 0 []
+  \n -> loop 0 [n]
   where
   loop :: Int -> [Int] -> Int
   loop ip stack = case code !! ip of
@@ -313,8 +313,8 @@ exec_stack code =
 
 exec_stack_2 :: [StackOp] -> Int -> Int
 exec_stack_2 ls_code =
-  \_ -> Control.Monad.ST.runST $ do
-    init_stack <- Data.Vector.Unboxed.Mutable.unsafeNew 256
+  \n -> Control.Monad.ST.runST $ do
+    init_stack <- Data.Vector.Unboxed.Mutable.unsafeNew (256 + n)
     go init_stack
   where
   code :: Data.Vector StackOp
