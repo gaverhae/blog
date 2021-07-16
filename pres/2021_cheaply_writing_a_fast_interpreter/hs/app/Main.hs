@@ -365,22 +365,6 @@ exec_stack_2 ls_code =
     set :: Int -> Int -> Control.Monad.ST.ST s ()
     set pos val = Data.Vector.Unboxed.Mutable.write stack pos val
 
-stack_exec_cont :: [StackOp] -> Int -> Int
-stack_exec_cont code =
-  \_ -> (code' Data.Vector.! 0) 0 mt_env []
-  where
-  code' :: Data.Vector (Int -> Env -> [Int] -> Int)
-  code' = Data.Vector.fromList $ (flip map) code $ \case
-    StackPush v -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env (v:stack)
-    StackSet n -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) (insert env n (head stack)) (tail stack)
-    StackGet n -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env (lookup env n : stack)
-    StackBin op -> \ip env stack -> (code' Data.Vector.! (ip+1)) (ip+1) env ((bin op) (stack !! 1) (stack !! 0) : drop 2 stack)
-    StackJump i -> \_ env stack -> (code' Data.Vector.! i) i env stack
-    StackJumpIfZero i -> \ip env stack ->
-      let next = if (head stack) == 0 then i else ip+1
-      in (code' Data.Vector.! next) next env (tail stack)
-    StackEnd -> \r _ _ -> r
-
 bench :: Control.DeepSeq.NFData a => (String, Int -> a) -> IO ()
 bench (name, f) = do
   let now = System.Clock.getTime System.Clock.Monotonic
@@ -427,8 +411,7 @@ main = do
           ("twe_cont", twe_cont ast),
           ("closure_cont", closure_cont ast),
           ("exec_stack", exec_stack (compile_stack ast)),
-          ("exec_stack_2", exec_stack_2 (compile_stack ast)),
-          ("stack_exec_cont", stack_exec_cont (compile_stack ast))
+          ("exec_stack_2", exec_stack_2 (compile_stack ast))
         ]
   print $ (map (\(_, f) -> f 0) functions)
   void $ forM functions bench
