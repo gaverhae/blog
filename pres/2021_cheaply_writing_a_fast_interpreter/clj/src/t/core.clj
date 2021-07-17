@@ -210,6 +210,50 @@
                                (recur (inc pc) stack)))
         [:end] (peek stack)))))
 
+(defn run-stack-mut
+  [code]
+  (let [^longs stack (long-array 256)
+        bin-map (->> bin (map-indexed (fn [idx [kw _]] [kw idx])) (into {}))
+        ^objects bin (->> bin (map second) (into-array Object))
+        ^ints code (->> code
+                        (mapcat #(match %
+                                   [:push val] [0 val]
+                                   [:set idx] [1 idx]
+                                   [:get idx] [2 idx]
+                                   [:bin op] [3 (bin-map op)]
+                                   [:jump to] [4 (* 2 to)]
+                                   [:jump-if-zero to] [5 (* 2 to)]
+                                   [:end] [6 -1]))
+                        (into-array Integer/TYPE))]
+    #(loop [pc (int 0)
+            top (int 0)]
+       (case (aget code pc)
+         0 (do (aset stack top (aget code (unchecked-inc-int pc)))
+               (recur (unchecked-add-int pc 2)
+                      (unchecked-inc-int top)))
+         1 (do (aset stack (aget code (unchecked-inc-int pc)) (aget stack (unchecked-dec-int top)))
+               (recur (unchecked-add-int pc 2)
+                      (Math/max (unchecked-inc-int (aget code (unchecked-inc-int pc)))
+                                (unchecked-dec-int top))))
+         2 (do (aset stack top (aget stack (aget code (unchecked-inc-int pc))))
+               (recur (unchecked-add-int pc 2)
+                      (unchecked-inc-int top)))
+         3 (do (let [f ^IFn (aget bin (aget code (unchecked-inc-int pc)))]
+                 (aset stack
+                       (unchecked-subtract-int top 2)
+                       (long (f (aget stack (unchecked-dec-int top))
+                                (aget stack (unchecked-subtract-int top 2)))))
+                 (recur (unchecked-add-int pc 2)
+                        (unchecked-dec-int top))))
+         4 (recur (aget code (unchecked-inc-int pc))
+                  top)
+         5 (if (zero? (aget stack top))
+             (recur (aget code (unchecked-inc-int pc))
+                    (unchecked-dec-int top))
+             (recur (unchecked-add-int pc 2)
+                    (unchecked-dec-int top)))
+         6 (aget stack (unchecked-dec-int top))))))
+
 (defn stack-exec-cont
   [ops]
   (let [compile-stack-op
@@ -757,51 +801,43 @@
 "2.68e-06"
 
   (bench (naive-ast-walk ast))
-"5.38e-03"
+"5.45e-03"
 
   (bench (twe-mon ast))
-"1.99e-02"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
-"1.96e-03"
 
   (bench (trampoline (twe-cont ast)))
-"6.55e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"6.68e-03"
+
+  (def rsm (run-stack-mut (compile-stack ast)))
+  (bench (rsm))
+"6.24e-04"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
-"5.33e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
-"1.36e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
-"6.09e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
-"5.39e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
-"1.85e-04"
 
   (def rcj (registers-jump (compile-register-ssa ast)))
   (bench (rcj))
-"3.23e-05"
 
   (def rcj (registers-loop (compile-register-ssa ast)))
   (bench (rcj))
-"7.86e-06"
 
   (registers-c (compile-register-ssa ast) 1000000)
-[-13 8075]
 
   )
