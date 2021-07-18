@@ -392,14 +392,14 @@ bench (name, f) = do
         let i1 = System.Clock.toNanoSecs t1
             i2 = System.Clock.toNanoSecs t2
         show $ ((i2 - i1) `div` n `div` 1000)
-  start <- now
-  ntimes 3
-  end <- now
-  printDur name (3::Int) start end (per_run start end 3)
-  start <- now
-  ntimes 30
-  end <- now
-  printDur name (30::Int) start end (per_run start end 30)
+  let run :: Int -> IO ()
+      run n = do
+        start <- now
+        ntimes n
+        end <- now
+        printDur name n start end (per_run start end (fromIntegral n))
+  run 30
+  run 3000
 
 main :: IO ()
 main = do
