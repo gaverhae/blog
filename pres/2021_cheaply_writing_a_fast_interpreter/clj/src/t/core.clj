@@ -798,46 +798,58 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.68e-06"
+"2.63e-06"
 
   (bench (naive-ast-walk ast))
-"5.45e-03"
+"5.31e-03"
 
   (bench (twe-mon ast))
+"1.72e-02"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
+"1.93e-03"
 
   (bench (trampoline (twe-cont ast)))
+"6.34e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
+"6.38e-03"
 
   (def rsm (run-stack-mut (compile-stack ast)))
   (bench (rsm))
-"6.24e-04"
+"6.28e-04"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
+"5.31e-03"
 
   (def scm (stack-exec-mut sc))
   (bench (scm))
+"1.32e-03"
 
   (def sca (stack-exec-case sc))
   (bench (sca))
+"6.08e-04"
 
   (def scj (stack-exec-case-jump sc))
   (bench (scj))
+"5.37e-04"
 
   (def rc (compile-register-ssa ast))
   (bench (run-registers rc))
+"1.82e-04"
 
   (def rcj (registers-jump (compile-register-ssa ast)))
   (bench (rcj))
+"3.22e-05"
 
   (def rcj (registers-loop (compile-register-ssa ast)))
   (bench (rcj))
+"7.79e-06"
 
   (registers-c (compile-register-ssa ast) 1000000)
+[-13 7872]
 
   )
