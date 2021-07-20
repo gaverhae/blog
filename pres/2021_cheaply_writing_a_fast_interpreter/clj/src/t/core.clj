@@ -213,6 +213,10 @@
 (defn run-stack-mut
   [code]
   (let [^longs stack (long-array 256)
+        max-var (int (->> code
+                          (filter (comp #{:set :get} first))
+                          (map second)
+                          (reduce max)))
         bin-map (->> bin (map-indexed (fn [idx [kw _]] [kw idx])) (into {}))
         ^objects bin (->> bin (map second) (into-array Object))
         ^ints code (->> code
@@ -226,15 +230,14 @@
                                    [:end] [6 -1]))
                         (into-array Integer/TYPE))]
     #(loop [pc (int 0)
-            top (int 0)]
+            top (int (inc max-var))]
        (case (aget code pc)
          0 (do (aset stack top (aget code (unchecked-inc-int pc)))
                (recur (unchecked-add-int pc 2)
                       (unchecked-inc-int top)))
          1 (do (aset stack (aget code (unchecked-inc-int pc)) (aget stack (unchecked-dec-int top)))
                (recur (unchecked-add-int pc 2)
-                      (Math/max (unchecked-inc-int (aget code (unchecked-inc-int pc)))
-                                (unchecked-dec-int top))))
+                      (unchecked-dec-int top)))
          2 (do (aset stack top (aget stack (aget code (unchecked-inc-int pc))))
                (recur (unchecked-add-int pc 2)
                       (unchecked-inc-int top)))
@@ -402,6 +405,74 @@
                (.push ~stack 0)
                (.push ~stack 0)
                (loop [~ip (long 0)]
+                 ~(concat ['case ip] segments)))))))
+
+(defn run-stack-mut-jmp
+  [ops]
+  (let [max-var (->> ops
+                     (filter (comp #{:set :get} first))
+                     (map second)
+                     (reduce max))
+        stack (with-meta (gensym) {:tag longs})
+        ip (gensym)
+        is-jump? #{:jump :jump-if-zero}
+        segments (->> ops
+                      (map-indexed vector)
+                      (filter (comp is-jump? first second))
+                      (mapcat (fn [[idx op]]
+                                (match op
+                                  [:jump x] [x]
+                                  [:jump-if-zero x] [x (inc idx)])))
+                      (cons 0)
+                      set
+                      sort
+                      (mapcat
+                        (fn [ep]
+                          (let [segment (->> (drop ep ops)
+                                             (reduce (fn [acc op]
+                                                       (if (is-jump? (first op))
+                                                         (reduced (conj acc op))
+                                                         (conj acc op)))
+                                                     []))]
+                          [ep (->> segment
+                                   ;; TODO: reduce + offset
+                                   (map (fn [op]
+                                          (match op
+                                            [:push val] `(let [top+# (unchecked-inc (aget ~stack (int 0)))]
+                                                           (aset ~stack top+# ~val)
+                                                           (aset ~stack (int 0) top+#))
+                                            [:set idx] `(let [top# (aget ~stack (int 0))]
+                                                          (aset ~stack (int ~(inc idx)) (aget ~stack top#))
+                                                          (aset ~stack (int 0) (unchecked-dec top#)))
+                                            [:get idx] `(let [top+# (unchecked-inc (aget ~stack (int 0)))
+                                                              v# (aget ~stack (int ~(inc idx)))]
+                                                          (aset ~stack top+# v#)
+                                                          (aset ~stack (int 0) top+#))
+                                            [:bin op] (let [top- (gensym)
+                                                            v1 (gensym)
+                                                            v2 (gensym)]
+                                                        `(let [~top- (unchecked-dec-int (aget ~stack (int 0)))
+                                                               ~v1 (aget ~stack ~top-)
+                                                               ~v2 (aget ~stack (unchecked-inc-int ~top-))]
+                                                           (aset ~stack
+                                                                 ~top-
+                                                                 ~(case op
+                                                                    :add `(unchecked-add ~v1 ~v2)
+                                                                    :not= `(if (== ~v1 ~v2) 0 1)))
+                                                           (aset ~stack (int 0) ~top-)))
+                                            [:jump to] `(recur (int ~to))
+                                            [:jump-if-zero to] `(let [top# (aget ~stack (int 0))
+                                                                      v# (aget ~stack top#)]
+                                                                  (aset ~stack (int 0) (unchecked-dec top#))
+                                                                  (if (zero? v#)
+                                                                    (recur (int ~to))
+                                                                    (recur (int ~(+ ep (count segment))))))
+                                            [:end] `(aget ~stack (aget ~stack (int 0))))))
+                                   (cons 'do))]))))]
+    (eval `(fn []
+             (let [~stack (long-array 256)]
+               (aset ~stack 0 ~(+ 2 max-var))
+               (loop [~ip 0]
                  ~(concat ['case ip] segments)))))))
 
 (defn compile-register-ssa
@@ -819,7 +890,11 @@
 
   (def rsm (run-stack-mut (compile-stack ast)))
   (bench (rsm))
-"6.28e-04"
+"6.44e-04"
+
+  (def rsmj (run-stack-mut-jmp (compile-stack ast)))
+  (bench (rsm))
+"6.37e-04"
 
   (def scc (stack-exec-cont sc))
   (bench (scc))
