@@ -5,6 +5,7 @@
 (deftest ast-walks
   (is (= -13 (t/baseline)))
   (is (= -13 (t/naive-ast-walk t/ast)))
+  (is (= -13 (t/twe-mon t/ast)))
   (is (= -13 (trampoline (t/twe-cont t/ast))))
   (is (= -13 ((t/compile-to-closure t/ast)))))
 
@@ -42,10 +43,7 @@
 (deftest stacks
   (is (= stack-code (t/compile-stack t/ast)))
   (is (= -13 (t/run-stack stack-code)))
-  (is (= -13 ((t/stack-exec-cont stack-code))))
-  (is (= -13 ((t/stack-exec-mut stack-code))))
-  (is (= -13 ((t/stack-exec-case stack-code))))
-  (is (= -13 ((t/stack-exec-case-jump stack-code)))))
+  (is (= -13 ((t/run-stack-mut stack-code)))))
 
 (def register-code
   {:hoisted {2 0, 4 4, 7 3, 8 2, 10 4, 11 -1}
