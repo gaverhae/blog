@@ -365,8 +365,8 @@ exec_stack_2 ls_code =
     set :: Int -> Int -> Control.Monad.ST.ST s ()
     set pos val = Data.Vector.Unboxed.Mutable.write stack pos val
 
-bench :: Control.DeepSeq.NFData a => (String, Int -> a) -> IO ()
-bench (name, f) = do
+bench :: Control.DeepSeq.NFData a => [Int] -> (String, Int -> a) -> IO ()
+bench ns (name, f) = do
   let now = System.Clock.getTime System.Clock.Monotonic
   let raw_string = Formatting.now . Data.Text.Lazy.Builder.fromString
   let printDur = Formatting.fprint
@@ -398,21 +398,27 @@ bench (name, f) = do
         ntimes n
         end <- now
         printDur name n start end (per_run start end (fromIntegral n))
-  run 30
-  run 3000
+  void $ forM ns (\n -> run n)
+  return ()
+
+functions :: [(String, Int -> Int)]
+functions = [
+  ("direct", direct),
+  ("naive_ast_walk", naive_ast_walk ast),
+  ("twe_mon", twe_mon ast),
+  ("compile_to_closure", compile_to_closure ast),
+  ("twe_cont", twe_cont ast),
+  ("closure_cont", closure_cont ast),
+  ("exec_stack", exec_stack (compile_stack ast)),
+  ("exec_stack_2", exec_stack_2 (compile_stack ast))
+  ]
 
 main :: IO ()
 main = do
-  let functions = [
-          ("direct", direct),
-          ("naive_ast_walk", naive_ast_walk ast),
-          ("twe_mon", twe_mon ast),
-          ("compile_to_closure", compile_to_closure ast),
-          ("twe_cont", twe_cont ast),
-          ("closure_cont", closure_cont ast),
-          ("exec_stack", exec_stack (compile_stack ast)),
-          ("exec_stack_2", exec_stack_2 (compile_stack ast))
-        ]
+  void $ forM functions (bench [30, 3000])
+
+_test :: IO ()
+_test = do
   print $ (map (\(_, f) -> f 0) functions)
-  void $ forM functions bench
+  void $ forM functions (bench [3, 30])
   pure ()
