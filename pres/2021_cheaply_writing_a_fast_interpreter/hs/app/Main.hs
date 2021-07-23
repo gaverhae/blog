@@ -384,14 +384,20 @@ bench ns (name, f) = do
                     Formatting.%
                     Formatting.Formatters.string
                     Formatting.%
-                    raw_string " μs/run)\n")
+                    raw_string ")\n")
   let ntimes :: Int -> IO ()
       ntimes 0 = return ()
       ntimes n = Control.DeepSeq.deepseq (f n) (ntimes (n - 1))
   let per_run t1 t2 n = do
         let i1 = System.Clock.toNanoSecs t1
             i2 = System.Clock.toNanoSecs t2
-        show $ ((i2 - i1) `div` n `div` 1000)
+            dur = ((i2 - i1) `div` n)
+            (d, unit) = if dur > 10000000
+                        then (dur `div` 1000000, "ms/run")
+                        else if dur > 10000
+                        then (dur `div` 1000, "µs/run")
+                        else (dur, "ns/run")
+        show d <> " " <> unit
   let run :: Int -> IO ()
       run n = do
         start <- now
