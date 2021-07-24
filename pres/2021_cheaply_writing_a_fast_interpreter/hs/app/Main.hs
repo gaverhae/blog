@@ -280,57 +280,46 @@ exec_stack code =
 
 exec_stack_2 :: [StackOp] -> Int -> Int
 exec_stack_2 ls_code =
-  \n -> Control.Monad.ST.runST $ do
-    init_stack <- Data.Vector.Unboxed.Mutable.unsafeNew (256 + n)
+  \_ -> Control.Monad.ST.runST $ do
+    init_stack <- Data.Vector.Unboxed.Mutable.unsafeNew 256
     go init_stack
   where
+  num_vars = foldl max 0 ((flip map) ls_code (\case StackGet n -> n; StackSet n -> n; _ -> 0))
   code :: Data.Vector StackOp
   !code = Data.Vector.fromList ls_code
   go :: forall s. Data.Vector.Unboxed.Mutable.MVector s Int -> Control.Monad.ST.ST s Int
   go stack = do
-    loop 0 0
+    loop 0 (num_vars + 1)
     where
     loop :: Int -> Int -> Control.Monad.ST.ST s Int
     loop ip top = case (Data.Vector.!) code ip of
       StackPush v -> do
-        top <- push top v
-        loop (ip + 1) top
+        write top v
+        loop (ip + 1) (top + 1)
       StackSet n -> do
-        (v, top) <- pop top
-        set n v
-        loop (ip + 1) (max top (n + 1))
+        v <- read (top - 1)
+        write n v
+        loop (ip + 1) (top - 1)
       StackGet n -> do
-        v <- get n
-        top <- push top v
-        loop (ip + 1) top
+        v <- read n
+        write top v
+        loop (ip + 1) (top + 1)
       StackBin op -> do
-        (a1, top) <- pop top
-        (a2, top) <- pop top
-        top <- push top ((bin op) a2 a1)
-        loop (ip + 1) top
+        a2 <- read (top - 1)
+        a1 <- read (top - 2)
+        write (top - 2) (bin op a2 a1)
+        loop (ip + 1) (top - 1)
       StackJump i -> loop i top
       StackJumpIfZero i -> do
-        (v, top) <- pop top
+        v <- read (top - 1)
         if v == 0
-        then loop i top
-        else loop (ip + 1) top
+        then loop i (top - 1)
+        else loop (ip + 1) (top - 1)
       StackEnd -> do
-        (v, _) <- pop top
+        v <- read (top - 1)
         return v
-    pop :: Int -> Control.Monad.ST.ST s (Int, Int)
-    pop top = do
-      v <- Data.Vector.Unboxed.Mutable.read stack (top - 1)
-      return (v, top - 1)
-    push :: Int -> Int -> Control.Monad.ST.ST s Int
-    push top v = do
-      Data.Vector.Unboxed.Mutable.write stack top v
-      return (top + 1)
-    get :: Int -> Control.Monad.ST.ST s Int
-    get top = do
-      v <- Data.Vector.Unboxed.Mutable.read stack top
-      return v
-    set :: Int -> Int -> Control.Monad.ST.ST s ()
-    set pos val = Data.Vector.Unboxed.Mutable.write stack pos val
+    write = Data.Vector.Unboxed.Mutable.write stack
+    read = Data.Vector.Unboxed.Mutable.read stack
 
 bench :: Control.DeepSeq.NFData a => [Int] -> (String, Int -> a) -> IO ()
 bench ns (name, f) = do
