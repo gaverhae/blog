@@ -287,6 +287,6 @@ approach (`twe_cont`).
 [part 1]: /posts/2021-06-19-cwafi-1
 [part 2]: /posts/2021-06-27-cwafi-2
 [part 3]: /posts/2021-07-04-cwafi-3
-[part 4]: /posts/2021-07-04-cwafi-4
+[part 4]: /posts/2021-07-11-cwafi-4
 [ndm]: https://ndmitchell.com
 [cwafi]: https://www.youtube.com/watch?v=V8dnIw3amLA
