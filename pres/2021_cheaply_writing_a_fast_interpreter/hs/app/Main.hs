@@ -8,8 +8,7 @@ import qualified Control.Monad.ST
 import qualified Data.Map as Data (Map)
 import qualified Data.Map
 import qualified Data.Text.Lazy.Builder
-import qualified Data.Vector as Data (Vector)
-import qualified Data.Vector
+import qualified Data.Vector.Unboxed
 import qualified Data.Vector.Unboxed.Mutable
 import qualified Formatting
 import qualified Formatting.Clock
@@ -317,39 +316,53 @@ exec_stack_2 ls_code =
     init_stack <- Data.Vector.Unboxed.Mutable.unsafeNew (256 + n)
     go init_stack
   where
-  code :: Data.Vector StackOp
-  !code = Data.Vector.fromList ls_code
+  code :: Data.Vector.Unboxed.Vector Int
+  !code = Data.Vector.Unboxed.fromList $ concat $ (flip map) ls_code (\case
+    StackPush v -> [0, v]
+    StackSet n -> [1, n]
+    StackGet n -> [2, n]
+    StackBin op -> [3, case op of
+                            Add -> 0
+                            NotEq -> 1]
+    StackJump i -> [4, 2 * i]
+    StackJumpIfZero i -> [5, 2 * i]
+    StackEnd -> [6, 0])
+  ibin op a1 a2 = case op of
+    0 -> a1 + a2
+    1 -> if a1 /= a2 then 1 else 0
+    _ -> undefined
   go :: forall s. Data.Vector.Unboxed.Mutable.MVector s Int -> Control.Monad.ST.ST s Int
   go stack = do
     loop 0 0
     where
     loop :: Int -> Int -> Control.Monad.ST.ST s Int
-    loop ip top = case (Data.Vector.!) code ip of
-      StackPush v -> do
+    loop ip top = case ((Data.Vector.Unboxed.!) code ip, (Data.Vector.Unboxed.!) code (ip + 1)) of
+      (0, v) -> do
         top <- push top v
-        loop (ip + 1) top
-      StackSet n -> do
+        loop (ip + 2) top
+      (1, n) -> do
         (v, top) <- pop top
         set n v
-        loop (ip + 1) (max top (n + 1))
-      StackGet n -> do
+        loop (ip + 2) (max top (n + 1))
+      (2, n) -> do
         v <- get n
         top <- push top v
-        loop (ip + 1) top
-      StackBin op -> do
+        loop (ip + 2) top
+      (3, op) -> do
         (a1, top) <- pop top
         (a2, top) <- pop top
-        top <- push top ((bin op) a2 a1)
-        loop (ip + 1) top
-      StackJump i -> loop i top
-      StackJumpIfZero i -> do
+        top <- push top (ibin op a2 a1)
+        loop (ip + 2) top
+      (4, i) -> loop i top
+      (5, i) -> do
         (v, top) <- pop top
         if v == 0
         then loop i top
-        else loop (ip + 1) top
-      StackEnd -> do
+        else loop (ip + 2) top
+      (6, _) -> do
         (v, _) <- pop top
         return v
+      _ -> undefined
     pop :: Int -> Control.Monad.ST.ST s (Int, Int)
     pop top = do
       v <- Data.Vector.Unboxed.Mutable.read stack (top - 1)
