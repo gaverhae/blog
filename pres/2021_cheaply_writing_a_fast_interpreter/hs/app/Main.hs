@@ -214,39 +214,6 @@ compile_to_closure e =
                else (bottom, env1)
       in loop
 
-closure_cont :: Exp -> Int -> Int
-closure_cont e =
-  let f = compile e (\f env -> f env)
-  in \n -> snd $ f (insert mt_env 13 n)
-  where
-  compile :: Exp -> ((Env -> (Env, Int)) -> Env -> (Env, Int)) -> Env -> (Env, Int)
-  compile exp cont = case exp of
-    Lit v -> cont (\env -> (env, v))
-    Var n -> cont (\env -> (env, lookup env n))
-    Set n exp -> compile exp (\f ->
-      cont (\env ->
-        let (env1, v) = f env
-        in (insert env1 n v, v)))
-    Bin op e1 e2 ->
-      compile e1 (\f1 ->
-        compile e2 (\f2 ->
-          cont (\env ->
-            let (env1, v1) = f1 env
-                (env2, v2) = f2 env1
-            in (env2, (bin op) v1 v2))))
-    Do first rest -> compile first (\f ->
-      compile rest (\r -> cont (\env -> r (fst $ f env))))
-    While condition body ->
-      compile condition (\cond ->
-        compile body (\bod ->
-          cont (\env ->
-            let loop = \env -> let (env1, c) = cond env
-                                   in if 1 == c
-                                      then let (env2, _) = bod env1
-                                           in loop env2
-                                      else (env1, bottom)
-            in loop env)))
-
 data StackOp
   = StackPush Int
   | StackSet Int
@@ -414,7 +381,6 @@ functions = [
   ("twe_mon", twe_mon ast),
   ("compile_to_closure", compile_to_closure ast),
   ("twe_cont", twe_cont ast),
-  ("closure_cont", closure_cont ast),
   ("exec_stack", exec_stack (compile_stack ast)),
   ("exec_stack_2", exec_stack_2 (compile_stack ast))
   ]
