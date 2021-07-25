@@ -2,7 +2,7 @@
  :layout :post
  :tags ["cheap interpreter"]}
 
-[Last week][part 5] was all about me screweing up my benchmarks. There have
+[Last week][part 5] was all about me screwing up my benchmarks. There have
 been some very interesting [discussions on reddit][reddit], including
 suggestions on how to do better benchmarking in Haskell, and how to better
 implement the approaches presented in the previous parts of this series. I
@@ -60,7 +60,7 @@ our stack in the following way:
   through the stack machine code to find out how many variables are involved is
   easy enough. As [previously discussed][part 5], a correct stack machine
   executing valid code should not "pop back past" its starting point, so starting
-  with an offset is not an issue for the rest of the itnerpreter.
+  with an offset is not an issue for the rest of the interpreter.
 - We keep track of the current position of the top of the stack in the vector.
   Conceptually, we're recording the number of elements we have written so far,
   though we're only manipulating this by incrementing and decrementing it and
@@ -114,9 +114,9 @@ exec_stack_2 ls_code =
     read = Data.Vector.Unboxed.Mutable.read stack
 ```
 
-This is not beautiful code. There's mutation and a lot fo places for off-by-one
-errors to hide. But this is also not a lot of code, so there may be projects in
-which this approach can be justified.
+This is not beautiful code. There's mutation, of course, but also a lot of
+places for off-by-one errors to hide. But this is also not a lot of code, so
+there may be projects in which this approach can be justified.
 
 A few salient points to note:
 
@@ -136,13 +136,13 @@ A few salient points to note:
   "real" VMs have a set-at-startup stack size too.
 - The function argument is not used; unlike our [previous approaches][part 5],
   this one does not seem to get inlined or cached by the compiler. I suspect
-  the used of mutable state is responsible for that.
+  the use of mutable state is responsible for that.
 - Since we're going to jump around in the code, and we've already added the
   [vector] package, we also convert our stack machine code to a vector before
-  running. We want that to happen once and cached, and sort of hope that the
-  `!` achieves that. I'm still not confident in my understanding of the Haskell
-  execution model to be sure what happens here, but that single `!` does give an
-  overall performance boost of almost half in this case.
+  running. We want that to happen once and be cached, and sort of hope that the
+  `!` achieves that. I'm still not confident enough in my understanding of the
+  Haskell execution model to be sure what happens here, but that single `!` does
+  cut the runtime in half in this case.
 
 With the above code, the performance I get is:
 
@@ -173,11 +173,15 @@ One of the [comments on reddit][kovacs] yielded significantly faster numbers
 for all of the previous approaches. You can read the comment itself, and the
 linked code, for more details on the differences, but the biggest factor seems
 to be that the commenter disabled laziness. I did not know one could do that,
-and I think it's really cool. In this case, we're not really using laziness in
+and I think it's really cool. In this case, we're not relying on laziness in
 any way, so disabling it seems acceptable, though I'm not sure how confident
-I'd be about that in a real Haskell project.
+I'd be about that in a real Haskell project. Especially since the language
+extension is marked "experimental".
 
-The performance benefits are importnat, though. Simply adding
+It's per-module, though, so it may be worth having just the interpreter in a
+separate, non-lazy module.
+
+The performance benefits are important. Simply adding
 
 ```haskell
 {-# Language Strict #-}
@@ -218,8 +222,13 @@ to turn the code itself into an unboxed vector of `Int`: every operation but
 increment the instruction pointer by two after each non-jump operation.
 
 Weirdly enough, this actually made the stack interpreter a bit slower in my
-experimentation (~130µs) in regulat Haskell, though it did give a nice boost to
+experimentation (~130µs) in regular Haskell, though it did give a nice boost to
 the strict version (~50µs).
+
+That's another important thing to keep in mind when trying to optimize code:
+different optimizations can sometimes interact in unexpected ways, so going for
+incremental improvements by introducing one optimization at a time may not
+always lead to the best overall result.
 
 ## Better opcodes
 
@@ -267,3 +276,4 @@ register machine.
 [cwafi]: https://www.youtube.com/watch?v=V8dnIw3amLA
 [reddit]: https://www.reddit.com/r/haskell/comments/omt2yl/this_is_so_hard_to_post_why_my_last_three_blog/
 [kovacs]: https://www.reddit.com/r/haskell/comments/omt2yl/this_is_so_hard_to_post_why_my_last_three_blog/h5q8ol2?utm_source=share&utm_medium=web2x&context=3
+[vector]: https://hackage.haskell.org/package/vector
