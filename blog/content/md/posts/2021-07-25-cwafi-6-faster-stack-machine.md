@@ -172,11 +172,13 @@ performance boost.
 One of the [comments on reddit][kovacs] yielded significantly faster numbers
 for all of the previous approaches. You can read the comment itself, and the
 linked code, for more details on the differences, but the biggest factor seems
-to be that the commenter disabled laziness. I did not know one could do that,
-and I think it's really cool. In this case, we're not relying on laziness in
-any way, so disabling it seems acceptable, though I'm not sure how confident
-I'd be about that in a real Haskell project. Especially since the language
-extension is marked "experimental".
+to be that the commenter disabled laziness. (**Edit**: If I'm being honest, the
+details here are a bit over my head, but he wrote a [followup] that is well
+worth reading, too.) I did not know one could do that, and I think it's really
+cool. In this case, we're not relying on laziness in any way, so disabling it
+seems acceptable, though I'm not sure how confident I'd be about that in a real
+Haskell project. Especially since the language extension is marked
+"experimental".
 
 It's per-module, though, so it may be worth having just the interpreter in a
 separate, non-lazy module.
@@ -277,3 +279,4 @@ register machine.
 [reddit]: https://www.reddit.com/r/haskell/comments/omt2yl/this_is_so_hard_to_post_why_my_last_three_blog/
 [kovacs]: https://www.reddit.com/r/haskell/comments/omt2yl/this_is_so_hard_to_post_why_my_last_three_blog/h5q8ol2?utm_source=share&utm_medium=web2x&context=3
 [vector]: https://hackage.haskell.org/package/vector
+[followup]: https://www.reddit.com/r/haskell/comments/or74jb/two_weeks_ago_i_showed_how_to_build_a_simple_slow/h6glmsc?utm_source=share&utm_medium=web2x&context=3
