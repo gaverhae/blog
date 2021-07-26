@@ -321,6 +321,30 @@ exec_stack_2 ls_code =
     write = Data.Vector.Unboxed.Mutable.write stack
     read = Data.Vector.Unboxed.Mutable.read stack
 
+data RegOp
+ = RegEnd Int
+ | RegLoadLiteral Int Int
+ | RegLoad Int Int
+ | RegJumpIfZero Int Int
+ | RegJump Int
+ | RegAdd Int Int Int
+ | RegNotEq Int Int Int
+
+_compile_register_ssa :: Exp -> [RegOp]
+_compile_register_ssa exp = undefined exp
+
+_run_register :: [RegOp] -> Int -> Int
+_run_register ops =
+  let max_reg = foldl (\acc el -> max acc (case el of
+        RegEnd r -> r
+        RegLoadLiteral r _ -> r
+        RegLoad r _ -> r
+        RegJumpIfZero r _ -> r
+        RegJump _ -> 0
+        RegAdd r1 r2 r3 -> foldl max 0 [r1, r2, r3]
+        RegNotEq r1 r2 r3 -> foldl max 0 [r1, r2, r3])) 0 ops
+  in undefined max_reg
+
 bench :: Control.DeepSeq.NFData a => [Int] -> (String, Int -> a) -> IO ()
 bench ns (name, f) = do
   let now = System.Clock.getTime System.Clock.Monotonic
