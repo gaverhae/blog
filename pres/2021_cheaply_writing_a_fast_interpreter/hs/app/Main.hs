@@ -321,28 +321,82 @@ exec_stack_2 ls_code =
     write = Data.Vector.Unboxed.Mutable.write stack
     read = Data.Vector.Unboxed.Mutable.read stack
 
+newtype Register = Register Int
+ deriving Show
+
 data RegOp
- = RegEnd Int
- | RegLoadLiteral Int Int
- | RegLoad Int Int
- | RegJumpIfZero Int Int
+ = RegEnd Register
+ | RegLoadLiteral Register Int
+ | RegLoad Register Int
+ | RegJumpIfZero Register Int
  | RegJump Int
- | RegAdd Int Int Int
- | RegNotEq Int Int Int
+ | RegAdd Register Register Register
+ | RegNotEq Register Register Register
+ deriving Show
 
-_compile_register_ssa :: Exp -> [RegOp]
-_compile_register_ssa exp = undefined exp
+instance Functor RegExec where fmap = liftM
+instance Applicative RegExec where pure = return; (<*>) = ap
+instance Monad RegExec where return = RegReturn; (>>=) = RegBind
 
-_run_register :: [RegOp] -> Int -> Int
-_run_register ops =
+data RegExec a where
+  RegBind :: RegExec a -> (a -> RegExec b) -> RegExec b
+  RegReturn :: a -> RegExec a
+  RegEmit :: [RegOp] -> RegExec ()
+  RegNext :: RegExec Register
+
+data RegState = RegState { next_register :: Register
+                         , code :: [RegOp]
+                         }
+ deriving Show
+
+compile_registers_ssa :: Exp -> RegState
+compile_registers_ssa exp =
+  exec (eval exp)
+       (RegState { next_register = Register $ (max_var exp) + 1
+                 , code = [] })
+       (\_ s -> s)
+  where
+  max_var :: Exp -> Int
+  max_var = \case
+    Lit _ -> 0
+    Var idx -> idx
+    Set idx exp1 -> max idx (max_var exp1)
+    Bin _ exp1 exp2 -> max (max_var exp1) (max_var exp2)
+    Do first rest ->  max (max_var first) (max_var rest)
+    While cond body -> max (max_var cond) (max_var body)
+  eval :: Exp -> RegExec ()
+  eval = \case
+    Lit v -> do
+      r <- RegNext
+      RegEmit [RegLoadLiteral r v]
+    Var idx -> undefined idx
+    Set idx exp1 -> undefined idx exp1
+    Bin op exp1 exp2 -> undefined op exp1 exp2
+    Do first rest -> undefined first rest
+    While cond body -> undefined cond body
+  exec :: RegExec a -> RegState -> (a -> RegState -> RegState) -> RegState
+  exec m cur k = case m of
+    RegBind ma f -> exec ma cur (\a cur -> exec (f a) cur k)
+    RegReturn a -> undefined a
+    RegEmit ops ->
+      let c = code cur
+      in k () (cur { code = c <> ops })
+    RegNext ->
+      let (Register nr) = next_register cur
+          next_state = cur { next_register = Register (nr + 1) }
+      in k (Register nr) next_state
+
+run_registers :: RegState -> Int -> Int
+run_registers reg_state =
   let max_reg = foldl (\acc el -> max acc (case el of
-        RegEnd r -> r
-        RegLoadLiteral r _ -> r
-        RegLoad r _ -> r
-        RegJumpIfZero r _ -> r
+        RegEnd (Register r) -> r
+        RegLoadLiteral (Register r) _ -> r
+        RegLoad (Register r) _ -> r
+        RegJumpIfZero (Register r) _ -> r
         RegJump _ -> 0
-        RegAdd r1 r2 r3 -> foldl max 0 [r1, r2, r3]
-        RegNotEq r1 r2 r3 -> foldl max 0 [r1, r2, r3])) 0 ops
+        RegAdd (Register r1) (Register r2) (Register r3) -> foldl max 0 [r1, r2, r3]
+        RegNotEq (Register r1) (Register r2) (Register r3) -> foldl max 0 [r1, r2, r3]))
+                      0 (code reg_state)
   in undefined max_reg
 
 bench :: Control.DeepSeq.NFData a => [Int] -> (String, Int -> a) -> IO ()
@@ -395,7 +449,8 @@ functions = [
   ("compile_to_closure", compile_to_closure ast),
   ("twe_cont", twe_cont ast),
   ("exec_stack", exec_stack (compile_stack ast)),
-  ("exec_stack_2", exec_stack_2 (compile_stack ast))
+  ("exec_stack_2", exec_stack_2 (compile_stack ast)),
+  ("run_registers", run_registers (compile_registers_ssa ast))
   ]
 
 main :: IO ()
@@ -404,6 +459,7 @@ main = do
 
 _test :: IO ()
 _test = do
-  print $ (map (\(_, f) -> f 0) functions)
-  void $ forM functions (bench [3, 30])
-  pure ()
+  print $ compile_registers_ssa (Lit 5)
+--  print $ (map (\(_, f) -> f 0) functions)
+--  void $ forM functions (bench [3, 30])
+--  pure ()
