@@ -275,7 +275,7 @@
                 [:pure a] [s a]
                 [:bind ma f] (let [[s a] (run s ma)]
                                (run s (f a)))
-                [:current-position] [s (-> s :code count dec)]
+                [:current-position] [s (-> s :code count)]
                 [:free-register] [(update s :reg inc) (:reg s)]
                 [:emit code] [(update s :code conj code) nil]
                 [:hoist idx v] [(update s :hoisted assoc idx v) nil]
@@ -304,7 +304,7 @@
                                      condition (h cnd)
                                      _ [:future]
                                      body (h bod)
-                                     _ [:emit [:jump (inc before-condition)]]
+                                     _ [:emit [:jump before-condition]]
                                      _ [:resolve (fn [pos] [:jump-if-zero condition pos])]])
               [:var idx] [:pure idx]
               [:bin op e1 e2] (mdo [left (h e1)
