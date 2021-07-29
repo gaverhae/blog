@@ -351,12 +351,12 @@ data RegState = RegState { next_register :: Register
                          }
  deriving Show
 
-compile_registers_ssa :: Exp -> RegState
+compile_registers_ssa :: Exp -> [RegOp]
 compile_registers_ssa exp =
-  exec (eval exp)
-       (RegState { next_register = Register $ (max_var exp) + 1
-                 , code = [] })
-       (\(Just r) s -> s { code = (code s) <> [RegEnd r]})
+  code $ exec (eval exp)
+              (RegState { next_register = Register $ (max_var exp) + 1
+                          , code = [] })
+              (\(Just r) s -> s { code = (code s) <> [RegEnd r]})
   where
   max_var :: Exp -> Int
   max_var = \case
@@ -412,17 +412,20 @@ compile_registers_ssa exp =
       let nested = exec m (cur { code = [] }) (\() r -> r)
       in k () (nested { code = (code cur) <> [f (length (code cur) + length (code nested) + 1)] <> (code nested) })
 
-run_registers :: RegState -> Int -> Int
-run_registers reg_state =
-  let max_reg = foldl (\acc el -> max acc (case el of
-        RegEnd (Register r) -> r
-        RegLoadLiteral (Register r) _ -> r
-        RegLoad (Register r) _ -> r
-        RegJumpIfZero (Register r) _ -> r
-        RegJump _ -> 0
-        RegBin _ (Register r1) (Register r2) (Register r3) -> foldl max 0 [r1, r2, r3]))
-                      0 (code reg_state)
-  in undefined max_reg
+run_registers :: [RegOp] -> Int -> Int
+run_registers code =
+  \n -> loop 0 (insert mt_env (-1) n)
+  where
+  loop :: Int -> Env -> Int
+  loop ip regs = case code !! ip of
+    RegEnd (Register r) -> lookup regs r
+    RegLoadLiteral (Register r) v -> loop (ip + 1) (insert regs r v)
+    RegLoad (Register to) (Register from) -> loop (ip + 1) (insert regs to (lookup regs from))
+    RegJumpIfZero (Register r) to ->
+      loop (if 0 == lookup regs r then to else (ip + 1)) regs
+    RegJump to -> loop to regs
+    RegBin op (Register to) (Register a1) (Register a2) ->
+      loop (ip + 1) (insert regs to (bin op (lookup regs a1) (lookup regs a2)))
 
 bench :: Control.DeepSeq.NFData a => [Int] -> (String, Int -> a) -> IO ()
 bench ns (name, f) = do
@@ -484,7 +487,7 @@ main = do
 
 _test :: IO ()
 _test = do
-  print $ compile_registers_ssa ast
+  print $ run_registers (compile_registers_ssa ast) 0
 --  print $ (map (\(_, f) -> f 0) functions)
 --  void $ forM functions (bench [3, 30])
 --  pure ()
