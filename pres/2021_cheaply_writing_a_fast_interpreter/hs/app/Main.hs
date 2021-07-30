@@ -487,7 +487,6 @@ main = do
 
 _test :: IO ()
 _test = do
-  print $ run_registers (compile_registers_ssa ast) 0
---  print $ (map (\(_, f) -> f 0) functions)
---  void $ forM functions (bench [3, 30])
---  pure ()
+  print $ (map (\(_, f) -> f 0) functions)
+  void $ forM functions (bench [3, 30])
+  pure ()
