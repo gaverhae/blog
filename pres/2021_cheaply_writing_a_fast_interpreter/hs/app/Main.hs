@@ -427,6 +427,44 @@ run_registers code =
     RegBin op (Register to) (Register a1) (Register a2) ->
       loop (ip + 1) (insert regs to (bin op (lookup regs a1) (lookup regs a2)))
 
+run_registers_2 :: [RegOp] -> Int -> Int
+run_registers_2 ls_code = do
+  let code :: Data.Vector RegOp
+      !code = Data.Vector.fromList ls_code
+  let max_reg :: Int
+      !max_reg = foldl (\acc el -> max acc $ case el of
+        RegLoadLiteral (Register to) _ -> to
+        RegLoad (Register to) _ -> to
+        RegBin _ (Register to) _ _ -> to
+        _ -> 0) 0 ls_code
+  let loop :: forall s. Data.Vector.Unboxed.Mutable.MVector s Int -> Int -> Control.Monad.ST.ST s Int
+      loop regs ip = case (Data.Vector.!) code ip of
+        RegEnd (Register r) -> read regs r >>= return
+        RegLoadLiteral (Register to) val -> do
+          write regs to val
+          loop regs (ip + 1)
+        RegLoad (Register to) (Register from) -> do
+          v <- read regs from
+          write regs to v
+          loop regs (ip + 1)
+        RegJumpIfZero (Register r) to -> do
+          v <- read regs r
+          if 0 == v
+          then loop regs to
+          else loop regs (ip + 1)
+        RegJump to -> loop regs to
+        RegBin op (Register to) (Register a1) (Register a2) -> do
+          v1 <- read regs a1
+          v2 <- read regs a2
+          write regs to (bin op v1 v2)
+          loop regs (ip + 1)
+        where
+        write = Data.Vector.Unboxed.Mutable.write
+        read = Data.Vector.Unboxed.Mutable.read
+  \_ -> Control.Monad.ST.runST $ do
+    registers <- Data.Vector.Unboxed.Mutable.unsafeNew (max_reg + 1)
+    loop registers 0
+
 bench :: Control.DeepSeq.NFData a => [Int] -> (String, Int -> a) -> IO ()
 bench ns (name, f) = do
   let now = System.Clock.getTime System.Clock.Monotonic
@@ -478,7 +516,8 @@ functions = [
   ("twe_cont", twe_cont ast),
   ("exec_stack", exec_stack (compile_stack ast)),
   ("exec_stack_2", exec_stack_2 (compile_stack ast)),
-  ("run_registers", run_registers (compile_registers_ssa ast))
+  ("run_registers", run_registers (compile_registers_ssa ast)),
+  ("run_registers_2", run_registers_2 (compile_registers_ssa ast))
   ]
 
 main :: IO ()
