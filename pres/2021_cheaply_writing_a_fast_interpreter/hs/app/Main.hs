@@ -341,20 +341,20 @@ instance MonadFail RegExec where fail = error "Should not happen"
 data RegExec a where
   RegBind :: RegExec a -> (a -> RegExec b) -> RegExec b
   RegReturn :: a -> RegExec a
-  RegEmit :: [RegOp] -> RegExec ()
+  RegEmit :: RegOp -> RegExec ()
   RegNext :: RegExec Register
   RegPosition :: RegExec Int
   RegEmitBefore :: (Int -> RegOp) -> RegExec () -> RegExec ()
 
-data RegState = RegState { next_register :: Register
+data RegState = RegState { num_registers :: Int
                          , code :: [RegOp]
                          }
  deriving Show
 
-compile_registers_ssa :: Exp -> [RegOp]
-compile_registers_ssa exp =
+compile_registers :: Exp -> [RegOp]
+compile_registers exp =
   code $ exec (eval exp)
-              (RegState { next_register = Register $ (max_var exp) + 1
+              (RegState { num_registers = (max_var exp) + 1
                           , code = [] })
               (\(Just r) s -> s { code = (code s) <> [RegEnd r]})
   where
@@ -370,18 +370,18 @@ compile_registers_ssa exp =
   eval = \case
     Lit v -> do
       r <- RegNext
-      RegEmit [RegLoadLiteral r v]
+      RegEmit (RegLoadLiteral r v)
       return (Just r)
     Var idx -> return $ Just $ Register idx
     Set idx exp1 -> do
       Just r <- eval exp1
-      RegEmit [RegLoad (Register idx) r]
+      RegEmit (RegLoad (Register idx) r)
       return Nothing
     Bin op exp1 exp2 -> do
       Just r1 <- eval exp1
       Just r2 <- eval exp2
       r <- RegNext
-      RegEmit [RegBin op r r1 r2]
+      RegEmit (RegBin op r r1 r2)
       return $ Just r
     Do first rest -> do
       _ <- eval first
@@ -393,24 +393,24 @@ compile_registers_ssa exp =
       RegEmitBefore (\after_body -> RegJumpIfZero condition_result after_body)
                     (do
           _ <- eval body
-          _ <- RegEmit [RegJump before_condition]
+          _ <- RegEmit (RegJump before_condition)
           return ())
       return Nothing
   exec :: RegExec a -> RegState -> (a -> RegState -> RegState) -> RegState
   exec m cur k = case m of
     RegBind ma f -> exec ma cur (\a cur -> exec (f a) cur k)
     RegReturn a -> k a cur
-    RegEmit ops ->
-      let c = code cur
-      in k () (cur { code = c <> ops })
+    RegEmit op ->
+      k () (cur { code = (code cur) <> [op] })
     RegNext ->
-      let (Register nr) = next_register cur
-          next_state = cur { next_register = Register (nr + 1) }
-      in k (Register nr) next_state
-    RegPosition -> k (length (code cur)) cur
+      k (Register $ num_registers cur) cur { num_registers = (num_registers cur) + 1 }
+    RegPosition ->
+      k (length (code cur)) cur
     RegEmitBefore f m ->
       let nested = exec m (cur { code = [] }) (\() r -> r)
-      in k () (nested { code = (code cur) <> [f (length (code cur) + length (code nested) + 1)] <> (code nested) })
+      in k () (nested { code = (code cur)
+                            <> [f (length (code cur) + length (code nested) + 1)]
+                            <> (code nested) })
 
 run_registers :: [RegOp] -> Int -> Int
 run_registers code =
@@ -516,8 +516,8 @@ functions = [
   ("twe_cont", twe_cont ast),
   ("exec_stack", exec_stack (compile_stack ast)),
   ("exec_stack_2", exec_stack_2 (compile_stack ast)),
-  ("run_registers", run_registers (compile_registers_ssa ast)),
-  ("run_registers_2", run_registers_2 (compile_registers_ssa ast))
+  ("run_registers", run_registers (compile_registers ast)),
+  ("run_registers_2", run_registers_2 (compile_registers ast))
   ]
 
 main :: IO ()
