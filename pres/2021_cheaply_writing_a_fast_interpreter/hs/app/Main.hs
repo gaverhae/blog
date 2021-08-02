@@ -3,7 +3,7 @@ where
 
 import Prelude hiding (exp,lookup)
 import qualified Control.DeepSeq
-import Control.Monad (ap,liftM,void,forM)
+import Control.Monad (ap,liftM,void,forM,when)
 import qualified Control.Monad.ST
 import qualified Data.Map as Data (Map)
 import qualified Data.Map
@@ -353,7 +353,7 @@ data RegState = RegState { num_registers :: Int
 
 compile_registers :: Exp -> [RegOp]
 compile_registers exp =
-  code $ exec (eval exp)
+  code $ exec (eval Nothing exp)
               (RegState { num_registers = (max_var exp) + 1
                           , code = [] })
               (\(Just r) s -> s { code = (code s) <> [RegEnd r]})
@@ -366,33 +366,37 @@ compile_registers exp =
     Bin _ exp1 exp2 -> max (max_var exp1) (max_var exp2)
     Do first rest ->  max (max_var first) (max_var rest)
     While cond body -> max (max_var cond) (max_var body)
-  eval :: Exp -> RegExec (Maybe Register)
-  eval = \case
+  eval :: Maybe Register -> Exp -> RegExec (Maybe Register)
+  eval ret = \case
     Lit v -> do
-      r <- RegNext
+      r <- case ret of
+        Nothing -> RegNext
+        Just r -> return r
       RegEmit (RegLoadLiteral r v)
       return (Just r)
     Var idx -> return $ Just $ Register idx
     Set idx exp1 -> do
-      Just r <- eval exp1
-      RegEmit (RegLoad (Register idx) r)
+      Just (Register r) <- eval (Just (Register idx)) exp1
+      when (r /= idx) (RegEmit (RegLoad (Register idx) (Register r)))
       return Nothing
     Bin op exp1 exp2 -> do
-      Just r1 <- eval exp1
-      Just r2 <- eval exp2
-      r <- RegNext
+      Just r1 <- eval Nothing exp1
+      Just r2 <- eval Nothing exp2
+      r <- case ret of
+        Nothing -> RegNext
+        Just r -> return r
       RegEmit (RegBin op r r1 r2)
       return $ Just r
     Do first rest -> do
-      _ <- eval first
-      r <- eval rest
+      _ <- eval Nothing first
+      r <- eval Nothing rest
       return r
     While cond body -> do
       before_condition <- RegPosition
-      Just condition_result <- eval cond
+      Just condition_result <- eval Nothing cond
       RegEmitBefore (\after_body -> RegJumpIfZero condition_result after_body)
                     (do
-          _ <- eval body
+          _ <- eval Nothing body
           _ <- RegEmit (RegJump before_condition)
           return ())
       return Nothing
