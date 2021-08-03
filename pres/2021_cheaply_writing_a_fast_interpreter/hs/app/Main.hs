@@ -3,7 +3,7 @@ where
 
 import Prelude hiding (exp,lookup)
 import qualified Control.DeepSeq
-import Control.Monad (ap,liftM,void,forM,when)
+import Control.Monad (ap,liftM,void,forM,forM_,when)
 import qualified Control.Monad.ST
 import qualified Data.Map as Data (Map)
 import qualified Data.Map
@@ -85,6 +85,9 @@ insert (Env m) n v = Env $ Data.Map.insert n v m
 
 mt_env :: Env
 mt_env = Env Data.Map.empty
+
+reduce :: (b -> (Int, Int) -> b) -> b -> Env -> b
+reduce f zero (Env m) = foldl f zero (Data.Map.toList m)
 
 naive_ast_walk :: Exp -> Int -> Int
 naive_ast_walk ex =
@@ -345,18 +348,21 @@ data RegExec a where
   RegNext :: RegExec Register
   RegPosition :: RegExec Int
   RegEmitBefore :: (Int -> RegOp) -> RegExec () -> RegExec ()
+  RegHoist :: Int -> RegExec Register
 
 data RegState = RegState { num_registers :: Int
                          , code :: [RegOp]
+                         , hoisted :: Env
                          }
  deriving Show
 
-compile_registers :: Exp -> [RegOp]
+compile_registers :: Exp -> RegState
 compile_registers exp =
-  code $ exec (eval Nothing exp)
-              (RegState { num_registers = (max_var exp) + 1
-                          , code = [] })
-              (\(Just r) s -> s { code = (code s) <> [RegEnd r]})
+  exec (eval Nothing exp)
+       (RegState { num_registers = (max_var exp) + 1
+                 , code = []
+                 , hoisted = mt_env })
+       (\(Just r) s -> s { code = (code s) <> [RegEnd r]})
   where
   max_var :: Exp -> Int
   max_var = \case
@@ -369,11 +375,11 @@ compile_registers exp =
   eval :: Maybe Register -> Exp -> RegExec (Maybe Register)
   eval ret = \case
     Lit v -> do
-      r <- case ret of
-        Nothing -> RegNext
-        Just r -> return r
-      RegEmit (RegLoadLiteral r v)
-      return (Just r)
+      case ret of
+        Nothing -> RegHoist v >>= return . Just
+        Just r -> do
+          RegEmit (RegLoadLiteral r v)
+          return (Just r)
     Var idx -> return $ Just $ Register idx
     Set idx exp1 -> do
       Just (Register r) <- eval (Just (Register idx)) exp1
@@ -415,13 +421,18 @@ compile_registers exp =
       in k () (nested { code = (code cur)
                             <> [f (length (code cur) + length (code nested) + 1)]
                             <> (code nested) })
+    RegHoist v ->
+      let r = num_registers cur
+      in k (Register $ r)
+           cur { num_registers = r + 1
+               , hoisted = insert (hoisted cur) r v}
 
-run_registers :: [RegOp] -> Int -> Int
-run_registers code =
-  \n -> loop 0 (insert mt_env (-1) n)
+run_registers :: RegState -> Int -> Int
+run_registers rs =
+  \n -> loop 0 (insert (hoisted rs) (-1) n)
   where
   loop :: Int -> Env -> Int
-  loop ip regs = case code !! ip of
+  loop ip regs = case (code rs) !! ip of
     RegEnd (Register r) -> lookup regs r
     RegLoadLiteral (Register r) v -> loop (ip + 1) (insert regs r v)
     RegLoad (Register to) (Register from) -> loop (ip + 1) (insert regs to (lookup regs from))
@@ -431,18 +442,20 @@ run_registers code =
     RegBin op (Register to) (Register a1) (Register a2) ->
       loop (ip + 1) (insert regs to (bin op (lookup regs a1) (lookup regs a2)))
 
-run_registers_2 :: [RegOp] -> Int -> Int
-run_registers_2 ls_code = do
-  let code :: Data.Vector RegOp
-      !code = Data.Vector.fromList ls_code
+run_registers_2 :: RegState -> Int -> Int
+run_registers_2 rs = do
+  let code_v :: Data.Vector RegOp
+      !code_v = Data.Vector.fromList (code rs)
   let max_reg :: Int
-      !max_reg = foldl (\acc el -> max acc $ case el of
-        RegLoadLiteral (Register to) _ -> to
-        RegLoad (Register to) _ -> to
-        RegBin _ (Register to) _ _ -> to
-        _ -> 0) 0 ls_code
+      !max_reg =
+        max (foldl (\acc el -> max acc $ case el of
+               RegLoadLiteral (Register to) _ -> to
+               RegLoad (Register to) _ -> to
+               RegBin _ (Register to) _ _ -> to
+               _ -> 0) 0 (code rs))
+            (reduce (\acc (r, _) -> max acc r) 0 (hoisted rs))
   let loop :: forall s. Data.Vector.Unboxed.Mutable.MVector s Int -> Int -> Control.Monad.ST.ST s Int
-      loop regs ip = case (Data.Vector.!) code ip of
+      loop regs ip = case (Data.Vector.!) code_v ip of
         RegEnd (Register r) -> read regs r >>= return
         RegLoadLiteral (Register to) val -> do
           write regs to val
@@ -467,6 +480,8 @@ run_registers_2 ls_code = do
         read = Data.Vector.Unboxed.Mutable.read
   \_ -> Control.Monad.ST.runST $ do
     registers <- Data.Vector.Unboxed.Mutable.unsafeNew (max_reg + 1)
+    forM_ (reduce (\acc el -> el:acc) [] $ hoisted rs) (\(r, v) -> do
+      Data.Vector.Unboxed.Mutable.write registers r v)
     loop registers 0
 
 bench :: Control.DeepSeq.NFData a => [Int] -> (String, Int -> a) -> IO ()
@@ -530,6 +545,7 @@ main = do
 
 _test :: IO ()
 _test = do
+  print $ compile_registers ast
   print $ (map (\(_, f) -> f 0) functions)
   void $ forM functions (bench [3, 30])
   pure ()
