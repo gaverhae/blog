@@ -14,7 +14,7 @@ fi
 
 for log in $LOGS; do
     if [ -f logs/$log ]; then
-        echo "Already got $log..."
+        :
     else
         aws s3 cp $BUCKET/logs/$log logs/$log
     fi
