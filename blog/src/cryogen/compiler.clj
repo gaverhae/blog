@@ -337,45 +337,36 @@
     file-path
     (htmlize-content params)))
 
+(defn compile-articles
+  [cat-str cat-kw articles root-uri-key {:keys [debug? blog-prefix] :as params}]
+  (when-not (empty? articles)
+    (println (blue (str "compiling " cat-str)))
+    (let [root-uri (root-uri-key params)]
+      (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix root-uri))
+      (doseq [{:keys [uri] :as article} articles]
+        (println "-->" (cyan uri))
+        (when debug?
+          (print-debug-info article))
+        (write-html uri
+                    params
+                    (render-file (str "/html/" (:layout article))
+                                 (merge params
+                                        {cat-kw article
+                                         :selmer/context (cryogen-io/path "/" blog-prefix "/")
+                                         :uri uri})))))))
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
-  [{:keys [blog-prefix page-root-uri debug?] :as params} pages]
-  (when-not (empty? pages)
-    (println (blue "compiling pages"))
-    (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix page-root-uri))
-    (doseq [{:keys [uri] :as page} pages]
-      (println "-->" (cyan uri))
-      (when debug?
-        (print-debug-info page))
-      (write-html uri
-                  params
-                  (render-file (str "/html/" (:layout page))
-                               (merge params
-                                      {:active-page     "pages"
-                                       :home            false
-                                       :selmer/context  (cryogen-io/path "/" blog-prefix "/")
-                                       :page            page
-                                       :uri             uri}))))))
+  [params pages]
+  (compile-articles "pages" :page pages :page-root-uri
+                    (merge params {:home false
+                                   :active-page "pages"})))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
-  [{:keys [blog-prefix post-root-uri debug?] :as params} posts]
-  (when-not (empty? posts)
-    (println (blue "compiling posts"))
-    (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix post-root-uri))
-    (doseq [{:keys [uri] :as post} posts]
-      (println "-->" (cyan uri))
-      (when debug?
-        (print-debug-info post))
-      (write-html uri
-                  params
-                  (render-file (str "/html/" (:layout post))
-                               (merge params
-                                      {:active-page    "posts"
-                                       :selmer/context (cryogen-io/path "/" blog-prefix "/")
-                                       :post           post
-                                       :uri            uri}))))))
+  [params posts]
+  (compile-articles "posts" :post posts :post-root-uri
+                    (merge params {:active-page "posts"})))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
