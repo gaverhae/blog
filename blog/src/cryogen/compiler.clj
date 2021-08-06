@@ -81,16 +81,6 @@
         (m/exts mu)
         ignored-files))))
 
-(defn find-posts
-  "Returns a list of markdown files representing posts under the post root."
-  [{:keys [post-root ignored-files]} mu]
-  (find-entries post-root mu ignored-files))
-
-(defn find-pages
-  "Returns a list of markdown files representing pages under the page root."
-  [{:keys [page-root ignored-files]} mu]
-  (find-entries page-root mu ignored-files))
-
 (defn parse-post-date
   "Parses the post date from the post's file name and returns the corresponding java date object"
   [^String file-name date-fmt]
@@ -200,7 +190,9 @@
        (mapcat
          (fn [mu]
            (->>
-             (find-posts config mu)
+             (find-entries (:post-root config)
+                           mu
+                           (:ignored-files config))
              (filter incremental-compile-filter)
              (pmap #(parse-post % config mu))
              (remove #(= (:draft? %) true)))))
@@ -216,7 +208,9 @@
        (mapcat
          (fn [mu]
            (->>
-             (find-pages config mu)
+             (find-entries (:page-root config)
+                           mu
+                           (:ignored-files config))
              (filter incremental-compile-filter)
              (map #(parse-page % config mu)))))
        (sort-by :page-index)))
