@@ -63,10 +63,8 @@
 
 (defn serve
   [config]
-  (ring-server/serve
-    (wrap-subdirectories (routes config) config)
-    (assoc config
-           :init (partial init config))))
+  (init config)
+  (ring-server/serve (wrap-subdirectories (routes config) config)))
 
 (defn -main [& args]
   (let [cli-args (edn/read-string (first args))
