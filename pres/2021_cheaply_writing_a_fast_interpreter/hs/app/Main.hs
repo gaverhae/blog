@@ -447,13 +447,7 @@ run_registers_2 rs = do
   let code_v :: Data.Vector RegOp
       !code_v = Data.Vector.fromList (code rs)
   let max_reg :: Int
-      !max_reg =
-        max (foldl (\acc el -> max acc $ case el of
-               RegLoadLiteral (Register to) _ -> to
-               RegLoad (Register to) _ -> to
-               RegBin _ (Register to) _ _ -> to
-               _ -> 0) 0 (code rs))
-            (reduce (\acc (r, _) -> max acc r) 0 (hoisted rs))
+      max_reg = num_registers rs
   let loop :: forall s. Data.Vector.Unboxed.Mutable.MVector s Int -> Int -> Control.Monad.ST.ST s Int
       loop regs ip = case (Data.Vector.!) code_v ip of
         RegEnd (Register r) -> read regs r >>= return
