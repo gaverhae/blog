@@ -28,7 +28,7 @@ if a process tries to open a fifo for reading, it will block until another
 process opens it for writing.
 
 Once a fifo is opened, there is still some blocking behaviour going on: fifos
-hacve a limited buffer size, and once the buffer is full, attempts to write
+have a limited buffer size, and once the buffer is full, attempts to write
 will block until another process reads on the other end. Similarly, attempts to
 read an empty fifo will block if the fifo is empty but there is a process
 connected for writing.
