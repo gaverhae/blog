@@ -233,7 +233,7 @@ with
 Finally, the recursive `eval` call on `rest` in the `Do` case should thread
 through the intended return register:
 
-```
+```haskell
     Do first rest -> do
       _ <- eval Nothing first
       r <- eval ret rest
@@ -286,8 +286,11 @@ definition, literals don't change, so it's a bit of a shame that we have so
 many `RegLoadLiteral` instructions in our tight loop.
 
 Again, we could conceive of a second pass of optimization moving those
-instructions out of the loop, but we will instead change our compiler to take
-care of it directly.
+instructions out of the loop. Think about this carefully, though. If we take in
+a list of operations and start moving them around, what happens to jumps? Me, I
+choose to instead change the compiler to emit this optimization directly, i.e.
+not emit those `RegLoadLiteral` to start with, such that I don't need to touch
+or worry about the jumping logic at all.
 
 First off, this requires a way to keep track of those constants as we go
 through the compilation process. To do that, we'll expand our monadic state
@@ -325,6 +328,20 @@ compiler to hoist the literal if it is not currently being set on a variable:
           return (Just r)
 ```
 
+Finally, we add a case to the `exec` function to handle the new `RegHoist`
+constructor:
+
+```haskell
+  exec :: RegExec a -> RegState -> (a -> RegState -> RegState) -> RegState
+  exec m cur k = case m of
+    -- [...]
+    RegHoist v ->
+      let r = num_registers cur
+      in k (Register $ r)
+           cur { num_registers = r + 1
+               , hoisted = insert (hoisted cur) r v}
+```
+
 That's all for the compiler (+ initializing `hoisted` to `mt_env`), but we now
 need to change our interpreter to know about this new field. Moreover, we need
 to change the type passed from the compiler to the interpreter to contain that
@@ -338,7 +355,7 @@ changing the jump instructions.
 
 Besides the trivial unwrapping of `RegState`, there are two semantic changes
 required to the interpreter code to accommodate this. The first one is to
-change the computation of `max_reg` to include the literals:
+change the computation of `max_reg` to include the hoisted constants:
 
 ```haskell
   let max_reg :: Int
@@ -363,12 +380,14 @@ The second one is to intialize the constants once, before running the code:
 ```haskell
   \_ -> Control.Monad.ST.runST $ do
     registers <- Data.Vector.Unboxed.Mutable.unsafeNew (max_reg + 1)
+    -- start new code
     forM_ (reduce (\acc el -> el:acc) [] $ hoisted rs) (\(r, v) -> do
       Data.Vector.Unboxed.Mutable.write registers r v)
+    -- end new code
     loop registers 0
 ```
 
-The code now looks like:
+The generated code now looks like:
 
 ```haskell
 [ RegLoadLiteral (Register 0) 100
@@ -415,8 +434,8 @@ If we added a "add literal to register" instruction, we could save the time it
 takes us to fetch constants from the registers vector.
 
 Another thing we could do, possibly combined with the above, is semantic
-optimizations. Arithmetic analysis could replace the entire loop with `x <- 2x
-+ 13`, so we could replace:
+optimizations. Arithmetic analysis could replace the entire loop with
+`x <- 2x + 13`, so we could replace:
 
 ```Haskell
 , RegBin Add (Register 5) (Register 0) (Register 4)
@@ -434,7 +453,8 @@ with
 ```
 
 where the suffix `R` means register and `L` means literal (say we wanted to
-support all three combinations).
+support all four combinations). the compiler code to reach this `RegState` is
+left as an exercise for the reader.
 
 Of course, if we're going to do semantic analysis, given that our sample code
 has no free variable we could also just do all of the computation at compile
@@ -454,8 +474,9 @@ yields a runtime of 30ns using the same benchmark I've used so far.
 
 This series has been all about writing interpreters, and so far we've been
 doing so from a statically compiled language. In the next part of this series,
-I'll show a possible advantage of writing interpreters in a dynamic language
-instead, where the host language interpreter is available at runtime.
+I'll show a technique that is only reasonably cheap when writing an interpreter
+within a dynamic language instead, where the host language interpreter is
+available at runtime.
 
 [series]: /tags/cheap%20interpreter
 [part 1]: /posts/2021-06-19-cwafi-1
