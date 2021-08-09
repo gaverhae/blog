@@ -161,47 +161,99 @@
                    (and (= p (p->n fixed? w))
                         (->> w (remove fixed?) (filter forb) empty?)))))))
 
-(def empty-dic (into {} (map #(-> [% \?]) characters)))
+(def empty-dict (into {} (map #(-> [% \?]) characters)))
+
+(def help
+  "
+* `:f grkkO` generates a list of words that match the given pattern and show
+  the first five. See below for how patterns work.
+* `.` moves through the above list of words.
+* `:r` resets the current key to an empty one.
+* `:q` exits current function loop.
+* `:k` resets the current key to the provided one.
+* `grkkt hello` updates the current key to map `g` to `h`, `r` to `e`, `k` to
+  `l` and `t` to `o`.
+* `ghrekl` updates the current key to map `g` to `h`, `r` to `e`, and `k` to
+  `l`.
+
+A pattern in this case is a mix of possibly repeated but unknown letters and
+known letters; in the given example above, `:f grkkO` would supply, in random
+order, all of the words from the dictionary that satisfy the following
+conditions:
+
+* The word ends with the letter `o` (because it is provided as uppercase).
+* The word has exactly 5 letters (because the given pattern has five letters).
+* The word is composed of four different letters, say 0, 1, 2 and 3, where 3 is
+  o and the letters are arranged as 0122o. Example: `hello`.
+* None of the unknown letters map to a letter that is already mapped to in the
+  key.")
+
+(defn string->dict
+  [s]
+  (->> s
+       (partition 2)
+       (map vec)
+       (into {})))
+
+(defn two-words-of-equal-length
+  [s]
+  (when-let [[_ a b] (re-matches #"^([a-z]+) ([a-z]+)$" s)]
+    (= (count a) (count b))))
+
+(defn one-word-of-even-length
+  [s]
+  (zero? (mod (count s) 2)))
+
+(defn run
+  ([s]
+   (run s nil))
+  ([cipher k]
+   (loop [dict (if k
+                 (string->dict k)
+                 empty-dict)
+          words ()]
+     (println)
+     (println)
+     (print-dict dict)
+     (println)
+     (print-strip cipher dict)
+     (print "?> ") (flush)
+     (let [^String r (read-line)]
+       (cond
+         (= r "?")
+         (do (println help)
+             (recur dict words))
+
+         (= r ".")
+         (do (prn (take 5 words))
+             (recur dict (drop 5 words)))
+
+         (= r ":k")
+         (recur (string->dict k) words)
+
+         (= r ":q")
+         nil
+
+         (.startsWith r ":f ")
+         (let [words (shuffle (find-words (subs r 3 (count r)) (->> dict vals set)))]
+           (prn (take 5 words))
+           (recur dict (drop 5 words)))
+
+         (= r ":r") (recur empty-dict ())
+
+         (two-words-of-equal-length r)
+         (let [[_ a b] (re-matches #"^([a-z]+) ([a-z]+)$" r)]
+           (recur (->> (map vector a b) (reduce conj dict))
+                  words))
+
+         (not (one-word-of-even-length r))
+         (recur dict words)
+
+         :else
+         (recur (merge dict (string->dict r))
+                words))))))
 
 (defn decrypt
   [i]
-  (printf "Suggested key: %s\n" (get-in strips [i :key]))
-  (loop [dict empty-dic ws () i i]
-    (print "\n\n")
-    (print-dict dict)
-    (println)
-    (print-strip (get-in strips [i :secret]) dict)
-    (print "?> ") (flush)
-    (let [^String r (read-line)]
-      (cond
-        (= r ".")
-        (do (prn (take 5 ws))
-            (recur dict (drop 5 ws) i))
-        (= r ":k")
-        (recur (->> (get-in strips [i :key])
-                    (partition 2)
-                    (map vec)
-                    (reduce conj {})) ws i)
-        (= r ":q")
-        nil
-        (.startsWith r ":f ")
-        (let [ws (shuffle (find-words (subs r 3 (count r)) (->> dict vals set)))]
-          (prn (take 5 ws))
-          (recur dict (drop 5 ws) i))
-        (.startsWith r ":g ")
-        (recur dict ws (Long/parseLong (subs r 3 (count r))))
-        (= r ":r") (recur empty-dic () i)
-        (when-let [[_ a b] (re-matches #"^([a-z]+) ([a-z]+)$" r)] (= (count a) (count b)))
-        (let [[_ a b] (re-matches #"^([a-z]+) ([a-z]+)$" r)]
-          (recur (->> (map vector a b) (reduce conj dict))
-                 ws
-                 i))
-        (not (zero? (mod (count r) 2)))
-        (recur dict ws i)
-        :else
-        (recur (->> r
-                    (partition 2)
-                    (map vec)
-                    (reduce conj dict))
-               ws
-               i)))))
+  (run (get-in strips [i :secret])
+       (get-in strips [i :key])))
