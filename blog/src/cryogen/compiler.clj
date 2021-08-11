@@ -352,14 +352,13 @@
   "Compiles all the pages into html and spits them out into the public folder"
   [params pages]
   (compile-articles "pages" :page pages :page-root-uri
-                    (merge params {:home false
-                                   :active-page "pages"})))
+                    (merge params {:home false})))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
   [params posts]
   (compile-articles "posts" :post posts :post-root-uri
-                    (merge params {:active-page "posts"})))
+                    (merge params {})))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
@@ -374,8 +373,7 @@
                     params
                     (render-file "/html/tag.html"
                                  (merge params
-                                        {:active-page     "tags"
-                                         :name            name
+                                        {:name            name
                                          :posts           posts
                                          :uri             uri})))))))
 
@@ -387,8 +385,7 @@
                 params
                 (render-file "/html/tags.html"
                              (merge params
-                                    {:active-page     "tags"
-                                     :uri             uri})))))
+                                    {:uri             uri})))))
 
 (defn content-until-more-marker
   "Returns the content until the <!--more--> special comment,
@@ -446,8 +443,7 @@
           params
           (render-file "/html/previews.html"
                        (merge params
-                              {:active-page     "preview"
-                               :home            (when index-page? true)
+                              {:home            (when index-page? true)
                                :posts           posts
                                :prev-uri        prev
                                :next-uri        next})))))))
@@ -477,8 +473,7 @@
                 params
                 (render-file (str "/html/" (:layout home-page))
                              (merge params
-                                    {:active-page       "home"
-                                     :home              true
+                                    {:home              true
                                      :uri               uri
                                      (:type home-page)  home-page})))))
 
@@ -491,8 +486,7 @@
                 params
                 (render-file "/html/archives.html"
                              (merge params
-                                    {:active-page     "archives"
-                                     :archives        true
+                                    {:archives        true
                                      :groups          (group-for-archive posts)
                                      :uri             uri})))))
 
@@ -608,7 +602,6 @@
                        config
                        {:today         (Date.)
                         :title         (:site-title config)
-                        :active-page   "home"
                         :tags          (map (partial tag-info config) (keys posts-by-tag))
                         :latest-posts  latest-posts
                         :navbar-pages  navbar-pages
