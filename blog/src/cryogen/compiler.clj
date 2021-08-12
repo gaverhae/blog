@@ -300,10 +300,6 @@
                         data)
     :dirty (cryogen-io/create-file file-uri data)))
 
-(defn- print-debug-info [data]
-  (println "DEBUG:")
-  (pprint data))
-
 (defn content-dom->html [{dom :content-dom :as article}]
   (-> article
       (dissoc :content-dom)
@@ -332,15 +328,13 @@
     (htmlize-content params)))
 
 (defn compile-articles
-  [cat-str cat-kw articles root-uri-key {:keys [debug? blog-prefix] :as params}]
+  [cat-str cat-kw articles root-uri-key {:keys [blog-prefix] :as params}]
   (when-not (empty? articles)
     (println (blue (str "compiling " cat-str)))
     (let [root-uri (root-uri-key params)]
       (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix root-uri))
       (doseq [{:keys [uri] :as article} articles]
         (println "-->" (cyan uri))
-        (when debug?
-          (print-debug-info article))
         (write-html uri
                     params
                     (render-file (str "/html/" (:layout article))
@@ -464,11 +458,9 @@
                   (util/enlive->plain-text)))))
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
-  [{:keys [blog-prefix debug? home-page] :as params}]
+  [{:keys [blog-prefix home-page] :as params}]
   (println (blue "compiling index"))
   (let [uri (page-uri "index.html" params)]
-    (when debug?
-      (print-debug-info meta))
     (write-html uri
                 params
                 (render-file (str "/html/" (:layout home-page))
