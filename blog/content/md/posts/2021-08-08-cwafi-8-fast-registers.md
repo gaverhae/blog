@@ -485,6 +485,6 @@ available at runtime.
 [part 4]: /posts/2021-07-11-cwafi-4
 [part 5]: /posts/2021-07-18-cwafi-5-mea-culpa
 [part 6]: /posts/2021-07-25-cwafi-6-faster-stack-machine
-[part 7]: /posts/2021-07-25-cwafi-7-register-machine
+[part 7]: /posts/2021-08-01-cwafi-7-register-machine
 [ndm]: https://ndmitchell.com
 [cwafi]: https://www.youtube.com/watch?v=V8dnIw3amLA
