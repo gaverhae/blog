@@ -257,15 +257,15 @@
                     (unchecked-dec-int top)))
          6 (aget stack (unchecked-dec-int top))))))
 
-(defn compile-register-ssa
+(defn compile-register
   [ast]
   (let [max-var ((fn max-var [op]
                    (match op
                      [:lit _] 0
-                     [:bin op e1 e2] (max (max-var e1)
-                                          (max-var e2))
                      [:var i] i
                      [:set i e] (max i (max-var e))
+                     [:bin op e1 e2] (max (max-var e1)
+                                          (max-var e2))
                      [:do head tail] (max (max-var head)
                                           (max-var tail))
                      [:while c b] (max (max-var c)
@@ -278,45 +278,48 @@
                 [:current-position] [s (-> s :code count)]
                 [:free-register] [(update s :reg inc) (:reg s)]
                 [:emit code] [(update s :code conj code) nil]
-                [:hoist idx v] [(update s :hoisted assoc idx v) nil]
-                [:future] [(-> s
-                               (update :code conj :placeholder)
-                               (update :nested conj (-> s :code count)))
-                           nil]
-                [:resolve f] [(-> s
-                                  (update :code assoc (-> s :nested peek) (f (-> s :code count)))
-                                  (update :nested pop))
-                              nil]))
+                [:hoist v] (let [r (:reg s)]
+                             [(-> s
+                                  (update :hoisted assoc r v)
+                                  (update :reg inc))
+                              r])
+                [:emit-before f m] (let [nested (first (run (assoc s :code []) m))]
+                                     [(assoc nested
+                                             :code (vec (concat (:code s)
+                                                                [(f (+ (count (:code s))
+                                                                       1
+                                                                       (count (:code nested))))]
+                                                                (:code nested))))
+                                      nil])))
         h (fn h [op & [ret]]
             (match op
-              [:lit v] (if ret
-                         [:emit [:load ret v]]
-                         (mdo [r [:free-register]
-                               _ [:hoist r v]
-                               _ [:pure r]]))
-              [:set idx e] (if (#{:lit :bin} (first e))
-                             (h e idx)
-                             (mdo [r (h e)
-                                   _ [:emit [:loadr idx r]]]))
+              [:lit v] (if-not ret
+                         [:hoist v]
+                         (mdo [_ [:emit [:loadl ret v]]
+                               _ [:pure ret]]))
+              [:var idx] [:pure idx]
+              [:set idx e] (mdo [r (h e idx)
+                                 _ (if (not= r idx)
+                                     [:emit [:loadl idx r]]
+                                     [:pure nil])])
               [:do head tail] (mdo [_ (h head)
                                     _ (h tail)])
               [:while cnd bod] (mdo [before-condition [:current-position]
                                      condition (h cnd)
-                                     _ [:future]
-                                     body (h bod)
-                                     _ [:emit [:jump before-condition]]
-                                     _ [:resolve (fn [pos] [:jump-if-zero condition pos])]])
-              [:var idx] [:pure idx]
+                                     _ [:emit-before
+                                        (fn [after] [:jump-if-zero condition after])
+                                        (mdo [_ (h bod)
+                                              _ [:emit [:jump before-condition]]])]])
               [:bin op e1 e2] (mdo [left (h e1)
                                     right (h e2)
                                     r (if ret [:pure ret] [:free-register])
                                     _ [:emit [[:bin op] r left right]]
                                     _ [:pure r]])))]
-    (let [[s a] (run {:nested (), :code [], :hoisted {}, :reg (inc max-var)}
+    (let [[s a] (run {:code [], :hoisted {}, :reg (inc max-var)}
                      (h ast))]
       (-> s
           (update :code conj [:return a])
-          (dissoc :nested :reg)))))
+          (dissoc :reg)))))
 
 (defmacro match-arr
   [expr & cases]
@@ -346,7 +349,7 @@
                                 (let [r (long-array (count op))]
                                   (aset r 0 (case (first op)
                                               :return 0
-                                              :load 1
+                                              :loadl 1
                                               :loadr 2
                                               :jump-if-zero 3
                                               :jump 4
@@ -405,7 +408,7 @@
                                      (map (fn [op]
                                             (match op
                                               [:return r] (re-get r)
-                                              [:load r v] `(aset ~registers (int ~r) (long ~v))
+                                              [:loadl r v] `(aset ~registers (int ~r) (long ~v))
                                               [:loadr to from] `(aset ~registers (int ~to)
                                                                       ~(re-get from))
                                               [:jump-if-zero r to] `(if (zero? ~(re-get r))
@@ -480,7 +483,7 @@
                                            (mapcat (fn [[_ to :as op]]
                                                      [(re-get to)
                                                       (match op
-                                                        [:load _ v] v
+                                                        [:loadl _ v] v
                                                         [:loadr _ from] (re-get from)
                                                         [[:bin :add] _ r1 r2] `(unchecked-add
                                                                                  ~(re-get r1)
@@ -508,7 +511,7 @@
   [{:keys [code hoisted]} iter]
   (let [target-register (fn [op]
                           (match op
-                            [:load to _] to
+                            [:loadl to _] to
                             [:loadr to _] to
                             [[:bin :add] to _ _] to
                             [[:bin :not=] to _ _] to
@@ -533,7 +536,7 @@
                     (fn [idx op]
                       (str (when (labels idx) (str "LABEL_" idx ":\n"))
                            (match op
-                             [:load r v] (str (reg r) " = " v ";")
+                             [:loadl r v] (str (reg r) " = " v ";")
                              [:loadr to from] (str (reg to) " = " (reg from) ";")
                              [[:bin :add] to arg1 arg2]
                              (str (reg to) " = " (reg arg1) " + " (reg arg2) ";")
@@ -674,19 +677,19 @@
   (bench (rsm))
 "6.44e-04"
 
-  (def rc (compile-register-ssa ast))
+  (def rc (compile-register ast))
   (bench (run-registers rc))
 "1.82e-04"
 
-  (def rcj (registers-jump (compile-register-ssa ast)))
+  (def rcj (registers-jump (compile-register ast)))
   (bench (rcj))
 "3.22e-05"
 
-  (def rcj (registers-loop (compile-register-ssa ast)))
+  (def rcj (registers-loop (compile-register ast)))
   (bench (rcj))
 "7.79e-06"
 
-  (registers-c (compile-register-ssa ast) 1000000)
+  (registers-c (compile-register ast) 1000000)
 [-13 7872]
 
   )

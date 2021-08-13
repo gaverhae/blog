@@ -47,8 +47,8 @@
 
 (def register-code
   {:hoisted {2 0, 4 4, 7 3, 8 2, 10 4, 11 -1}
-   :code [[:load 0 100]
-          [:load 1 1000]
+   :code [[:loadl 0 100]
+          [:loadl 1 1000]
           [[:bin :not=] 3 2 1]
           [:jump-if-zero 3 11]
           [[:bin :add] 5 0 4]
@@ -61,7 +61,7 @@
           [:return 0]]})
 
 (deftest registers
-  (is (= register-code (t/compile-register-ssa t/ast)))
+  (is (= register-code (t/compile-register t/ast)))
   (is (= -13 (t/run-registers register-code)))
   (is (= -13 ((t/registers-jump register-code))))
   (is (= -13 ((t/registers-loop register-code))))
