@@ -395,16 +395,14 @@ compile_registers exp =
       return $ Just r
     Do first rest -> do
       _ <- eval Nothing first
-      r <- eval Nothing rest
-      return r
+      eval Nothing rest
     While cond body -> do
       before_condition <- RegPosition
       Just condition_result <- eval Nothing cond
       RegEmitBefore (\after_body -> RegJumpIfZero condition_result after_body)
                     (do
           _ <- eval Nothing body
-          _ <- RegEmit (RegJump before_condition)
-          return ())
+          RegEmit (RegJump before_condition))
       return Nothing
   exec :: RegExec a -> RegState -> (a -> RegState -> RegState) -> RegState
   exec m cur k = case m of
