@@ -58,7 +58,8 @@
           [[:bin :add] 0 9 10]
           [[:bin :add] 1 11 1]
           [:jump 2]
-          [:return 0]]})
+          [:return 0]]
+   :reg 12})
 
 (deftest registers
   (is (= register-code (t/compile-register t/ast)))

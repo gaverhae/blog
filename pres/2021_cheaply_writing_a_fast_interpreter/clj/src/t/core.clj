@@ -317,9 +317,7 @@
                                     _ [:pure r]])))]
     (let [[s a] (run {:code [], :hoisted {}, :reg (inc max-var)}
                      (h ast))]
-      (-> s
-          (update :code conj [:return a])
-          (dissoc :reg)))))
+      (update s :code conj [:return a]))))
 
 (defmacro match-arr
   [expr & cases]
@@ -337,13 +335,8 @@
                                           ~body)])))))))
 
 (defn run-registers
-  [{:keys [code hoisted]}]
-  (let [max-reg (max (->> hoisted keys (reduce max))
-                     (->> code
-                          (remove (comp #{:jump} first))
-                          (map second)
-                          (reduce max)))
-        registers (long-array (inc max-reg))
+  [{:keys [code hoisted reg]}]
+  (let [registers (long-array (inc reg))
         ^"[[J" tape (->> code
                          (map (fn [op]
                                 (let [r (long-array (count op))]
