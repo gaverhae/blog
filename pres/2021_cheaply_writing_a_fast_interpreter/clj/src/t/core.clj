@@ -336,8 +336,7 @@
 
 (defn run-registers
   [{:keys [code hoisted reg]}]
-  (let [registers (long-array (inc reg))
-        ^"[[J" tape (->> code
+  (let [^"[[J" tape (->> code
                          (map (fn [op]
                                 (let [r (long-array (count op))]
                                   (aset r 0 (case (first op)
@@ -352,82 +351,94 @@
                                     (aset r n (long (get op n))))
                                   r)))
                          into-array)]
-    (doseq [[k v] hoisted]
-      (aset ^longs registers (int k) (long v)))
-    (loop [i 0]
-      (match-arr ^"[J" (aget tape i)
-        [0 r] (aget registers (int r))
-        [1 r v] (do (aset registers (int r) (long v))
-                        (recur (inc i)))
-        [2 into from] (do (aset registers (int into) (aget registers (int from)))
-                               (recur (inc i)))
-        [3 r to] (if (zero? (aget registers (int r)))
+    #(let [registers (long-array (inc reg))]
+       (doseq [[k v] hoisted]
+         (aset ^longs registers (int k) (long v)))
+       (loop [i 0]
+         (match-arr ^"[J" (aget tape i)
+                    [0 r] (aget registers (int r))
+                    [1 r v] (do (aset registers (int r) (long v))
+                                (recur (inc i)))
+                    [2 into from] (do (aset registers (int into) (aget registers (int from)))
+                                      (recur (inc i)))
+                    [3 r to] (if (zero? (aget registers (int r)))
                                (recur (long to))
                                (recur (inc i)))
-        [4 to] (recur (long to))
-        [5 result op1 op2] (do (aset registers (int result) (unchecked-add (aget registers (int op1))
-                                                                              (aget registers (int op2))))
-                                  (recur (inc i)))
-        [6 result op1 op2] (do (aset registers (int result) (if (== (aget registers (int op1))
-                                                                        (aget registers (int op2)))
-                                                                  0 1))
-                                   (recur (inc i)))))))
+                    [4 to] (recur (long to))
+                    [5 result op1 op2] (do (aset registers (int result) (unchecked-add (aget registers (int op1))
+                                                                                       (aget registers (int op2))))
+                                           (recur (inc i)))
+                    [6 result op1 op2] (do (aset registers (int result) (if (== (aget registers (int op1))
+                                                                                (aget registers (int op2)))
+                                                                          0 1))
+                                           (recur (inc i))))))))
+
+(def is-jump? (comp #{:jump :jump-if-zero} first))
+
+(defn find-entrypoints
+  [code]
+  (->> code
+       (map-indexed vector)
+       (filter (comp is-jump? second))
+       (mapcat (fn [[idx op]]
+                 (match op
+                   [:jump x] [x]
+                   [:jump-if-zero _ x] [x (inc idx)])))
+       (cons 0)
+       set
+       sort))
+
+(defn find-segments
+  [code]
+  (->> code
+       find-entrypoints
+       (map
+         (fn [ep]
+           [ep (->> (drop ep code)
+                    (reduce (fn [acc op]
+                              (if (is-jump? op)
+                                (reduced (conj acc op))
+                                (conj acc op)))
+                            []))]))))
+
+(defn compile-segment-arr
+  [[ep segment] hoisted registers]
+  (let [re-get (fn [r] `(long ~(hoisted r `(aget ~registers (int ~r)))))]
+    [ep (->> segment
+             (map (fn [op]
+                    (match op
+                      [:return r] (re-get r)
+                      [:loadl r v] `(aset ~registers (int ~r) (long ~v))
+                      [:loadr to from] `(aset ~registers (int ~to)
+                                              ~(re-get from))
+                      [:jump-if-zero r to] `(if (zero? ~(re-get r))
+                                              (recur (int ~to))
+                                              (recur (int ~(+ ep (count segment)))))
+                      [:jump to] `(recur (int ~to))
+                      [[:bin :add] to r1 r2] `(aset ~registers (int ~to)
+                                                    (unchecked-add
+                                                      ~(re-get r1)
+                                                      ~(re-get r2)))
+                      [[:bin :not=] to r1 r2] `(aset ~registers (int ~to)
+                                                     (if (== ~(re-get r1)
+                                                             ~(re-get r2))
+                                                       0 1)))))
+             (cons 'do))]))
+
+(defn compile-rc-arr
+  [{:keys [code hoisted reg]}]
+  (let [registers (gensym)
+        ip (gensym)]
+    `(fn []
+       (let [~registers (long-array ~(inc reg))]
+         (loop [~ip (int 0)]
+           (case ~ip
+             ~@(->> (find-segments code)
+                    (mapcat #(compile-segment-arr % hoisted registers)))))))))
 
 (defn registers-jump
-  [{:keys [code hoisted]}]
-  (let [registers (gensym)
-        ip (gensym)
-        is-jump? (comp #{:jump :jump-if-zero} first)
-        re-get (fn [r] `(long ~(hoisted r `(aget ~registers (int ~r)))))
-        segments (->> code
-                      (map-indexed vector)
-                      (filter (comp is-jump? second))
-                      (mapcat (fn [[idx op]]
-                                (match op
-                                  [:jump x] [x]
-                                  [:jump-if-zero _ x] [x (inc idx)])))
-                      (cons 0)
-                      set
-                      sort
-                      (mapcat
-                        (fn [ep]
-                          (let [segment (->> (drop ep code)
-                                             (reduce (fn [acc op]
-                                                       (if (is-jump? op)
-                                                         (reduced (conj acc op))
-                                                         (conj acc op)))
-                                                     []))]
-                            [ep (->> segment
-                                     (map (fn [op]
-                                            (match op
-                                              [:return r] (re-get r)
-                                              [:loadl r v] `(aset ~registers (int ~r) (long ~v))
-                                              [:loadr to from] `(aset ~registers (int ~to)
-                                                                      ~(re-get from))
-                                              [:jump-if-zero r to] `(if (zero? ~(re-get r))
-                                                                      (recur (int ~to))
-                                                                      (recur (int ~(+ ep (count segment)))))
-                                              [:jump to] `(recur (int ~to))
-                                              [[:bin :add] to r1 r2] `(aset ~registers (int ~to)
-                                                                            (unchecked-add
-                                                                              ~(re-get r1)
-                                                                              ~(re-get r2)))
-                                              [[:bin :not=] to r1 r2] `(aset ~registers (int ~to)
-                                                                             (if (== ~(re-get r1)
-                                                                                     ~(re-get r2))
-                                                                               0 1)))))
-                                     (cons 'do))]))))
-        max-registers (max (->> hoisted keys (reduce max))
-                           (->> code
-                                (remove (comp #{:jump} first))
-                                (map second)
-                                (reduce max)))]
-    (eval
-      `(fn []
-         (let [~registers (long-array ~(inc max-registers))]
-           (loop [~ip (int 0)]
-             (case ~ip
-               ~@segments)))))))
+  [reg-state]
+  (eval (compile-rc-arr reg-state)))
 
 (defn registers-loop
   [{:keys [code hoisted]}]
@@ -441,55 +452,38 @@
                        (into {}))
         re-get (fn [r] (hoisted r (second (registers r))))
         ip (gensym)
-        is-jump? (comp #{:jump :jump-if-zero} first)
         rec (fn [update-ip]
               `(recur ~update-ip
                       ~@(->> registers
                              (map (fn [[i [idx sym]]] [idx sym]))
                              sort
                              (map second))))
-        entrypoints (->> code
-                         (map-indexed vector)
-                         (filter (comp is-jump? second))
-                         (mapcat (fn [[idx op]]
-                                   (match op
-                                     [:jump x] [x]
-                                     [:jump-if-zero _ x] [x (inc idx)])))
-                         (cons 0)
-                         set
-                         sort)
-        reindex (->> entrypoints
+        reindex (->> (find-entrypoints code)
                      (map-indexed vector)
                      (map (comp vec reverse))
                      (into {}))
-        segments (->> entrypoints
+        segments (->> (find-segments code)
                       (mapcat
-                        (fn [ep]
-                          (let [segment (->> (drop ep code)
-                                             (reduce (fn [acc op]
-                                                       (if (is-jump? op)
-                                                         (reduced (conj acc op))
-                                                         (conj acc op)))
-                                                     []))]
-                            [(reindex ep)
-                             `(let [~@(->> (butlast segment)
-                                           (mapcat (fn [[_ to :as op]]
-                                                     [(re-get to)
-                                                      (match op
-                                                        [:loadl _ v] v
-                                                        [:loadr _ from] (re-get from)
-                                                        [[:bin :add] _ r1 r2] `(unchecked-add
-                                                                                 ~(re-get r1)
-                                                                                 ~(re-get r2))
-                                                        [[:bin :not=] _ r1 r2] `(if (== ~(re-get r1)
-                                                                                    ~(re-get r2))
-                                                                                  0 1))])))]
-                                ~(match (last segment)
-                                   [:jump to] (rec `(int ~(reindex to)))
-                                   [:jump-if-zero r to] (rec `(if (zero? ~(re-get r))
-                                                                (int ~(reindex to))
-                                                                (int ~(reindex (+ ep (count segment))))))
-                                   [:return r] (re-get r)))]))))]
+                        (fn [[ep segment]]
+                          [(reindex ep)
+                           `(let [~@(->> (butlast segment)
+                                         (mapcat (fn [[_ to :as op]]
+                                                   [(re-get to)
+                                                    (match op
+                                                      [:loadl _ v] v
+                                                      [:loadr _ from] (re-get from)
+                                                      [[:bin :add] _ r1 r2] `(unchecked-add
+                                                                               ~(re-get r1)
+                                                                               ~(re-get r2))
+                                                      [[:bin :not=] _ r1 r2] `(if (== ~(re-get r1)
+                                                                                      ~(re-get r2))
+                                                                                0 1))])))]
+                              ~(match (last segment)
+                                 [:jump to] (rec `(int ~(reindex to)))
+                                 [:jump-if-zero r to] (rec `(if (zero? ~(re-get r))
+                                                              (int ~(reindex to))
+                                                              (int ~(reindex (+ ep (count segment))))))
+                                 [:return r] (re-get r)))])))]
     (eval
       `(fn []
              (loop [~ip (int 0)
@@ -647,42 +641,42 @@
     `(->> (crit/benchmark ~exp {}) :mean first (format "%1.2e")))
 
   (bench (baseline))
-"2.63e-06"
+"2.61e-06"
 
   (bench (naive-ast-walk ast))
-"5.31e-03"
+"5.29e-03"
 
   (bench (twe-mon ast))
-"1.72e-02"
+"1.74e-02"
 
   (def cc (compile-to-closure ast))
   (bench (cc))
 "1.93e-03"
 
   (bench (trampoline (twe-cont ast)))
-"6.34e-03"
+"6.47e-03"
 
   (def sc (compile-stack ast))
   (bench (run-stack sc))
-"6.38e-03"
+"6.47e-03"
 
   (def rsm (run-stack-mut (compile-stack ast)))
   (bench (rsm))
-"6.44e-04"
+"6.27e-04"
 
-  (def rc (compile-register ast))
-  (bench (run-registers rc))
-"1.82e-04"
+  (def rr (run-registers (compile-register ast)))
+  (bench (rr))
+"1.64e-04"
 
   (def rcj (registers-jump (compile-register ast)))
   (bench (rcj))
-"3.22e-05"
+"3.17e-05"
 
-  (def rcj (registers-loop (compile-register ast)))
-  (bench (rcj))
-"7.79e-06"
+  (def rcl (registers-loop (compile-register ast)))
+  (bench (rcl))
+"7.78e-06"
 
   (registers-c (compile-register ast) 1000000)
-[-13 7872]
+[-13 7875]
 
   )
