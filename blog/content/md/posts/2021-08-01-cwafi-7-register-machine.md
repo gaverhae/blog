@@ -2,6 +2,10 @@
  :layout :post
  :tags ["cheap interpreter"]}
 
+> **[EDIT 2021-08-15]**: The original version of `RegEmitBefore` did not work
+> for nested loops. Huge thanks to Reddit user [JeffJeffJeffersonson] for
+> spotting and reporting the issue!
+
 [Last week][part 6] I presented a few ways to improve the performance of the
 [very simple stack machine][part 4] we had previously defined. In this post, we
 move further into the list of techniques presentetd in [Neil][ndm]'s
@@ -50,6 +54,7 @@ data RegOp
  | RegJumpIfZero Register Int
  | RegJump Int
  | RegBin Op Register Register Register
+ | RegPlaceholder
  deriving Show
 ```
 
@@ -66,6 +71,8 @@ where:
 - `RegBin op to arg1 arg2` reads the values in registers `arg1` and `arg2`,
   applies the function `op` to them, and then writes the result in register
   `to`.
+- `RegPlaceholder` is a placeholder used during compilation. I has no semantics
+  and should never appear in any code emitted by the compiler.
 
 As for the stack machine language, by default every instruction also increments
 the instruction pointer by one, unless it sets it to a specific value.
@@ -154,10 +161,11 @@ data RegState = RegState { num_registers :: Int
     RegPosition ->
       k (length (code cur)) cur
     RegEmitBefore f m ->
-      let nested = exec m (cur { code = [] }) (\() r -> r)
+      let nested = exec m (cur { code = (code cur) <> [RegPlaceholder]}) (\() r -> r)
+          cur_len = length (code cur)
       in k () (nested { code = (code cur)
-                            <> [f (length (code cur) + length (code nested) + 1)]
-                            <> (code nested) })
+                            <> [f (length (code nested))]
+                            <> (drop (cur_len + 1) (code nested)) })
 ```
 
 From there, the `eval` code is fairly straigthtforward for most cases. Literals
@@ -284,6 +292,7 @@ run_registers code =
     RegJump to -> loop to regs
     RegBin op (Register to) (Register a1) (Register a2) ->
       loop (ip + 1) (insert regs to (bin op (lookup regs a1) (lookup regs a2)))
+    RegPlaceholder -> error "Invalid code"
 ```
 
 As one would expect, this is very slow. In fact, it's the slowest interpreter
@@ -305,3 +314,4 @@ probably have some idea of what to expect, but there will be a few twists.
 [ndm]: https://ndmitchell.com
 [cwafi]: https://www.youtube.com/watch?v=V8dnIw3amLA
 [ssa]: https://en.wikipedia.org/wiki/Static_single_assignment_form
+[JeffJeffJeffersonson]: https://www.reddit.com/user/JeffJeffJeffersonson

@@ -334,6 +334,7 @@ data RegOp
  | RegJumpIfZero Register Int
  | RegJump Int
  | RegBin Op Register Register Register
+ | RegPlaceholder
  deriving Show
 
 instance Functor RegExec where fmap = liftM
@@ -415,10 +416,11 @@ compile_registers exp =
     RegPosition ->
       k (length (code cur)) cur
     RegEmitBefore f m ->
-      let nested = exec m (cur { code = [] }) (\() r -> r)
+      let nested = exec m (cur { code = (code cur) <> [RegPlaceholder]}) (\() r -> r)
+          cur_len = length (code cur)
       in k () (nested { code = (code cur)
-                            <> [f (length (code cur) + length (code nested) + 1)]
-                            <> (code nested) })
+                            <> [f (length (code nested))]
+                            <> (drop (cur_len + 1) (code nested)) })
     RegHoist v ->
       let r = num_registers cur
       in k (Register $ r)
@@ -439,6 +441,7 @@ run_registers rs =
     RegJump to -> loop to regs
     RegBin op (Register to) (Register a1) (Register a2) ->
       loop (ip + 1) (insert regs to (bin op (lookup regs a1) (lookup regs a2)))
+    RegPlaceholder -> error "Invalid code"
 
 run_registers_2 :: RegState -> Int -> Int
 run_registers_2 rs = do
@@ -467,6 +470,7 @@ run_registers_2 rs = do
           v2 <- read regs a2
           write regs to (bin op v1 v2)
           loop regs (ip + 1)
+        RegPlaceholder -> error "Invalid code"
         where
         write = Data.Vector.Unboxed.Mutable.write
         read = Data.Vector.Unboxed.Mutable.read

@@ -77,6 +77,7 @@ here's the loop code in its entirety:
           v2 <- read regs a2
           write regs to (bin op v1 v2)
           loop regs (ip + 1)
+        RegPlaceholder -> error "Invalid code"
         where
         write = Data.Vector.Unboxed.Mutable.write
         read = Data.Vector.Unboxed.Mutable.read
