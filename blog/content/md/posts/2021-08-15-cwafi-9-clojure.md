@@ -31,7 +31,7 @@ translation to Clojure is straightforward: we omit the data definition and all
 type annotations, but apart from that the code is surprisingly similar at all
 levels, using [my Clojure monad macros][monad].
 
-In order to fosu on the interesting parts, this post assumes we start with the
+In order to focus on the interesting parts, this post assumes we start with the
 register code already compiled[^compile] to this form, showing Haskell and
 Clojure versions side-by-side:
 
@@ -105,9 +105,9 @@ _cheap_) to load new code at runtime, because the host language interpreter is
 available.
 
 If we are ourselves writing an interpreter, having our host language
-interpreter suggests a different approach: what if instead of writing an
-interpreter, we wrote a compiler to our host language, and then used our host
-language interpreter to generated "native" (in our itnerpreted world) code
+interpreter available suggests a different approach: what if instead of writing
+an interpreter, we wrote a compiler to our host language, and then used our
+host language interpreter to generate "native" (in our interpreted world) code
 instead?
 
 The main obstacle to doing just that is that, in most dynamic languages, `eval`
@@ -133,10 +133,10 @@ to generate.
 
 ## Instruction pointer
 
-Let's take a closer look at [array-based interpreter from last week][part 8].
-We've gone through quite a bit of effort there to minimize the work done in
-each step, to the point where it's basically just an array lookup, a write, or
-a combination of both.
+Let's take a closer look at the [array-based interpreter from last week][part
+8].  We've gone through quite a bit of effort there to minimize the work done
+in each step, to the point where it's basically just an array lookup, a write,
+or a combination of both.
 
 We're also incrementing a loop counter and looping back after every single
 instruction. Normally, for most code, that would be completely negligible.
@@ -146,7 +146,7 @@ not free here.
 There isn't really a great way around that as long as we're writing and
 interpreter ourselves, but if we're coopting our host language interpreter, we
 can instead use our host language instruction pointer too. This can be done by
-simply sequencing multiple instructions as one block of (generated) code.
+sequencing multiple instructions as one block of (generated) code.
 
 Ideally, we'd want to generate a single block of code for our host language
 interpreter. But since our source language (in this context, the register
@@ -206,7 +206,7 @@ i.e. all of the code between each entrypoint and the first jump it reaches:
   [code]
   (->> code
        find-entrypoints
-       (mapcat
+       (map
          (fn [ep]
            [ep (->> (drop ep code)
                     (reduce (fn [acc op]
@@ -271,18 +271,19 @@ The next step in assembling our little compiler is to turn each of these segment
              (cons 'do))]))
 ```
 
-If you're not very familiar with the specifics of Clojure syntax, backtick
+In case you're not very familiar with the specifics of Clojure syntax, backtick
 starts a quasiquote in which tilde escapes. For example, given the `:hoisted`
 value from our register machine code and a `registers` value of `regs`, the
 call `(re-get 5)` will yield the list `'(long (aget regs (int 5)))`, whereas
 `(re-get 2)` would yield `(long 0)`.
 
 This function expects `[ep segment]` to be the values returned from
-`find-segments`, `hoisted` to be the Integer to Integer map returned by our
-`compile-registers` call, and `registers` to be a Clojure symbol, i.e. somthing
-that can play the role of a variable once the code gets compiled.
+`find-segments`, `hoisted` to be the integer-to-integer map returned by our
+`compile-registers` call, and `registers` to be a Clojure symbol, i.e.
+something that can play the role of a variable once the code gets compiled.
 
-For example, called on our first segment, this yields:
+For example, called on our first segment, this yields (in a Clojure repl, `*1`
+is bound to the result of the last printed value):
 
 ```clojure-repl
 t.core=> (find-segments (:code (compile-register ast)))
@@ -422,7 +423,7 @@ t.core=>
 
 ## Next step
 
-Yes, "step" singular. I hope.
+Yes, "step" singular. Probably.
 
 Benchmarking that generated code on my laptop yields a runtime of about 32ms,
 which is, as claimed, faster than the Haskell code I presented [last week][part
