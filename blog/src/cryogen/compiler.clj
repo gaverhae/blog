@@ -328,31 +328,31 @@
     (htmlize-content params)))
 
 (defn compile-articles
-  [cat-kw articles root-uri-key {:keys [blog-prefix] :as params}]
+  [cat-kw articles {:keys [blog-prefix root-uri] :as params}]
   (when-not (empty? articles)
     (println (blue (str "compiling " cat-kw)))
-    (let [root-uri (root-uri-key params)]
-      (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix root-uri))
-      (doseq [{:keys [uri] :as article} articles]
-        (println "-->" (cyan uri))
-        (write-html uri
-                    params
-                    (render-file (str "/html/" (:layout article))
-                                 (merge params
-                                        {cat-kw article
-                                         :uri uri})))))))
+    (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix root-uri))
+    (doseq [{:keys [uri] :as article} articles]
+      (println "-->" (cyan uri))
+      (write-html uri
+                  params
+                  (render-file (str "/html/" (:layout article))
+                               (merge params
+                                      {cat-kw article
+                                       :uri uri}))))))
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
   [params pages]
-  (compile-articles :page pages :page-root-uri
-                    (merge params {:home false})))
+  (compile-articles :page pages
+                    (merge params {:home false
+                                   :root-uri (:page-root-uri params)})))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
   [params posts]
-  (compile-articles :post posts :post-root-uri
-                    (merge params {})))
+  (compile-articles :post posts
+                    (merge params {:root-uri (:post-root-uri params)})))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
