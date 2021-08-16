@@ -1,33 +1,35 @@
-{:site-title                   "Cuddly, Octo-Palm Tree"
- :author                       "Gary Verhaegen"
- :description                  "Blog on software engineering, mostly."
- :site-url                     "https://cuddly-octo-palm-tree.com"
- :post-root                    "posts"
- :page-root                    "pages"
- :post-root-uri                "posts"
- :page-root-uri                "pages"
- :tag-root-uri                 "tags"
- :author-root-uri              "authors"
- :public-dest                  "public"
- :blog-prefix                  ""
- :rss-name                     "feed.xml"
- :rss-filters                  []
- :recent-posts                 3
- :post-date-format             "yyyy-MM-dd"
+{
  :archive-group-format         "yyyy MMMM"
- :sass-src                     []
- :sass-path                    "sass"
- :theme                        "blue"
- :resources                    ["img"]
- :keep-files                   [".git"]
- :disqus?                      false
- :disqus-shortname             ""
- :ignored-files                [#"\.#.*" #".*\.swp$"]
- :previews?                    false
- :posts-per-page               5
+ :author                       "Gary Verhaegen"
+ :author-root-uri              "authors"
  :blocks-per-preview           2
+ :blog-prefix                  ""
  :clean-urls                   :trailing-slash
  :collapse-subdirs?            false
+ :description                  "Blog on software engineering, mostly."
+ :description-include-elements #{:p :h1 :h2 :h3 :h4 :h5 :h6}
+ :disqus-shortname             ""
+ :disqus?                      false
  :hide-future-posts?           true
+ :ignored-files                [#"\.#.*" #".*\.swp$"]
+ :keep-files                   [".git"]
  :klipse                       {}
- :description-include-elements #{:p :h1 :h2 :h3 :h4 :h5 :h6}}
+ :page-root                    "pages"
+ :page-root-uri                "pages"
+ :post-date-format             "yyyy-MM-dd"
+ :post-root                    "posts"
+ :post-root-uri                "posts"
+ :posts-per-page               5
+ :previews?                    false
+ :public-dest                  "public"
+ :recent-posts                 3
+ :resources                    ["img"]
+ :rss-filters                  []
+ :rss-name                     "feed.xml"
+ :sass-path                    "sass"
+ :sass-src                     []
+ :site-title                   "Cuddly, Octo-Palm Tree"
+ :site-url                     "https://cuddly-octo-palm-tree.com"
+ :tag-root-uri                 "tags"
+ :theme                        "blue"
+ }
