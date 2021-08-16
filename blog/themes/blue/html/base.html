@@ -37,7 +37,7 @@
                 {% if archives %} class="active" {% endif %}><a href="{{archives-uri}}">Archives</a></li>
                 {% for nav-page in navbar-pages %}
                 <li
-                {%ifequal page.uri nav-page.uri %} class="active" {% endifequal %}>
+                {%ifequal article.uri nav-page.uri %} class="active" {% endifequal %}>
                 <a href="{{nav-page.uri}}">{{nav-page.title|safe}}</a>
                 </li>
                 {% endfor %}

@@ -316,8 +316,7 @@
                 postprocess-article))]
     (cond
       (contains? params :posts) (update params :posts (partial map htmlize-article))
-      (contains? params :post) (update params :post htmlize-article)
-      (contains? params :page) (update params :page htmlize-article)
+      (contains? params :article) (update params :article htmlize-article)
       :else params)))
 
 (defn render-file
@@ -328,9 +327,9 @@
     (htmlize-content params)))
 
 (defn compile-articles
-  [cat-kw articles {:keys [blog-prefix root-uri] :as params}]
+  [articles {:keys [blog-prefix root-uri] :as params}]
   (when-not (empty? articles)
-    (println (blue (str "compiling " cat-kw)))
+    (println (blue (str "compiling " root-uri)))
     (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix root-uri))
     (doseq [{:keys [uri] :as article} articles]
       (println "-->" (cyan uri))
@@ -338,20 +337,20 @@
                   params
                   (render-file (str "/html/" (:layout article))
                                (merge params
-                                      {cat-kw article
+                                      {:article article
                                        :uri uri}))))))
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
   [params pages]
-  (compile-articles :page pages
+  (compile-articles pages
                     (merge params {:home false
                                    :root-uri (:page-root-uri params)})))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
   [params posts]
-  (compile-articles :post posts
+  (compile-articles posts
                     (merge params {:root-uri (:post-root-uri params)})))
 
 (defn compile-tags
@@ -467,7 +466,7 @@
                              (merge params
                                     {:home              true
                                      :uri               uri
-                                     (:type home-page)  home-page})))))
+                                     :article home-page})))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"

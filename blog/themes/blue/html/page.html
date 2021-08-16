@@ -1,22 +1,22 @@
 {% extends "/html/base.html" %}
-{%block subtitle %}: {{page.title|remove-tags:strike}}{% endblock %}
+{%block subtitle %}: {{article.title|remove-tags:strike}}{% endblock %}
 {% block meta %}
-{% if page.description %}
-<meta name="description" content="{{page.description}}">
+{% if article.description %}
+<meta name="description" content="{{article.description}}">
 {% comment %} OpenGraph tags {% endcomment %}
-<meta property="og:description" content="{{page.description}}">
+<meta property="og:description" content="{{article.description}}">
 {% endif %}
 <meta property="og:url" content="{{site-url}}{{uri}}" />
-<meta property="og:title" content="{{page.title|remove-tags:strike}}" />
+<meta property="og:title" content="{{article.title|remove-tags:strike}}" />
 <meta property="og:type" content="article" />
 {% endblock %}
 {% block content %}
 <div id="custom-page">
     <div id="page-header">
-        <h2>{{page.title|safe}}</h2>
+        <h2>{{article.title|safe}}</h2>
     </div>
-    {% if page.toc %}{{page.toc|safe}}{% endif %}
-    {{page.content|safe}}
+    {% if article.toc %}{{article.toc|safe}}{% endif %}
+    {{article.content|safe}}
 
 </div>
 {% endblock %}

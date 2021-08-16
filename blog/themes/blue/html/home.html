@@ -4,16 +4,16 @@
     {% include "/html/post-content.html" %}
     {% if disqus? %}
     <div id="comments">
-        <a href="{{post.uri}}#disqus_thread">View Comments</a>
+        <a href="{{article.uri}}#disqus_thread">View Comments</a>
     </div>
     {% endif %}
 
     <div id="prev-next">
-        {% if post.next %}
-        <a href="{{post.next.uri}}">&laquo; {{post.next.title|safe}}</a>
+        {% if article.next %}
+        <a href="{{article.next.uri}}">&laquo; {{article.next.title|safe}}</a>
         {% endif %}
-        {% if post.prev %}
-        <a class="right" href="{{post.prev.uri}}">{{post.prev.title|safe}} &raquo;</a>
+        {% if article.prev %}
+        <a class="right" href="{{article.prev.uri}}">{{article.prev.title|safe}} &raquo;</a>
         {% endif %}
     </div>
 </div>
