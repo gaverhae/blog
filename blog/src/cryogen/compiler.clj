@@ -340,18 +340,6 @@
                                       {:article article
                                        :uri uri}))))))
 
-(defn compile-pages
-  "Compiles all the pages into html and spits them out into the public folder"
-  [params pages]
-  (compile-articles pages
-                    (merge params {:root-uri (:page-root-uri params)})))
-
-(defn compile-posts
-  "Compiles all the posts into html and spits them out into the public folder"
-  [params posts]
-  (compile-articles posts
-                    (merge params {:root-uri (:post-root-uri params)})))
-
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
   [{:keys [blog-prefix tag-root-uri] :as params} posts-by-tag]
@@ -628,8 +616,8 @@
      (println (blue "copying resources"))
      (cryogen-io/copy-resources "content" config)
      (copy-resources-from-markup-folders config)
-     (compile-pages params other-pages)
-     (compile-posts params posts)
+     (compile-articles other-pages (assoc params :root-uri (:page-root-uri params)))
+     (compile-articles posts (assoc params :root-uri (:post-root-uri params)))
      (compile-tags params posts-by-tag)
      (compile-tags-page params)
      (if previews?
