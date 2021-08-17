@@ -344,8 +344,7 @@
   "Compiles all the pages into html and spits them out into the public folder"
   [params pages]
   (compile-articles pages
-                    (merge params {:home false
-                                   :root-uri (:page-root-uri params)})))
+                    (merge params {:root-uri (:page-root-uri params)})))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
