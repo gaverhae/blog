@@ -651,18 +651,3 @@
                 (instance? clojure.lang.ExceptionInfo e))
           (println (red "Error:") (yellow (.getMessage e)))
           (write-exception e)))))))
-
-(comment
-  (def *config (resolve-config {}))
-
-  ;; Build and copy only styles & theme
-  (do
-    (sass/compile-sass->css! *config)
-    (cryogen-io/copy-resources-from-theme *config))
-
-  ;; Build a single page (quicker than all)
-  (compile-assets
-    ;; Insert the prefix and suffix of the only file you _want_ to process
-    {:ignored-files [#"^(?!2019-12-12-nrepl-).*\.asc"]})
-
-  nil)
