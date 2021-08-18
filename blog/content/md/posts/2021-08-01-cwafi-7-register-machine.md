@@ -75,7 +75,9 @@ where:
   and should never appear in any code emitted by the compiler.
 
 As for the stack machine language, by default every instruction also increments
-the instruction pointer by one, unless it sets it to a specific value.
+the instruction pointer by one, unless it sets it to a specific value. A
+program for our register machine will be a list of such instructions, i.e.
+`[RegOp]`.
 
 ## Number of registers
 
@@ -94,6 +96,9 @@ static instructions. Therefore, the total number of registers is still
 statically known, and a further compilation pass can swap them in and out of
 memory as required to fit in the actual number of registers the target machine
 has.
+
+Just like we stored our variables on the stack in the [stack machine][part 4],
+we'll use the "bottom" registers for our variables here.
 
 ## Compilation monad
 
@@ -140,7 +145,8 @@ with the following semantics:
 - For instructions that write a result, `a` will be the register where that
   result is written.
 
-or, more precisely:
+or, more precisely, using the `eval`/`exec` split I introduced in [my monad
+tutorial][monads] (specifically [part 3][monads-3]):
 
 ```haskell
 data RegState = RegState { num_registers :: Int
@@ -148,8 +154,11 @@ data RegState = RegState { num_registers :: Int
                          }
  deriving Show
 
+compile_registers :: Exp -> [RegOp]
+compile_registers exp =
 -- [...]
-
+  where
+-- [...]
   exec :: RegExec a -> RegState -> (a -> RegState -> RegState) -> RegState
   exec m cur k = case m of
     RegBind ma f -> exec ma cur (\a cur -> exec (f a) cur k)
@@ -172,10 +181,18 @@ From there, the `eval` code is fairly straigthtforward for most cases. Literals
 are just written to a new register using `RegLoadLiteral`:
 
 ```haskell
+compile_registers :: Exp -> [RegOp]
+compile_registers exp =
+-- [...]
+  where
+-- [...]
+  eval :: Maybe Register -> Exp -> RegExec (Maybe Register)
+  eval ret = \case
     Lit v -> do
       r <- RegNext
       RegEmit (RegLoadLiteral r v)
       return (Just r)
+-- [...]
 ```
 
 Variables are mapped directly to their index as a register:
@@ -239,6 +256,10 @@ compile_registers exp =
     Bin _ exp1 exp2 -> max (max_var exp1) (max_var exp2)
     Do first rest ->  max (max_var first) (max_var rest)
     While cond body -> max (max_var cond) (max_var body)
+  eval :: Maybe Register -> Exp -> RegExec (Maybe Register)
+-- [...]
+  exec :: RegExec a -> RegState -> (a -> RegState -> RegState) -> RegState
+-- [...]
 ```
 
 And we add a `RegEnd` instruction to signal the end of the program. With all of
@@ -315,3 +336,5 @@ probably have some idea of what to expect, but there will be a few twists.
 [cwafi]: https://www.youtube.com/watch?v=V8dnIw3amLA
 [ssa]: https://en.wikipedia.org/wiki/Static_single_assignment_form
 [JeffJeffJeffersonson]: https://www.reddit.com/user/JeffJeffJeffersonson
+[monads]: /tags/monad-tutorial
+[monads-3]: /posts/2021-05-02-monads-3
