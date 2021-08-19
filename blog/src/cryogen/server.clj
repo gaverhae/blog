@@ -14,17 +14,13 @@
     [cryogen-core.io :refer [path]]))
 
 (defn init
-  [{:as config, fast? :fast}]
-  (println "Init: fast compile enabled = " (boolean fast?))
+  [{:as config}]
   (load-plugins)
   (compile-assets-timed config)
   (let [ignored-files (-> config :ignored-files)
         recompile (fn [] (compile-assets-timed config))]
-    (run!
-      #(if fast?
-         (start-watcher-for-changes! % ignored-files recompile {})
-         (start-watcher! % ignored-files recompile))
-      ["content" "themes"])))
+    (run! (start-watcher! % ignored-files recompile)
+          ["content" "themes"])))
 
 (defn wrap-subdirectories
   [handler config]
