@@ -15,6 +15,7 @@ fi
 if aws s3 ls $S3_FILE; then
     echo "File already exists, no need to build."
 else
+    rm -rf public
     lein run
     ( cd public && tar czf ../public.tar.gz . )
     aws s3 cp public.tar.gz $S3_FILE
