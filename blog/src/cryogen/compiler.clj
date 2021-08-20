@@ -85,11 +85,10 @@
 (defn page-content
   "Returns a map with the given page's file-name, metadata and content parsed from
   the file with the given markup."
-  [^java.io.File page config markup]
+  [^java.io.File page root config markup]
   (with-open [rdr (java.io.PushbackReader. (io/reader page))]
-    (let [re-root     (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
-          page-fwd    (string/replace (str page) "\\" "/")  ;; make it work on Windows
-          page-name   (if (:collapse-subdirs? config) (.getName page) (string/replace page-fwd re-root ""))
+    (let [page-fwd    (string/replace (str page) "\\" "/")  ;; make it work on Windows
+          page-name   (string/replace page-fwd (re-pattern (str "^.*" root)) "")
           file-name   (string/replace page-name (re-pattern-from-exts (m/exts markup)) ".html")
           page-meta   (read-page-meta page-name rdr)
           content     ((m/render-fn markup) rdr (assoc config :page-meta page-meta))
@@ -120,7 +119,7 @@
 (defn parse-page
   "Parses a page/post and returns a map of the content, uri, date etc."
   [page config markup]
-  (let [{:keys [file-name page-meta content-dom]} (page-content page config markup)]
+  (let [{:keys [file-name page-meta content-dom]} (page-content page (:page-root config) config markup)]
     (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content-dom)
         (merge
           {:type          :page
@@ -133,7 +132,7 @@
 (defn parse-post
   "Return a map with the given post's information."
   [page config markup]
-  (let [{:keys [file-name page-meta content-dom]} (page-content page config markup)]
+  (let [{:keys [file-name page-meta content-dom]} (page-content page (:post-root config) config markup)]
     (let [date            (if (:date page-meta)
                             (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
                             (parse-post-date file-name (:post-date-format config)))

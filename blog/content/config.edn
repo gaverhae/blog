@@ -5,7 +5,6 @@
  :blocks-per-preview           2
  :blog-prefix                  ""
  :clean-urls                   :trailing-slash
- :collapse-subdirs?            false
  :description                  "Blog on software engineering, mostly."
  :description-include-elements #{:p :h1 :h2 :h3 :h4 :h5 :h6}
  :disqus-shortname             ""
