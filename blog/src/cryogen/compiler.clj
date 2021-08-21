@@ -150,18 +150,18 @@
              :klipse/local            (:klipse page-meta)})
           (add-toc config)))))
 
-(defn read-posts
+(defn read-articles
   "Returns a sequence of maps representing the data from markdown files of posts.
    Sorts the sequence by post date."
-  [config]
+  [config root]
   (->> (m/markups)
        (mapcat
          (fn [mu]
            (->>
-             (find-entries (:post-root config)
+             (find-entries root
                            mu
                            (:ignored-files config))
-             (pmap #(parse-article % (:post-root config) config mu))
+             (pmap #(parse-article % root config mu))
              (remove #(= (:draft? %) true)))))
        (sort-by :date)
        reverse
@@ -478,6 +478,18 @@
             {:resources     folders
              :ignored-files (map #(re-pattern-from-exts (m/exts %)) (m/markups))}))))
 
+(defn gather-articles
+  [config root update-article-fn]
+  (let [posts (->> (read-articles config root)
+                   (add-prev-next)
+                   (map klipse/klipsify)
+                   (map (partial add-description config))
+                   (map #(update-article-fn % config))
+                   (remove nil?))
+        posts-by-tag (group-by-tags posts)
+        posts        (tag-posts posts config)]
+    [posts posts-by-tag]))
+
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config.
 
@@ -511,14 +523,9 @@
                               :extend-params-fn :update-article-fn)
          {:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
           :as   config} (resolve-config overrides)
-         posts        (->> (read-posts config)
-                           (add-prev-next)
-                           (map klipse/klipsify)
-                           (map (partial add-description config))
-                           (map #(update-article-fn % config))
-                           (remove nil?))
-         posts-by-tag (group-by-tags posts)
-         posts        (tag-posts posts config)
+         [posts posts-by-tag] (gather-articles config
+                                               (:post-root config)
+                                               update-article-fn)
          latest-posts (->> posts (take recent-posts) vec)
          pages        (->> (read-pages config)
                            (map klipse/klipsify)
