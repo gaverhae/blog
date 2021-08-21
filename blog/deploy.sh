@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$DIR"
+
 SHA=$(git log -n1 --format=%H .)
 COUNT=$(git rev-list --count $SHA)
 VERSION=$(git show -s --format=%cd-$COUNT-%h --date=format:%Y%m%d --abbrev=8 $SHA)
@@ -15,9 +18,23 @@ fi
 if aws s3 ls $S3_FILE; then
     echo "File already exists, no need to build."
 else
+    # clean-up
     rm -rf public
+
+    # resize images
+    find content/img \
+         -not -path '*/\.*' \
+         -type f \
+         -exec bash -c \
+         "convert '{}' -resize 800x1000 '{}.out.jpg' && mv '{}.out.jpg' '{}'" \;
+
+    # compile static site
     lein run
+
+    # create tar
     ( cd public && tar czf ../public.tar.gz . )
+
+    # push to S3
     aws s3 cp public.tar.gz $S3_FILE
     rm public.tar.gz
 fi

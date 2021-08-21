@@ -28,6 +28,8 @@ in rec {
     goaccess = pkgs.goaccess;
     lnav = pkgs.lnav;
 
+    convert = pkgs.imagemagick;
+
     # Java
     #jdk    = pkgs.jdk8;
     #java   = jdk;
