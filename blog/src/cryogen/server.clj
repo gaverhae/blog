@@ -19,7 +19,7 @@
   (compile-assets-timed config)
   (let [ignored-files (-> config :ignored-files)
         recompile (fn [] (compile-assets-timed config))]
-    (run! (start-watcher! % ignored-files recompile)
+    (run! #(start-watcher! % ignored-files recompile)
           ["content" "themes"])))
 
 (defn wrap-subdirectories
