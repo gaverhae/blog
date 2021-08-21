@@ -50,7 +50,7 @@
         (m/exts mu)
         ignored-files))))
 
-(defn parse-post-date
+(defn parse-article-date
   "Parses the post date from the post's file name and returns the corresponding java date object"
   [^String file-name date-fmt]
   (let [fmt (java.text.SimpleDateFormat. date-fmt)]
@@ -129,13 +129,13 @@
            :klipse/local  (:klipse page-meta)})
         (add-toc config))))
 
-(defn parse-post
+(defn parse-article
   "Return a map with the given post's information."
-  [page config markup]
-  (let [{:keys [file-name page-meta content-dom]} (page-content page (:post-root config) config markup)]
+  [page root config markup]
+  (let [{:keys [file-name page-meta content-dom]} (page-content page root config markup)]
     (let [date            (if (:date page-meta)
                             (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
-                            (parse-post-date file-name (:post-date-format config)))
+                            (parse-article-date file-name (:post-date-format config)))
           archive-fmt     (java.text.SimpleDateFormat. ^String (:archive-group-format config) (Locale/getDefault))
           formatted-group (.format archive-fmt date)]
       (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content-dom)
@@ -161,7 +161,7 @@
              (find-entries (:post-root config)
                            mu
                            (:ignored-files config))
-             (pmap #(parse-post % config mu))
+             (pmap #(parse-article % (:post-root config) config mu))
              (remove #(= (:draft? %) true)))))
        (sort-by :date)
        reverse
