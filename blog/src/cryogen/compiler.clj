@@ -212,8 +212,11 @@
   (let [sorted (->> pages
                     (sort-by :date)
                     (map-indexed (fn [idx p] (assoc p :idx idx))))]
-    {:first (->> sorted reverse (drop 3) reverse first)
-     :last (->> sorted reverse (take 3) reverse)}))
+    (if (> (count sorted) 4)
+      {:first (first sorted)
+       :last (->> sorted reverse (take 3))}
+      {:first nil
+       :last (->> sorted reverse (take 4))})))
 
 (defn group-for-author
   "Groups the posts by author. If no post author if found defaults `default-author`."
