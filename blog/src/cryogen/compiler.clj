@@ -52,11 +52,11 @@
 
 (defn parse-article-date
   "Parses the post date from the post's file name and returns the corresponding java date object"
-  [^String file-name date-fmt]
+  [file-name date-fmt]
   (let [fmt (java.text.SimpleDateFormat. date-fmt)]
     (if-let [last-slash (string/last-index-of file-name "/")]
-      (.parse fmt (.substring file-name (inc last-slash) (+ last-slash 11)))
-      (.parse fmt (.substring file-name 0 10)))))
+      (.parse fmt (subs file-name (inc last-slash) (+ last-slash 11)))
+      (.parse fmt (subs file-name 0 10)))))
 
 
 (defn page-uri
