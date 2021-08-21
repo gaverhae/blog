@@ -207,6 +207,14 @@
        (sort-by :parsed-group)
        reverse))
 
+(defn group-for-arts
+  [pages]
+  (let [sorted (->> pages
+                    (sort-by :date)
+                    (map-indexed (fn [idx p] (assoc p :idx idx))))]
+    {:first (->> sorted reverse (drop 3) reverse first)
+     :last (->> sorted reverse (take 3) reverse)}))
+
 (defn group-for-author
   "Groups the posts by author. If no post author if found defaults `default-author`."
   [posts default-author]
@@ -434,6 +442,16 @@
                                      :groups          (group-for-archive posts)
                                      :uri             uri})))))
 
+(defn compile-arts
+  [{:keys [blog-prefix] :as params}]
+  (println (blue "compiling arts"))
+  (let [uri (page-uri "art.html" params)]
+    (write-html uri
+                params
+                (render-file "/html/art.html"
+                             (merge params
+                                    {:art true
+                                     :uri uri})))))
 (defn compile-authors
   "For each author, creates a page with filtered posts."
   [{:keys [blog-prefix author-root-uri author] :as params} posts]
@@ -526,6 +544,11 @@
          [posts posts-by-tag] (gather-articles config
                                                (:post-root config)
                                                update-article-fn)
+         [miscs miscs-by-tag] (gather-articles (assoc config
+                                                      :post-root-uri "art/misc"
+                                                      :post-root "art/misc")
+                                               "art/misc"
+                                               update-article-fn)
          latest-posts (->> posts (take recent-posts) vec)
          pages        (->> (read-pages config)
                            (map klipse/klipsify)
@@ -552,12 +575,14 @@
                                          home-page
                                          (assoc (first latest-posts) :layout "home.html"))
                         :archives-uri  (page-uri "archives.html" config)
+                        :art-uri       (page-uri "art.html" config)
                         :index-uri     (page-uri "index.html" config)
                         :tags-uri      (page-uri "tags.html" config)
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                         :site-url      (if (.endsWith site-url "/")
                                          (.substring site-url 0 (dec (count site-url)))
                                          site-url)
+                        :arts {:misc (group-for-arts miscs)}
                         :selmer/context (cryogen-io/path "/" blog-prefix "/")})
          params       (extend-params-fn
                         params0
@@ -580,12 +605,14 @@
      (copy-resources-from-markup-folders config)
      (compile-articles other-pages (assoc params :root-uri (:page-root-uri params)))
      (compile-articles posts (assoc params :root-uri (:post-root-uri params)))
-     (compile-tags params posts-by-tag)
+     (compile-articles miscs (assoc params :root-uri "/art/misc"))
+     (compile-tags params (concat posts-by-tag miscs-by-tag))
      (compile-tags-page params)
      (if previews?
        (compile-preview-pages params posts)
        (compile-index params))
      (compile-archives params posts)
+     (compile-arts params)
      (when author-root-uri
        (println (blue "generating authors views"))
        (compile-authors params posts))

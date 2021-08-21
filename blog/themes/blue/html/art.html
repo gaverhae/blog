@@ -1,0 +1,29 @@
+{% extends "/html/base.html" %}
+{%block subtitle %}: Art{% endblock %}
+{% block content %}
+<div id="posts">
+    <div id="page-header">
+        <h2>Art</h2>
+    </div>
+
+    <h3>Miscellaneous</h3>
+    <p>
+    Stuff that does not fit in other categories. Updates Wed/Sun.
+    </p>
+    <ul>
+    {% for post in arts.misc.last %}
+    <li>
+      {{post.date|date:"yyyy-MM-dd"}} - {{post.idx}} - <a href="{{post.uri}}">{{post.title|safe}}</a>
+    </li>
+      {% endfor %}
+    {% if arts.misc.first %}
+    <li>
+        ...
+    </li>
+    <li>
+      {{arts.misc.first.date|date:"yyyy-MM-dd"}} - {{arts.misc.first.idx}} - <a href="{{arts.misc.first.uri}}">{{arts.misc.first.title|safe}}</a>
+    </li>
+    {% endif %}
+    </ul>
+</div>
+{% endblock %}
