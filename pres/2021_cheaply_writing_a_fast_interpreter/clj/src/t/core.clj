@@ -707,4 +707,47 @@
   (registers-c (compile-register ast) 1000000)
 [-13 7875]
 
-  )
+(bench (let [a 5
+      a (* 2 a)
+      a (+ a 3)]
+  a))
+"1.66e-08"
+
+(bench (let [regs (int-array 1)]
+  (aset regs 0 5)
+  (aset regs 0 (* 2 (aget regs 0)))
+  (aset regs 0 (+ (aget regs 0) 3))
+  (aget regs 0)))
+"3.77e-08"
+
+(bench
+  (loop [i 0
+         j 1000]
+    (if (zero? j)
+      i
+      (case i
+        0 (recur 15 (dec j))
+        15 (recur 957 (dec j))
+        957 (recur 15376 (dec j))
+        15376 (recur 1234567890 (dec j))
+        1234567890 (recur 9876543210 (dec j))
+        9876543210 (recur 1 (dec j))
+        1 (recur 0 (dec j))))))
+"2.53e-05"
+
+(bench
+  (loop [i 0
+         j 1000]
+    (if (zero? j)
+      i
+      (case i
+        0 (recur 1 (dec j))
+        1 (recur 2 (dec j))
+        2 (recur 3 (dec j))
+        3 (recur 4 (dec j))
+        4 (recur 5 (dec j))
+        5 (recur 6 (dec j))
+        6 (recur 0 (dec j))))))
+"2.17e-06"
+
+)
