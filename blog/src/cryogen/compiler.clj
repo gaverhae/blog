@@ -643,8 +643,7 @@
                                    (->> arts-pages
                                         (remove :key)
                                         (map (fn [a]
-                                               (re-pattern (:root a))))
-                                        ((fn [x] (prn x) x)))))
+                                               (re-pattern (:root a)))))))
           (cryogen-io/create-file (cryogen-io/path "/" blog-prefix "sitemap.xml")))
      (println (blue "generating main rss"))
      (->> (rss/make-channel config posts)
