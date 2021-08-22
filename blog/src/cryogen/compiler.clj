@@ -511,6 +511,11 @@
         posts        (tag-posts posts config)]
     [posts posts-by-tag]))
 
+(def art-roots
+  [{:key :misc
+    :root "art/misc"}
+   {:root "art/secret/sketches/uw1"}])
+
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config.
 
@@ -547,11 +552,17 @@
          [posts posts-by-tag] (gather-articles config
                                                (:post-root config)
                                                update-article-fn)
-         [miscs miscs-by-tag] (gather-articles (assoc config
-                                                      :post-root-uri "art/misc"
-                                                      :post-root "art/misc")
-                                               "art/misc"
-                                               update-article-fn)
+         arts-pages (->> art-roots
+                         (map (fn [a]
+                                (let [[posts posts-by-tag]
+                                      (gather-articles (assoc config
+                                                              :post-root-uri (:root a)
+                                                              :post-root (:root a))
+                                                       (:root a)
+                                                       update-article-fn)]
+                                  (assoc a
+                                         :posts posts
+                                         :posts-by-tag posts-by-tag)))))
          latest-posts (->> posts (take recent-posts) vec)
          pages        (->> (read-pages config)
                            (map klipse/klipsify)
@@ -585,7 +596,11 @@
                         :site-url      (if (.endsWith site-url "/")
                                          (.substring site-url 0 (dec (count site-url)))
                                          site-url)
-                        :arts {:misc (group-for-arts miscs)}
+                        :arts (->> arts-pages
+                                   (keep (fn [a]
+                                           (when-let [k (:key a)]
+                                             [k (group-for-arts (:posts a))])))
+                                   (into {}))
                         :selmer/context (cryogen-io/path "/" blog-prefix "/")})
          params       (extend-params-fn
                         params0
@@ -608,8 +623,10 @@
      (copy-resources-from-markup-folders config)
      (compile-articles other-pages (assoc params :root-uri (:page-root-uri params)))
      (compile-articles posts (assoc params :root-uri (:post-root-uri params)))
-     (compile-articles miscs (assoc params :root-uri "/art/misc"))
-     (compile-tags params (concat posts-by-tag miscs-by-tag))
+     (doseq [a arts-pages]
+       (compile-articles (:posts a) (assoc params :root-uri (:root a))))
+     (compile-tags params (concat posts-by-tag
+                                  (mapcat :posts-by-tag arts-pages)))
      (compile-tags-page params)
      (if previews?
        (compile-preview-pages params posts)
