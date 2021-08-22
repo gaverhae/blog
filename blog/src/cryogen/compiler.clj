@@ -637,7 +637,14 @@
        (println (blue "generating authors views"))
        (compile-authors params posts))
      (println (blue "generating site map"))
-     (->> (sitemap/generate site-url config)
+     (->> (sitemap/generate (str site-url "/")
+                            (assoc config
+                                   :sitemap-ignored-paths
+                                   (->> arts-pages
+                                        (remove :key)
+                                        (map (fn [a]
+                                               (re-pattern (:root a))))
+                                        ((fn [x] (prn x) x)))))
           (cryogen-io/create-file (cryogen-io/path "/" blog-prefix "sitemap.xml")))
      (println (blue "generating main rss"))
      (->> (rss/make-channel config posts)
