@@ -26,7 +26,7 @@ else
          -not -path '*/\.*' \
          -type f \
          -exec bash -c \
-         "convert '{}' -resize 800x1000 '{}.out.jpg' && mv '{}.out.jpg' '{}'" \;
+         "convert '{}' -resize 800x2000 '{}.out.jpg' && mv '{}.out.jpg' '{}'" \;
 
     # compile static site
     lein run
