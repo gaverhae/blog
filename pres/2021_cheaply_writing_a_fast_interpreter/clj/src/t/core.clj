@@ -440,61 +440,83 @@
   [reg-state]
   (eval (compile-rc-arr reg-state)))
 
-(defn registers-loop
-  [{:keys [code hoisted]}]
-  (let [registers (->> code
-                       (remove (comp #{:jump} first))
-                       (map second)
-                       set
-                       sort
-                       (map-indexed (fn [idx i]
-                                      [i [idx (gensym)]]))
-                       (into {}))
-        re-get (fn [r] (hoisted r (second (registers r))))
-        ip (gensym)
-        rec (fn [update-ip]
-              `(recur ~update-ip
-                      ~@(->> registers
-                             (map (fn [[i [idx sym]]] [idx sym]))
-                             sort
-                             (map second))))
-        reindex (->> (find-entrypoints code)
-                     (map-indexed vector)
-                     (map (comp vec reverse))
-                     (into {}))
-        segments (->> (find-segments code)
-                      (mapcat
-                        (fn [[ep segment]]
-                          [(reindex ep)
-                           `(let [~@(->> (butlast segment)
-                                         (mapcat (fn [[_ to :as op]]
-                                                   [(re-get to)
-                                                    (match op
-                                                      [:loadl _ v] v
-                                                      [:loadr _ from] (re-get from)
-                                                      [[:bin :add] _ r1 r2] `(unchecked-add
-                                                                               ~(re-get r1)
-                                                                               ~(re-get r2))
-                                                      [[:bin :not=] _ r1 r2] `(if (== ~(re-get r1)
-                                                                                      ~(re-get r2))
-                                                                                0 1))])))]
-                              ~(match (last segment)
-                                 [:jump to] (rec `(int ~(reindex to)))
-                                 [:jump-if-zero r to] (rec `(if (zero? ~(re-get r))
-                                                              (int ~(reindex to))
-                                                              (int ~(reindex (+ ep (count segment))))))
-                                 [:return r] (re-get r)))])))]
-    (eval
-      `(fn []
-             (loop [~ip (int 0)
-                    ~@(->> registers
-                           (map (fn [[i [idx sym]]] [idx sym]))
-                           sort
-                           (mapcat (fn [[_ sym]] [sym `(long 0)])))]
-               (case ~ip
-                 ~@segments))))))
+(defn vars-from-reg
+  [code]
+  (->> code
+       (remove (comp #{:jump} first))
+       (map second)
+       set
+       sort
+       (map-indexed (fn [idx i]
+                      [i [idx (gensym)]]))
+       (into {})))
 
-(defn registers-c
+(defn make-index
+  [code]
+  (->> (find-entrypoints code)
+       (map-indexed vector)
+       (map (comp vec reverse))
+       (into {})))
+
+(defn make-re-get
+  [hoisted registers]
+  (fn [r] (hoisted r (second (registers r)))))
+
+(defn make-recur
+  [registers]
+  (fn [update-ip]
+    `(recur ~update-ip
+            ~@(->> registers
+                   (map (fn [[i [idx sym]]] [idx sym]))
+                   sort
+                   (map second)))))
+
+(defn compile-segment-dense
+  [reindex re-get rec]
+  (fn [[ep segment]]
+    [(reindex ep)
+     `(let [~@(->> (butlast segment)
+                   (mapcat (fn [[_ to :as op]]
+                             [(re-get to)
+                              (match op
+                                [:loadl _ v] v
+                                [:loadr _ from] (re-get from)
+                                [[:bin :add] _ r1 r2] `(unchecked-add
+                                                         ~(re-get r1)
+                                                         ~(re-get r2))
+                                [[:bin :not=] _ r1 r2] `(if (== ~(re-get r1)
+                                                                ~(re-get r2))
+                                                          0 1))])))]
+        ~(match (last segment)
+           [:jump to] (rec `(int ~(reindex to)))
+           [:jump-if-zero r to] (rec `(if (zero? ~(re-get r))
+                                        (int ~(reindex to))
+                                        (int ~(reindex (+ ep (count segment))))))
+           [:return r] (re-get r)))]))
+
+(defn compile-rc-dense
+  [{:keys [code hoisted]}]
+  (let [registers (vars-from-reg code)
+        reindex (make-index code)
+        re-get (make-re-get hoisted registers)
+        rec (make-recur registers)
+        segments (->> (find-segments code)
+                      (mapcat (compile-segment-dense reindex re-get rec)))
+        ip (gensym)]
+    `(fn []
+       (loop [~ip (int 0)
+              ~@(->> registers
+                     (map (fn [[i [idx sym]]] [idx sym]))
+                     sort
+                     (mapcat (fn [[_ sym]] [sym `(long 0)])))]
+         (case ~ip
+           ~@segments)))))
+
+(defn registers-loop
+  [reg-code]
+  (eval (compile-rc-dense reg-code)))
+
+(defn compile-rc-c
   [{:keys [code hoisted]} iter]
   (let [target-register (fn [op]
                           (match op
@@ -553,16 +575,22 @@
                   "}"
                   "printf(\"%ld\\n\", ((clock() - start) * 1000) / CLOCKS_PER_SEC);"
                   "}"
-                  ])]
-    (let [tmp (-> (shell/sh "mktemp" "-d")
-                  :out
-                  string/trim)
-          _ (spit (str tmp "/main.c") c-code)]
-      (->> (shell/sh "bash" "-c" (str "cd " tmp "; cc main.c; ./a.out"))
-           :out
-           string/trim
-           string/split-lines
-           (mapv #(Long/parseLong %))))))
+                  ])
+        tmp (-> (shell/sh "mktemp" "-d")
+                :out
+                string/trim)
+        file (str tmp "/main.c")]
+    (spit file c-code)
+    tmp))
+
+(defn registers-c
+  [rc iter]
+  (let [tmp (compile-rc-c rc iter)]
+    (->> (shell/sh "bash" "-c" (str "cd " tmp "; cc main.c; ./a.out"))
+         :out
+         string/trim
+         string/split-lines
+         (mapv #(Long/parseLong %)))))
 
 (comment
 
