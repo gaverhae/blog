@@ -244,6 +244,7 @@
          3 (do (let [f ^IFn (aget bin (aget code (unchecked-inc-int pc)))]
                  (aset stack
                        (unchecked-subtract-int top 2)
+                       ;; TODO: try with inlined functions
                        (long (f (aget stack (unchecked-dec-int top))
                                 (aget stack (unchecked-subtract-int top 2)))))
                  (recur (unchecked-add-int pc 2)
