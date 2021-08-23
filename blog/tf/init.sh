@@ -33,6 +33,7 @@ TARBALL=public/${version}.tar.gz
 if aws s3 ls $S3/$TARBALL; then
     aws s3 cp $S3/$TARBALL /tmp/blog
     tar xzf /tmp/blog -C /var/www/$DOMAIN/html/
+    echo "${version}" > /var/www/$DOMAIN/html/version.txt
 else
     cat <<'INDEX' > /var/www/$DOMAIN/html/index.html
 <html>

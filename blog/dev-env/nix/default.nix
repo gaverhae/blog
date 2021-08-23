@@ -27,6 +27,7 @@ in rec {
     ]);
     goaccess = pkgs.goaccess;
     lnav = pkgs.lnav;
+    jq = pkgs.jq;
 
     convert = pkgs.imagemagick;
 

@@ -38,4 +38,26 @@ else
     aws s3 cp public.tar.gz $S3_FILE
     rm public.tar.gz
 fi
-( cd tf && terraform apply -var="blog_version=$VERSION" )
+
+jq -c --arg version $VERSION '. + [$version]' < tf/deployed > tf/deployed.tmp
+mv tf/deployed.tmp tf/deployed
+
+( cd tf && terraform apply -var="blog_version=$(cat deployed)" )
+
+while ! { RESP=$(curl --fail \
+                      --connect-to cuddly-octo-palm-tree.com:443:$(cat tf/out):443 \
+                      https://cuddly-octo-palm-tree.com/version.txt) \
+      && [[ "$VERSION" == "$RESP" ]] ;}; do
+    echo $RESP
+    sleep 5
+done
+
+jq -c 'reverse' < tf/deployed > tf/deployed.tmp
+mv tf/deployed.tmp tf/deployed
+
+( cd tf && terraform apply -var="blog_version=$(cat deployed)" )
+
+jq -c '.[0:1]' < tf/deployed > tf/deployed.tmp
+mv tf/deployed.tmp tf/deployed
+
+( cd tf && terraform apply -var="blog_version=$(cat deployed)" )

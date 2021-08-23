@@ -11,7 +11,9 @@ provider "aws" {
   region = "us-east-1"
 }
 
-variable "blog_version" {}
+variable "blog_version" {
+  type = list(string)
+}
 
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -167,6 +169,7 @@ resource "aws_iam_role_policy_attachment" "read-blog" {
 }
 
 resource "aws_instance" "web" {
+  for_each      = toset(var.blog_version)
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t3.nano"
   subnet_id     = aws_subnet.open.id
@@ -184,13 +187,19 @@ resource "aws_instance" "web" {
 
   iam_instance_profile = aws_iam_instance_profile.read-blog.name
 
-  user_data = templatefile("init.sh", { version = var.blog_version })
+  user_data = templatefile("init.sh", { version = each.key })
 
   depends_on = [aws_internet_gateway.gw]
 
 }
 
+resource "local_file" "out" {
+  count    = length(var.blog_version) - 1
+  filename = "out"
+  content  = aws_instance.web[var.blog_version[1]].public_ip
+}
+
 resource "aws_eip" "ip" {
-  instance   = aws_instance.web.id
+  instance   = aws_instance.web[var.blog_version[0]].id
   depends_on = [aws_internet_gateway.gw]
 }
