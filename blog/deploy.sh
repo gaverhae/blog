@@ -61,3 +61,7 @@ jq -c '.[0:1]' < tf/deployed > tf/deployed.tmp
 mv tf/deployed.tmp tf/deployed
 
 ( cd tf && terraform apply -var="blog_version=$(cat deployed)" )
+
+git add tf/deployed
+git commit -m "auto: deployed $VERSION"
+git push
