@@ -163,7 +163,7 @@
                            (:ignored-files config))
              (pmap #(parse-article % root config mu))
              (remove #(= (:draft? %) true)))))
-       (sort-by :date)
+       (sort-by (juxt :date :file-name))
        reverse
        (drop-while #(and (:hide-future-posts? config) (.after ^Date (:date %) (Date.))))))
 
