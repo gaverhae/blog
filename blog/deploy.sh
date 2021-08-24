@@ -19,7 +19,7 @@ update_deploy_set() {
 }
 
 deploy() {
-    ( cd tf && terraform apply -var="blog_version=$(cat deployed)" )
+    ( cd tf && terraform apply -var="blog_version=$(cat deployed)" -auto-approve)
 }
 
 wait_for() {
@@ -27,9 +27,9 @@ wait_for() {
                           $(if [ "$1" == "background" ]; then
                               echo "--connect-to cuddly-octo-palm-tree.com:443:$(cat tf/out):443"
                             fi) \
-                          https://cuddly-octo-palm-tree.com/version.txt) \
+                          https://cuddly-octo-palm-tree.com/version.txt -s) \
           && [[ "$VERSION" == "$RESP" ]] ;}; do
-        echo $RESP
+        echo -n .
         sleep 5
     done
 }
