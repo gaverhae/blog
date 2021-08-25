@@ -312,7 +312,7 @@ Finally, `mount` is just as happy mounting a file as it would be mounting a
 block device, so that works out very well for us.
 
 There's just one problem with this script: it only works if you run it as root.
-We don't want our CI jobs to have root access on the machines, for vary many
+We don't want our CI jobs to have root access on the machines, for very many
 security reasons. The usual answer to "I just need to run that one command as
 root" is `sudo`, specifically with a restricted entry in the `/etc/sudoers`
 file. However, this doesn't really work here as that command would need to be
@@ -330,7 +330,7 @@ permissions:
 # chmod 4775 remount.sh
 ```
 
-we could use run it as a normal user:
+we could run it as a normal user:
 
 ```shell
 $ ./remount.sh
