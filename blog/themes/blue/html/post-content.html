@@ -9,6 +9,19 @@
 </div>
 <div>
     {% if article.toc %}{{article.toc|safe}}{% endif %}
+    {% if article.image %}
+    <p>
+        {% if article.prev %}
+        <a href="{{article.prev.uri}}">
+        {% endif %}
+      <img src="{{ article.image }}"
+           alt="{% if article.alt %}{{ article.alt }}{% else %}{{article.title}}{% endif %}"
+           >
+        {% if article.next %}
+        </a>
+        {% endif %}
+    </p>
+    {% endif %}
     {{article.content|safe}}
 </div>
 {% if article.tags|not-empty %}
