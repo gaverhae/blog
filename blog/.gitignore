@@ -14,6 +14,6 @@ pom.xml.asc
 /themes/lotus/css/blog.css.map
 .cpcache/
 .envrc.private
-logs
+/logs
 report.html
 /content/img
