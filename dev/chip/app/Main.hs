@@ -270,15 +270,18 @@ rocket_game =
    0xf065, 0xf029, 0xd345, 0x00ee, 0x2070, 0x70f8, 0xd888, 0x7cd6,
    0x7c00]
 
-loaded :: [Word16]
-loaded | False = maze
-       | False = print_ship
-       | True = rocket_game
+data TestRun
+  = Maze
+  | Print
+  | Game
 
 main :: IO ()
 main = do
-  let s0 = Main.init loaded
-  let state = if False
-              then step_n s0 1000
+  let s0 = Main.init $ case Game of
+             Maze -> maze
+             Print -> print_ship
+             Game -> rocket_game
+  let state = if True
+              then step_n s0 100
               else step_end s0 7
   putStrLn $ show state
