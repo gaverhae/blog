@@ -21,8 +21,7 @@ update_deploy_set() {
 deploy() {
     local var
     var="-var=blog_version=$(cat tf/deployed)"
-    echo $var
-    ( echo "$var" && cd tf && terraform plan "$var" && terraform apply "$var" -auto-approve)
+    ( cd tf && terraform plan "$var" && terraform apply "$var" -auto-approve)
 }
 
 wait_for() {
