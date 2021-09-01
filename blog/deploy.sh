@@ -47,15 +47,15 @@ else
     # clean-up
     rm -rf public
 
+    # compile static site
+    lein run
+
     # resize images
-    find content/img \
+    find public/img \
          -not -path '*/\.*' \
          -type f \
          -exec bash -c \
          "convert '{}' -resize 800x2000 '{}.out.jpg' && mv '{}.out.jpg' '{}'" \;
-
-    # compile static site
-    lein run
 
     # create tar
     ( cd public && tar czf ../public.tar.gz . )
