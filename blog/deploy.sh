@@ -34,6 +34,7 @@ wait_for() {
         echo -n .
         sleep 5
     done
+    echo
 }
 
 if ! [ -z "$(git status --porcelain)" ]; then
