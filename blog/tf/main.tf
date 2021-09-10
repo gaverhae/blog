@@ -189,14 +189,28 @@ resource "aws_instance" "web" {
 
   user_data = templatefile("init.sh", { version = each.key })
 
-  depends_on = [aws_internet_gateway.gw]
+  tags = {
+    Name = each.key
+  }
 
+  depends_on = [aws_internet_gateway.gw]
 }
 
 resource "local_file" "out" {
   count    = length(var.blog_version) - 1
   filename = "out"
   content  = aws_instance.web[var.blog_version[1]].public_ip
+}
+
+resource "local_file" "deployed" {
+  filename = "temp"
+  content = jsonencode([
+    for m in aws_instance.web :
+    {
+      ami     = m.ami
+      version = m.tags.Name
+    }
+  ])
 }
 
 resource "aws_eip" "ip" {
