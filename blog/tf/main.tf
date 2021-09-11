@@ -11,9 +11,14 @@ provider "aws" {
   region = "us-east-1"
 }
 
-variable "blog_version" {
-  type = list(string)
+variable "deployed_json" {
+  type = string
 }
+
+locals {
+  deployed = jsondecode(var.deployed_json)
+}
+
 
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -169,8 +174,8 @@ resource "aws_iam_role_policy_attachment" "read-blog" {
 }
 
 resource "aws_instance" "web" {
-  for_each      = toset(var.blog_version)
-  ami           = data.aws_ami.ubuntu.id
+  for_each      = { for spec in local.deployed : spec.version => spec }
+  ami           = coalesce(each.value["ami"], data.aws_ami.ubuntu.id)
   instance_type = "t3.nano"
   subnet_id     = aws_subnet.open.id
 
@@ -187,33 +192,33 @@ resource "aws_instance" "web" {
 
   iam_instance_profile = aws_iam_instance_profile.read-blog.name
 
-  user_data = templatefile("init.sh", { version = each.key })
+  user_data = templatefile("init.sh", { version = each.value["version"] })
 
   tags = {
-    Name = each.key
+    Name = each.value["version"]
   }
 
   depends_on = [aws_internet_gateway.gw]
 }
 
 resource "local_file" "out" {
-  count    = length(var.blog_version) - 1
+  count    = length(local.deployed) - 1
   filename = "out"
-  content  = aws_instance.web[var.blog_version[1]].public_ip
+  content  = aws_instance.web[local.deployed[1]["version"]].public_ip
 }
 
 resource "local_file" "deployed" {
-  filename = "temp"
+  filename = "deployed"
   content = jsonencode([
-    for m in aws_instance.web :
+    for m in local.deployed :
     {
-      ami     = m.ami
-      version = m.tags.Name
+      ami     = coalesce(m.ami, aws_instance.web[m.version].ami)
+      version = m.version
     }
   ])
 }
 
 resource "aws_eip" "ip" {
-  instance   = aws_instance.web[var.blog_version[0]].id
+  instance   = aws_instance.web[local.deployed[0]["version"]].id
   depends_on = [aws_internet_gateway.gw]
 }

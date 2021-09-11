@@ -20,7 +20,7 @@ update_deploy_set() {
 
 deploy() {
     local var
-    var="-var=blog_version=$(cat tf/deployed)"
+    var="-var=deployed_json=$(cat tf/deployed)"
     ( cd tf && terraform plan "$var" && terraform apply "$var" -auto-approve)
 }
 
@@ -66,7 +66,7 @@ else
     rm public.tar.gz
 fi
 
-update_deploy_set '. + [$version]'
+update_deploy_set '. + [{version: $version, ami: null}]'
 deploy
 wait_for background
 
