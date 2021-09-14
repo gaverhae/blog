@@ -77,3 +77,45 @@ On a single set, a predicate \(P\) is _preserved_ by a binary relation \(R\)
 iff \(s R s' \and P(s) \implies P(s')\).
 
 ### 2.2 - Ordered Sets
+
+A binary relation R on S can be reflexive (maps s to s for all s), symmetric
+((s, t) implies (t, s)), transitive ((s,t) and (t, u) imply (s, u)), and/or
+antisymmetric ((s, t) and (t, s) imply s == t).
+
+A relation that is reflexive and transitive is a preorder. If it is also
+antisymmetric, it is a partial order. If it covers all possible pairs, it is a
+total order.
+
+When we have a partial order, we can define least upper bounds and greater
+lower bounds, which we respectively call join and meet.
+
+A reflexive, transitive and symmetric relation is called an equivalence.
+
+The reflexive closure of a relation is the smallest reflexive relation that
+contains it. The transitive closure is the smallest transitive relation that
+contains it.
+
+> **Exercise.** Suppose we are given a relation R on a set S. Define R' as
+> follows:
+>
+> R' = R \union {(s, s) | s \in S }
+>
+> That is, R' contains all the pairs in R plus all pairs of the form (s, s).
+> Show that R' is the reflexive closure of R.
+
+> By definition of a reflexive closure, we have three things to show:
+>
+> 1. R' is reflexive.
+> 2. R' contains R.
+> 3. R' is the smallest reflexive relation that contains R.
+>
+> 1 and 2 are trivially true by construction: R' is defined as being the union
+> of R and something, so it contains R, and the something is exactly the
+> reflexivity condition, so it is reflexive. To prove the third point, we need
+> to construct a smaller set that still respects the first two points.
+>
+> Let's try removing an element from R'. If we remove an element of the form
+> (s, s), the resulting relation is not reflexive anymore, so we cannot remove
+> any of those. If we remove any of the other elements, the relation does not
+> contain R anymore. Therefore, R' is the smallest possible reflexive relation
+> that contains R, which makes it its reflexive closure.
