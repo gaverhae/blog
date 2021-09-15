@@ -119,3 +119,72 @@ contains it.
 > any of those. If we remove any of the other elements, the relation does not
 > contain R anymore. Therefore, R' is the smallest possible reflexive relation
 > that contains R, which makes it its reflexive closure.
+
+> **Exercise.** Here is a more constructive defintion of the transitive closure
+> of a relation R. First, we define the following sequence of sets of pairs:
+>
+> R\_0 = R
+> R\_{i+1} = R\_i \union {(s, u) | for some t, (s, t) \in R\_i and (t, u) \in R\_i}
+>
+> That is, we construct each R\_{i+1} by adding to R\_i all the pairs that can
+> be obtained by "one step of transitivity" from pairs already in R\_i.
+> Finally, define the relation R^+ as the union of all the R\_i.
+>
+> Show that R^+ is really the transitive closure of R.
+
+> By defintion, this means proving that:
+> 1. R^+ is transitive.
+> 2. R^+ contains R.
+> 3. R^+ is the smallest relation that satisfies 1 and 2.
+>
+> 2 is evident by construction, as R^+ is defined as the union of a number of
+> sets, among which R. For 1, the definition of transitive is that if (s, t)
+> and (t, u) are in the relation, then (s, u) must also be in it. By
+> construction, we have added all such (s, u), so the result is transitive.
+>
+> Is it the smallest possible one? Following the same logic as for the previous
+> exercise, if we pick any element and remove it, that element is either:
+> - An original element of R. Removing it means the result does not contain R
+>   anymore.
+> - An element we added in one of the R\_i steps. That means that the resulting
+>   relation has two elements (s, t) and (t, u) for which (s, u) is not part of
+>   the relation (we just removed it), and therefore the relation is not
+>   transitive anymore.
+> If we cannot remove an element without breaking either 1 or 2, it must follow
+> that we have indeed the smallest relation that satisfies both 1 and 2.
+
+> **Exercise.** Suppose R is a binary relation on a set S and P is a predicate
+> on S that is preserved by R. Show that P is also preserved by R^\*.
+
+> P is preserved by R if, whenever we have (s, t) in R and P(s), then P(t) is
+> also true. R^\* is constructed by adding two types of elements to R:
+> 1. To make the relation reflexive, we add "diagonal" elements (s, s). For
+>    those, the property automatically holds; if P(s) is true, then P(s) is
+>    also true. (Likewise, if false, it's still false.)
+> 2. To make the relation transitive, we need to add "composition" elements: if
+>    we _had_ (s, t) and (t, u), we add (s, u). But if we had (s, t) and P(s),
+>    then we also know that P(t), and therefore P(u), which means the new tuple
+>    still satisfies. If we did not have P(s), then we can add all the (s, x)
+>    we want with no issue.
+
+A _decreasing chain_ on a preorder Po on a set S is a sequence s1, s2, ... of
+elements of S such that each s\_i < s\_{i+1} forall i. We call a set with a
+preorder _well-founded_ if it has no infinite decreasing chain (e.g. the
+natural numbers, opp. the integers). As a shortcut, we can say the set itself
+is well-founded (if the preorder is obvious enough to be implicit).
+
+### 2.3 - Sequences
+
+A sequence is written by listin its elements. A sequence is a permutation of
+another one if they contain the same elements, possibly in different orders. As
+we deal mostly with non-nested sequences, we overload `,` to sequence both
+individual elements and sequences (in a flattening way).
+
+### 2.4 - Induction
+
+Type theory makes use of proofs by induction: if things are true for 0 and i+1,
+they are true for all numbers, etc. We use lexicographic order on pairs.
+
+# Part I - Untyped Systems
+
+## 3 - Untyped Arithmetic Expressions
