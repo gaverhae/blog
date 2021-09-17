@@ -25,17 +25,7 @@ rm: Cannot remove 'folder/file': Permission denied
 $
 ```
 
-Uh? Ultimately this will be running on our CI servers, under an unprivileged
-user. However, as this is a local test machine (set up to mirror our CI nodes),
-I can try the most violent approach I know of: `sudo`.
-
-```shell
-$ sudo rm -rf folder
-rm: Cannot remove 'folder/file': Permission denied
-$
-```
-
-This is getting interesting. Let's take a look:
+This is getting interesting. Let's take a closer look:
 
 ```shell
 $ ls -l folder
