@@ -222,3 +222,23 @@ resource "aws_eip" "ip" {
   instance   = aws_instance.web[local.deployed[0]["version"]].id
   depends_on = [aws_internet_gateway.gw]
 }
+
+resource "aws_route53_zone" "primary" {
+  name = "cuddly-octo-palm-tree.com"
+}
+
+resource "aws_route53_record" "primary" {
+  zone_id = aws_route53_zone.primary.zone_id
+  name    = aws_route53_zone.primary.name
+  type    = "A"
+  ttl     = "30"
+  records = ["52.204.159.248"]
+}
+
+resource "aws_route53_record" "www" {
+  zone_id = aws_route53_zone.primary.zone_id
+  name    = "www.${aws_route53_zone.primary.name}"
+  type    = "A"
+  ttl     = "30"
+  records = ["52.204.159.248"]
+}
