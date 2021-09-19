@@ -2,7 +2,7 @@
  :layout :post
  :tags ["git"]}
 
-This is not a tutorial. If you're looking for a quick, easy "how to use git"
+This is not a tutorial. If you're looking for a quick, easy, "how to use git"
 kind of post, look elsewhere.
 
 The goal of this post is to give you just enough understanding of the git
@@ -29,7 +29,7 @@ How do they achieve that kind of collaboration? Glad you asked.
 
 ## The git data model
 
-The secret is that `git` is, first and foremost, an on-disk data structure
+The secret is that git is, first and foremost, an on-disk data structure
 (hereafter "git repo"). It's very well-defined and documented, which means that
 anyone can write a new tool that processes a git repo. This is a great way to
 organize software, as it allows each tool to do what it does best, and a
@@ -86,12 +86,12 @@ at each of those in order.
 
 The simplest type of git object is the blob. A blob is just a delimited stream
 of bytes, with no further structure as far as git is concerned. They are
-opaque, atomic units of content. In practice, blob objects will represent files
-in your git worktree.
+opaque, atomic units of content. In practice, blob objects will represent the
+content of files in your git worktree.
 
 ### `tree` objects
 
-A `tree` object represents a directory. It is (cocnetually) a simple text file
+A tree object represents a directory. It is (conceptually) a simple text file
 where each line represents an entry in the directory; entrie can themselves be
 of type tree for nested directories, or of type blob for files in the current
 directory.
@@ -124,7 +124,7 @@ though that's a negligible cost on most filesystems.)
 
 ### `commit` objects
 
-This is the one that ties everything togther. Like `tree` objects, `commit`
+This is the one that ties everything together. Like `tree` objects, `commit`
 objects can be thought of as text files. Their structure is a little bit more
 complicated, though: they have a number of headers, some of which are optional,
 followed by a content. A bit like HTTP requests have a set of headers followed
@@ -147,7 +147,7 @@ We can see four headers here. The `tree` header references a `tree` object
 which will serve as the root of the worktree for this commit. The `parent`
 header (which can appear any number of times) represents the set of parents for
 this commit. In most commits, you'll have one, but merge commits may have two
-or more, and the initial commit(s) will have 0.
+or more, and the initial commit(s) will have none.
 
 `author` and `committer` are useful metadata; both can appear multiple times.
 It's important to realize that they are just text in a text file and thus very
@@ -155,12 +155,12 @@ easy to forge. If that is a concern for you, you should [sign your
 commits][sign].
 
 Note that git is a blockchain. A blockchain is a succession of "blocks" that
-are identified by a hash of their content _and a reference to their parent_,
+are identified by a hash of [their content _and_ a reference to their parent],
 which is how the "chain" is formed.
 
 ### `tag` objects
 
-`tag` objects have a similar structure to commit objects, but a different set
+Tag objects have a similar structure to commit objects, but a different set
 of possible headers. In particular, tags do not have a parent, and can point to
 any type of object. Most often, tags will point to a commit, but you could tag
 a specific tree or blob (or, I suppose, a tag).
@@ -174,7 +174,7 @@ Branch refs are text file that contain a SHA1. They can represent either local
 or remote branches, respectively under `.git/refs/heads` and
 `.git/refs/remotes`. They are generally managed through the `HEAD` special ref.
 
-The "namae of the branch" is simply the name of the file. You can have slashes
+The "name of the branch" is simply the name of the file. You can have slashes
 in a branch name; the file will then be nested in subfolders under
 `.git/refs/heads`.
 
@@ -211,14 +211,16 @@ this means is that the next `git commit` command will:
 - mutate the `.git/HEAD` file to point to the new commit's SHA as a direct ref.
 
 This may not look bad, but contrast that to what the `git commit` command does
-when `HEAD` is a symbolic ref to a branch:
+when `HEAD` is a symbolic ref to a local branch:
 
 - create a new commits object.
 - resolve HEAD to the branch file.
 - mutate the branch file to point to the new commit.
 
 Note that, in this case, `HEAD` is unchanged. Instead, git updates the branch
-file, which is why branches give this illusion of continuity while working.
+file, which is why branches give this illusion of continuity while working "on
+a branch". This also means that you can switch to another commit or branch
+_without losing your work_.
 
 The other special refs are mostly for the internal workings of various git
 commands, and we're not going to go into more details in this post.
@@ -237,7 +239,7 @@ In the simplest case, a git repo will have:
 
 There are a few consequences of that approach. First, git does not store diffs.
 Git computes diffs at the time of showing them. This means that the performance
-of a git diff between two commits is a fucntion of how different their content
+of a git diff between two commits is a function of how different their content
 is, not how far apart they are in the history DAG. Reusing trees makes for very
 efficient diffing, as the algorithm knows it does not need to descend into
 common trees at all.
@@ -252,7 +254,7 @@ is an easy solution to that.
 If you look into `.git/objects`, you'll see a bunch of two-letter folders, as
 described above, but you'll also see two folders named `pack` and `info`.
 
-Keeping all the obejcts as separate files can lead to a lot of filesystem
+Keeping all the objects as separate files can lead to a lot of filesystem
 accesses. git was designed specifically for managing source code, which means
 it generally expects lots of small files, which in turn means lots of file
 accesses, which means lots of kernel calls, and that's slow.
@@ -278,7 +280,10 @@ for that is `git rebase`, though `git reset` and `git commit --amend` can also
 be used to create new commits that ignore part of the existing history.
 
 More simply, you can just decide to throw away a branch after having made a few
-commits that don't end up leading where you wanted.
+commits that don't end up leading where you wanted. Or you can accidentally
+work in a detached `HEAD` state, and then switch away to some other commit,
+unintentionally creating unreachable commits (and potentially losing the
+associated work).
 
 When that happens, you can end up with "orphan" git objects, defined as objects
 that cannot be reached from either HEAD or any of the user refs (branches and
@@ -299,14 +304,14 @@ both blobs in memory to compare them.
 
 ## Conclusion
 
-You can use git every day for year without ever feeling like you need to know
-any of this. But a lot of people express some level of frustration at git and
+You can use git every day for years without ever feeling like you need to know
+any of this. But a lot of people express some level of frustration with git and
 its various subcommands, and I hope that knowing this may help alleviate at
 least some of that frustration.
 
-At least, for myself, I have found that knowing this has made working with git
-both more pleasant and a lot safer, as I'm able to identify which commands
-might be dangerous and how to properly use them without losing work.
+For myself, I have found that knowing this has made working with git both more
+pleasant and a lot safer, as I'm able to identify which commands might be
+dangerous and how to properly use them without losing work.
 
 [data]: /posts/2021-08-29-data-api
 [sign]: https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work
