@@ -92,7 +92,7 @@ content of files in your git worktree.
 ### `tree` objects
 
 A tree object represents a directory. It is (conceptually) a simple text file
-where each line represents an entry in the directory; entrie can themselves be
+where each line represents an entry in the directory; entries can themselves be
 of type tree for nested directories, or of type blob for files in the current
 directory.
 
@@ -213,7 +213,7 @@ this means is that the next `git commit` command will:
 This may not look bad, but contrast that to what the `git commit` command does
 when `HEAD` is a symbolic ref to a local branch:
 
-- create a new commits object.
+- create a new commit object.
 - resolve HEAD to the branch file.
 - mutate the branch file to point to the new commit.
 
@@ -229,8 +229,8 @@ commands, and we're not going to go into more details in this post.
 
 In the simplest case, a git repo will have:
 
-- `HEAD` as a symbolic ref to `refs/heads/master`.
-- `refs/heads/master` as a direct ref to a current commit `C0`.
+- `HEAD` as a symbolic ref to `refs/heads/main`.
+- `refs/heads/main` as a direct ref to a current commit `C0`.
 - `C0` pointing to a tree `T0`, and to a parent `C1`.
 - `C1` pointing to a tree `T1`, and possibly more parents.
 - `T0` may point to blobs `B0` and `B1` as well as a subfolder `T2`.
