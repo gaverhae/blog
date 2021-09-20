@@ -227,6 +227,20 @@ resource "aws_route53_zone" "primary" {
   name = "cuddly-octo-palm-tree.com"
 }
 
+data "aws_kms_key" "dns_key" {
+  key_id = "alias/dns_key"
+}
+
+resource "aws_route53_key_signing_key" "dnssec" {
+  hosted_zone_id             = aws_route53_zone.primary.id
+  key_management_service_arn = data.aws_kms_key.dns_key.arn
+  name                       = "dnssec"
+}
+
+resource "aws_route53_hosted_zone_dnssec" "dnssec" {
+  hosted_zone_id = aws_route53_key_signing_key.dnssec.hosted_zone_id
+}
+
 resource "aws_route53_record" "primary" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = aws_route53_zone.primary.name
