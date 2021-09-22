@@ -19,4 +19,4 @@ you.
 You can also follow [me on Twitter](https://twitter.com/gaverhae), where I
 mostly tweet just to announce blog posts here.
 
-If you want to get in touch with me, just send me [an email](mailto:gary.verhaegen+cuddly-spam@gmail.com).
+If you want to get in touch with me, just send me [an email](mailto:gary.verhaegen+cuddly@gmail.com).
