@@ -188,3 +188,97 @@ they are true for all numbers, etc. We use lexicographic order on pairs.
 # Part I - Untyped Systems
 
 ## 3 - Untyped Arithmetic Expressions
+
+### 3.1 - Introduction
+
+We start with a simple, untyped language, summarized as a hand-wavy syntax as:
+
+```plaintext
+S := t
+t := 'false'
+   | 'true'
+   | 'false'
+   | 'if' t 'then' t 'else' t
+   | '0'
+   | 'succ' t
+   | 'pred' t
+   | 'iszero' t
+```
+
+Examples:
+
+```plaintext
+if false then 0 else 1
+```
+
+whih evaluates to _"What's a '1'?"_, and
+
+```plaintext
+iszero (pred (succ 0))
+```
+
+which evaluates to `true`.
+
+For our purposes, the interesting thing about this program is that its syntax
+allows for expressions like
+
+```plaintext
+if 0 then 0 else 0
+```
+
+and
+
+```plaintext
+succ true
+```
+
+### 3.2 - Syntax
+
+The syntax can more formally be defined as a set T such that:
+
+0. T is the smallest set that satisfies the following rules:
+1. {true, false, 0} \subseteq T,
+2. if t\_1 \in T, then {succ t\_1, pred t\_1, iszero t\_1} \subseteq T,
+3. if t\_1 \in T, t\_2 \in T, and t\_3 \in T, then "if t\_1 then t\_2 else t\_3" \in T.
+
+Alternatively, we can construct T by starting with S\_0 being the empty set,
+and defining S\_{i+1} to be:
+
+```
+{true, false, 0}
+U {succ t1, pred t1, iszero t1 | t1 \in Si}
+U {if t1 then t2 else t3 | t1, t2, t3 \in Si}
+```
+
+and saying T is the union of all Sis.
+
+> **Exercise.** How many elements does S3 have?
+
+> - S0 has zero elements.
+> - S1 has 3 elements: the "atoms". The constructions add nothing because S0 is
+>   empty.
+> - S2 has the 3 basic elements, plus 9 elements for all the possible "depth
+>   \<2" unary terms, and 27 elements for all the possible if-then-else
+>   combinations of atoms, so 39 elements in total.
+> - S3 has:
+>   - 3 atoms.
+>   - 3 times the size of S2 for all the "depth \<3" trees where the root is a
+>     unary operator, so 117.
+>   - The size of S2 cubed for all the possible if-then-elses: 59319.
+>  for a total of 59439.
+
+> **Exercise.** Show that the sets Si are cumulative (Si \subseteq S\_{i+1}).
+
+> This is trivially true for i = 0, because every set contains the empty set.
+> So let's assume it's true for i-1 and look at i. If Si contains S\_{i-1},
+> then the construction of S\_{i+1} becomes:
+> ```
+> {true, false, 0}
+> U {succ t1, pred t1, iszero t1 | t1 \in S_{i-1}}
+> U {succ t1, pred t1, iszero t1 | t1 \in (Si \setminus S_{i-1})}
+> U {if t1 then t2 else t3 | t1, t2, t3 \in S_{i-1}}
+> U {if t1 then t2 else t3 | t1, t2, t3 \in (si \setminus S_{i-1})}
+> ```
+> which clearly contains Si as a subset.
+
+### 3.3 - Induction on terms
