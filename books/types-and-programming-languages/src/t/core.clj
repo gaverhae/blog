@@ -1,5 +1,6 @@
 (ns t.core
-  (:require [instaparse.core :as insta]))
+  (:require [clojure.set :as set]
+            [instaparse.core :as insta]))
 
 (defmacro match
   [expr & cases]
@@ -50,15 +51,49 @@
   (match e
     [:true] true
     [:false] false
-    [:if c r1 r2] (if (eval-arith c)
-                    (eval-arith r1)
-                    (eval-arith r2))
     [:zero] 0
     [:succ n] (inc (eval-arith n))
     [:pred n] (dec (eval-arith n))
-    [:iszero n] (zero? (eval-arith n))))
+    [:iszero n] (zero? (eval-arith n))
+    [:if c r1 r2] (if (eval-arith c)
+                    (eval-arith r1)
+                    (eval-arith r2))))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn consts
+  [e]
+  (match e
+    [:true] #{true}
+    [:false] #{false}
+    [:zero] #{0}
+    [:succ n] (consts n)
+    [:pred n] (consts n)
+    [:iszero n] (consts n)
+    [:if c r1 r2] (set/union (consts c)
+                             (consts r1)
+                             (consts r2))))
+
+(defn size
+  [e]
+  (match e
+    [:true] 1
+    [:false] 1
+    [:zero] 1
+    [:succ n] (inc (size n))
+    [:pred n] (inc (size n))
+    [:iszero n] (inc (size n))
+    [:if c r1 r2] (+ (size c)
+                     (size r1)
+                     (size r2))))
+
+(defn depth
+  [e]
+  (match e
+    [:true] 1
+    [:false] 1
+    [:zero] 1
+    [:succ n] (inc (depth n))
+    [:pred n] (inc (depth n))
+    [:iszero n] (inc (depth n))
+    [:if c r1 r2] (inc (max (depth c)
+                            (depth r1)
+                            (depth r2)))))

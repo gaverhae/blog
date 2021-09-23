@@ -281,4 +281,37 @@ and saying T is the union of all Sis.
 > ```
 > which clearly contains Si as a subset.
 
-### 3.3 - Induction on terms
+### 3.3 - Induction on Terms
+
+The constructive approach to defining T (= S) allows us to define functions and
+prove properties by induction on terms (i.e. pattern matching), because every
+term is either a terminal or a is defined in terms of _smaller terms_.
+
+For example:
+
+```plaintext
+consts(true) = {true}
+consts(false) = {false}
+consts(0) = {0}
+consts(succ t) = consts(t)
+consts(pred t) = consts(t)
+consts(iszero t) = consts(t)
+consts(if t1 then t2 else t3) = consts(t1) U consts(t2) U consts(t3)
+```
+
+> **Exercise.** Prove the principles of induction on terms:
+> 1. Induction on depth: if, for each term s, given P(r) for all r such that
+>    depth(r) < depth(s), we can show P(s), then P(s) holds for all s.
+> 2. Induction on size: if, for each term s, given P(r) for all r such that
+>    size(r) < size(s), we can show P(s), then P(s) holds for all s.
+> 3. Structural induction: if, for each term s, given P(r) for all immediate
+>    subterms r of s, we can show P(s), then P(s) holds for all s.
+
+> 1. Going back to our constructive definition of T, the set of all r is
+>    S\_{i-1}, and the set of all s is Si. Therefore, this follows directly
+>    from induction on integers.
+> 2. This requires a different way to construct our sets, but it similarly
+>    boils down to induction on integers.
+> 3. This is really just another way to phrase 1.
+
+### 3.4 - Semantic Styles
