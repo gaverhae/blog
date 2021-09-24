@@ -211,7 +211,7 @@ Examples:
 if false then 0 else 1
 ```
 
-whih evaluates to _"What's a '1'?"_, and
+which evaluates to _"What's a '1'?"_, and
 
 ```plaintext
 iszero (pred (succ 0))
@@ -277,7 +277,7 @@ and saying T is the union of all Sis.
 > U {succ t1, pred t1, iszero t1 | t1 \in S_{i-1}}
 > U {succ t1, pred t1, iszero t1 | t1 \in (Si \setminus S_{i-1})}
 > U {if t1 then t2 else t3 | t1, t2, t3 \in S_{i-1}}
-> U {if t1 then t2 else t3 | t1, t2, t3 \in (si \setminus S_{i-1})}
+> U {if t1 then t2 else t3 | t1, t2, t3 \in (Si \setminus S_{i-1})}
 > ```
 > which clearly contains Si as a subset.
 
