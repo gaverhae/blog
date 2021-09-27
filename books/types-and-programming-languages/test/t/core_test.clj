@@ -17,7 +17,13 @@
        0 "0"
        1 "succ (0)"
        1 "if (false) then 0 else (succ 0)"
-       true "iszero (pred (succ (0)))"))
+       true "iszero (pred (succ (0)))"
+       0 "pred (pred (pred 0))"
+       0 "pred (succ 0)"
+       1 "succ 0"
+       1 "succ (pred 0)"
+       2 "pred (succ (succ (succ 0)))"
+       ))
 
 (deftest consts
   (are [x y] (= x (t/consts (t/parse-arith y)))

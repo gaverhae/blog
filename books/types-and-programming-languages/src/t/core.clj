@@ -53,7 +53,8 @@
     [:false] false
     [:zero] 0
     [:succ n] (inc (eval-arith n))
-    [:pred n] (dec (eval-arith n))
+    [:pred n] (let [v (eval-arith n)]
+                (if (pos? v) (dec v) 0))
     [:iszero n] (zero? (eval-arith n))
     [:if c r1 r2] (if (eval-arith c)
                     (eval-arith r1)
