@@ -191,13 +191,12 @@ they are true for all numbers, etc. We use lexicographic order on pairs.
 
 ### 3.1 - Introduction
 
-We start with a simple, untyped language, summarized as a hand-wavy syntax as:
+We start with a simple, untyped language, summarized as:
 
 ```plaintext
 S := t
 t := 'false'
    | 'true'
-   | 'false'
    | 'if' t 'then' t 'else' t
    | '0'
    | 'succ' t
@@ -315,3 +314,42 @@ consts(if t1 then t2 else t3) = consts(t1) U consts(t2) U consts(t3)
 > 3. This is really just another way to phrase 1.
 
 ### 3.4 - Semantic Styles
+
+There are three approaches to formalizing a language semantics:
+
+1. _Operational semantics_ specifies the semantics by giving an abstract
+   machine for it, which associates a transition function to possible states.
+   The meaning of a term is defined as the final state the machine reaches when
+   using that term as its initial state.
+2. _Denotational semantics_ defines the meaning of a term to be some
+   mathematical object, like a number or a function.
+3. _Axiomatic semantics_ defines the meaning of a term as the set of properties
+   that can be proven about it.
+
+This book uses operational semantics.
+
+### 3.5 - Evaluation
+
+We can define the boolean subset of our language with the following operational
+semantics:
+
+```plaintext
+t := true
+   | false
+   | if t then t else t
+v := true
+   | false
+if true then t2 else t3 --> t2
+if false then t2 else t3 --> t3
+t1 --> t1' ==> if t1 then t2 else t3 --> if t1' then t2 else t3
+```
+
+where `t` is the form of all possible terms, `v` is the form of "values", a
+special subset of terms that we admit as possible final states, and the rest
+define an _evaluation relation_ where the term on the left of the `-->` can be
+_reduced to_ the term on the right, provided that the condition before the
+`==>` holds.
+
+In other words, if the tuple `(t1, t1')` is in the evaluation relation, then
+the tuple `(if t1 then t2 else t3, if t1' then t2 else t3)` is also in the
+relation.
