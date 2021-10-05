@@ -54,8 +54,8 @@ The `run` function applied to `:bind` must have the semantics of "unwrapping"
 the monadic value and applying its function to it.
 
 Because Clojure is a dynamic language, and because the `run` function will be
-written as a case analysis on the type of its argument, we can fully formalize
-a specific monad by just specifying its `run` function.
+written as a case analysis on the type of its argument(s), we can fully
+formalize a specific monad by just specifying its `run` function.
 
 ## A bit of syntax
 
@@ -157,7 +157,7 @@ t.core=>
 ```
 
 So, you'll have to trust me a bit on this one, but here's the result of a
-manual recursive exapansion of the macro:
+manual recursive expansion of the macro:
 
 ```clojure
 [:bind [:return 5]
@@ -184,13 +184,10 @@ Let's make all of that a little bit more concrete. We start by defining an
 "ambient state" monad, one in which you can, at any point, reach out to a
 "global variable" that maintains some piece of state.
 
-Specifically, we want to reify three effects:
+Specifically, we want to reify two effects:
 
 - `[:get k]` will return the value associated to the key `k`.
 - `[:set k v]` will set the value associated to key `k` to value `v`.
-- `[:update k f]` will update the binding associated to key `k` by applying the
-  function `f` to the previous value and saving the value returned by the
-  function.
 
 Here is the definition of this monad, in the form of a `run` function:
 
@@ -203,9 +200,7 @@ Here is the definition of this monad, in the form of a `run` function:
      [:bind ma f] (let [[v env] (run-ambient ma env)]
                     (run-ambient (f v) env))
      [:set k v] [v (assoc env k v)]
-     [:get k] [(get env k) env]
-     [:update k f] (let [v (f (get env k))]
-                    [v (assoc env k v)]))))
+     [:get k] [(get env k) env])))
 ```
 
 There's nothing very complicated about this code: we just keep around some
@@ -246,29 +241,37 @@ also returns the total number of expression nodes in the program.
           r (sequenceM (rest ms))
           _ [:return (cons a r)]])))
 
+(defn update
+  [k f]
+  (mdo [v [:get k]
+        _ [:set k (f v)]]))
+
 (defn count-exprs
   [expr]
-  (let [m-inc (fn [k] [:update k (fnil inc 0)])]
+  (let [finc (fnil inc 0)]
     (match expr
-      [:lit e] (mdo [_ (m-inc :lit)
+      [:lit e] (mdo [_ (update :lit finc)
                      _ [:return 1]])
-      [:var _] (mdo [_ (m-inc :var)
+      [:var _] (mdo [_ (update :var finc)
                      _ [:return 1]])
       [:set _ e] (mdo [c (count-exprs e)
-                       _ (m-inc :set)
+                       _ (update :set finc)
                        _ [:return (inc c)]])
       [:bin _ e1 e2] (mdo [c1 (count-exprs e1)
                            c2 (count-exprs e2)
-                           _ (m-inc :bin)
+                           _ (update :bin finc)
                            _ [:return (+ c1 c2 1)]])
       [:while e-cond e-body] (mdo [c1 (count-exprs e-cond)
                                    c2 (count-exprs e-body)
-                                   _ (m-inc :while)
+                                   _ (update :while finc)
                                    _ [:return (+ c1 c2 1)]])
       [:do & exprs] (mdo [counts (sequenceM (mapv count-exprs exprs))
-                          _ (m-inc :do)
+                          _ (update :do finc)
                           _ [:return (reduce + 1 counts)]]))))
 ```
+
+Note that `sequenceM` will work with any monad, while `update` is more specific
+to this one.
 
 Running this yields:
 
@@ -293,7 +296,7 @@ t.core=>
 ```
 
 An interesting note to make about `count-exprs` is that there is no explicit
-threading of state through the recusrive calls. The code reads as imperative,
+threading of state through the recursive calls. The code reads as imperative,
 mutable code, while there is in fact no mutation going on.
 
 ## Second example: non-deterministic computation
