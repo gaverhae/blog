@@ -352,4 +352,5 @@ _reduced to_ the term on the right, provided that the condition before the
 
 In other words, if the tuple `(t1, t1')` is in the evaluation relation, then
 the tuple `(if t1 then t2 else t3, if t1' then t2 else t3)` is also in the
-relation.
+relation. Note that these rules implicitly define an evaluation order
+(condition before consequent, in this case).
