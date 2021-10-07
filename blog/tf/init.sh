@@ -53,14 +53,18 @@ if aws s3 ls $S3/$CERT; then
     tar xzf /tmp/cert -C /etc/letsencrypt
 fi
 
-certbot run --nginx \
-            --reinstall \
-            --non-interactive \
-            --agree-tos \
-            --email gary.verhaegen@gmail.com \
-            --redirect \
-            -d $DOMAIN \
-            -d www.$DOMAIN
+do_certs() {
+    certbot run --nginx \
+                --reinstall \
+                --non-interactive \
+                --agree-tos \
+                --email gary.verhaegen@gmail.com \
+                --redirect \
+                -d $DOMAIN \
+                -d www.$DOMAIN
+}
+
+do_certs
 
 cd /etc/letsencrypt
 tar czf /tmp/new-cert .
@@ -127,3 +131,11 @@ WantedBy=multi-user.target
 SERVICE_DEFINITION
 systemctl enable $SERVICE.service
 systemctl start save_logs
+
+sleep 3600
+
+for d in $DOMAIN www.$DOMAIN; do
+    sed -i /etc/letsencrypt/renewal/$d -e 's/.*renew_before.*/renew_before_expiry = 40 days/'
+done
+
+do_certs
