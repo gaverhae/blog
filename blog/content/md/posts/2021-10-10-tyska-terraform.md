@@ -120,7 +120,7 @@ towards having some form of audit log.
 However, Terraform provides you with something more, which is quite a lot of
 work to build out yourself: once Terraform has created a resource, it keeps
 track of it. It will detect if it changes, and offer to change it back so it
-stays in think with your provided description. If you remove a resource
+stays in sync with your provided description. If you remove a resource
 description from your configuration files, Terraform will also detect that and
 offer to delete the corresponding resource.
 
