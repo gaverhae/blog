@@ -3,25 +3,30 @@
             [t.core :as t]))
 
 (deftest lang-3-1
-  (are [v] (t/value-3-1 v)
+  (are [v] (t/b-3-1-value? v)
        true
        false)
-  (are [t] (t/term-3-1 t)
+  (are [t] (t/b-3-1-term? t)
        true
        false
        '(if true false true)
        '(if (if true false true) true (if false false true)))
-  (are [not-t] (not (t/term-3-1 not-t))
+  (are [v] (t/b-3-1-normal? v)
+       true
+       false)
+  (are [not-t] (not (t/b-3-1-term? not-t))
        1
        nil
        ()
        [:a :b :c]
        '(if true 4 false))
-  (are [out in] (= out (t/step-3-1 in))
-       [:not-a-term 4] 4
-       [:value true] true
-       [:value false] false
-       [:if-true true] '(if true true false)
-       [:if-false false] '(if false true false)
-       [:if-true '(if true true false)] '(if true (if true true false) false)
-       [:if '(if true true false)] '(if (if false false true) true false)))
+  (are [out in] (= out (t/b-3-1-step in))
+       true '(if true true false)
+       false '(if false true false)
+       '(if true true false) '(if true (if true true false) false)
+       '(if true true false) '(if (if false false true) true false))
+  (are [out in] (= out (t/b-3-1-eval in))
+       [:value true]'(if true true false)
+       [:value false] '(if false true false)
+       [:value true]'(if true (if true true false) false)
+       [:value true]'(if (if false false true) true false)))
