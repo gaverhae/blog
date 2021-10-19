@@ -194,7 +194,6 @@ they are true for all numbers, etc. We use lexicographic order on pairs.
 We start with a simple, untyped language, summarized as:
 
 ```plaintext
-S := t
 t := 'false'
    | 'true'
    | 'if' t 'then' t 'else' t
@@ -353,4 +352,123 @@ _reduced to_ the term on the right, provided that the condition before the
 In other words, if the tuple `(t1, t1')` is in the evaluation relation, then
 the tuple `(if t1 then t2 else t3, if t1' then t2 else t3)` is also in the
 relation. Note that these rules implicitly define an evaluation order
-(condition before consequent, in this case).
+(condition before consequent or alternative, in this case).
+
+A term `t` is said to be "in normal form" if there is no evaluation step that
+applies to it. For this language, normal forms coincide with values, but, in
+general, values are a subset of normal forms. Normal forms that are not values
+are "stuck" and represent errors, the kind we want to statically eliminate with
+our type system(s).
+
+> **Exercise.** Suppose we add a new rule:
+> ```plaintext
+> if true then t2 else t3 --> t3
+> ```
+> Which of the discussed properties remain valid?
+
+> - Determinacy of one-step evaluation, "if `t --> t'` and `t --> t''`, then
+>   `t' == t''`", is no longer valid.
+> - Every value is still in normal form.
+> - Every normal form is still a value.
+> - Uniqueness of normal form, "if `t -->* u` and `t -->* u'`, then `u == u'`",
+>   is no longer valid, as the proof relies on determinacy of one-step
+>   evaluation.
+> - Termination of evaluation is still true, as whichever path we take, we
+>   still reduce the size of the expression by one.
+
+> **Exercise.** Same question for the additional rule:
+> ```plaintext
+> t2 --> t2' ==> if t1 then t2 rlse t3 --> if t1 then t2' else t3
+> ```
+
+> - Determinacy of one-step evaluation does not hold.
+> - Every value is still a normal form.
+> - Every normal form is still a value.
+> - Uniqueness of normal forms _does_ hold, but the proof needs to change:
+>   instead of proving there is only one evaluation path, based on determinacy
+>   of one-step evaluation, we now need to prove that all paths lead to the
+>   same answer.
+> - Termination of evaluation is still true, as every step still reduces the
+>   size.
+
+We now expand our evaluation rules with arithmetic:
+
+```plaintext
+t := true
+   | false
+   | if t then t else t
+   | 0
+   | succ t
+   | pred t
+   | iszero t
+v := true
+   | false
+   | nv
+nv := 0
+    | succ nv
+if true then t2 else t3 --> t2
+if false then t2 else t3 --> t3
+t1 --> t1' ==> if t1 then t2 else t3 --> if t1' then t2 else t3
+t1 --> t1' ==> succ t1 --> succ t1'
+pred 0 --> 0
+pred (succ nv1) --> nv1
+t1 --> t1' ==> pred t1 --> pred t1'
+iszero 0 --> true
+iszero (succ nv1) --> false
+t1 --> t1' ==> iszero t1 --> iszero t1'
+```
+
+Note that determinacy of evaluation is preserved, as well as uniqueness of
+normal forms, termination of evaluation, and the property that every value is
+in normal form. However, there are now normal forms that are _not_ values, and
+those are said to be _stuck_.
+
+Instead of leaving the terms stuck, we could be more explicit by adding the
+following definitions:
+
+```plaintext
+badnat := wrong
+        | true
+        | false
+badbool := wrong
+         | nv
+if badbool then t1 else t2 --> wrong
+succ badnat --> wrong
+pred badnat --> wrong
+iszero badnat --> wrong
+```
+
+> **Exercise.** Show that the two treatments are equivalent.
+
+> For the two statements to be equivalent, they need to agree, i.e. each stuck
+> term in the first approach needs to evaluate to `wrong` with the additional
+> rules, and we must not have any non-stuck term that evaluats to `wrong`.
+>
+> The proof can be done by induction on the new rules: they only apply to stuck
+> terms (i.e. no non-stuck term can evaluate to `wrong`), and they all evaluate
+> to `wrong`. There is no stuck term that is not covered by the new rules.
+
+The approach we've taken so far is known as "small step", where we define how
+to perform one step of evaluation and then derive from that a notion of
+repeated evaluation until we get a value (or we get stuck). A "big step"
+appraoch would look like:
+
+```plaintext
+v --> v
+t1 --> true AND t2 --> v2 ==> if t1 then t2 else t3 --> v2
+t1 --> false AND t3 --> v3 ==> if t1 then t2 else t3 --> v3
+t1 --> nv1 ==> succ t1 --> succ nv1
+t1 --> 0 ==> pred t1 --> 0
+t1 --> succ nv1 ==> pred t1 --> nv1
+t1 --> 0 ==> iszero t1 --> true
+t1 --> succ nv1 ==> iszero t1 --> false
+```
+
+The semantics coincide, in that if `t` derives to `v` in one approach, it will
+derive to the same value in the other approach.
+
+## 4 - An ML Implementation of Arithmetic Expressions
+
+:shrug:
+
+## 5 -
