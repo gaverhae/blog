@@ -1,8 +1,12 @@
-(ns t.core)
+(ns t.core
+  (:require [clojure.core.match :refer [match]]))
 
 (defn b-3-1-value?
   [exp]
-  (contains? #{true false} exp))
+  (match exp
+    true true
+    false true
+    _ false))
 
 (defn b-3-1-term?
   [exp]
