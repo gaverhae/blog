@@ -1,4 +1,4 @@
-{:title "Forwarding AWS SES emails with Terraform"
+{:title "Forwarding emails with SES and Terraform"
  :layout :post
  :tags ["terraform" "aws"]}
 
@@ -36,8 +36,8 @@ things, I spent quite a bit of time doing additional research because I thought
 surely there was a simpler way to do this. I did not find one.
 
 If you have that problem, and you're happy clicking around, the AWS post has
-everything you need. Me, I like [text-based representations of mt
-infrastructure][tf], so what follows is an annotated transcriotion of the AWS
+everything you need. Me, I like [text-based representations of my
+infrastructure][tf], so what follows is an annotated transcription of the AWS
 blog to Terraform syntax.
 
 All of the code snippets in this post are meant to be part of a single
@@ -75,7 +75,7 @@ AWS provider will expect to find the AWS credentials in the usual env vars
 (`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`) when the `terraform` command
 is invoked. [There are other ways to pass credentials.][aws-tf]
 
-Next, we're going to set up a handful a few variables that we'll use later on:
+Next, we're going to set up two variables that we'll use later on:
 
 ```plaintext
 data "aws_region" "current" {}
@@ -90,7 +90,7 @@ to derive from the credentials at run time.
 ## DNS configuration
 
 In order to make this blog self-contained, the next block set up a minimal DNS
-zone for said domain. In practice, it's likely that by the time you want to add
+zone for the domain. In practice, it's likely that by the time you want to add
 email forwarding, you already have a zone somewhere.
 
 ```plaintext
@@ -111,18 +111,10 @@ need to prove to our email provider (AWS SES) that we're really the owner of
 the domain, so it can feel good about sending emails in the name of that
 domain.
 
-Some of the steps to set up SES may seem a bit odd in the context of email
-forwarding, especially in my case where I mostly wanted to forward emails sent
-to various other addresses to my own inbox. It's worth keeping in mind that SES
-is not really designed for this use-case; instead, it is designed primarily to
-send emails from automation, like marketing campaigns or transactional emails
-from a web app. This is obviously fraught with spamming opportunities, and the
-hoops we have to jump through to set it up reflect that to some extent. By
-which I mean AWS tries to make it hard to use SES for spamming.
-
-So, to prove we own the DNS zone, we need to insert a special TXT entry that
-SES gives us. Fortunately, we don't have to copy-paste between two screns in
-the AWS console and can instead use an API for that. In Terraform terms:
+So, to prove we own the DNS zone, we need to insert a special TXT record in the
+zone, which SES gives us. Fortunately, we don't have to copy-paste between two
+screens in the AWS console and can instead use an API for that. In Terraform
+terms:
 
 ```plaintext
 resource "aws_ses_domain_identity" "primary" {
@@ -172,9 +164,9 @@ There does not seem to be a way to tell SES to directly forward emails.
 Instead, what we're going to do is set up a series of two actions to be taken
 upon receiving an email. The actions are:
 
-1. Save the email as a file in an S3 bucket. This is a "direct" action
+1. Save the email as a binary blog in an S3 bucket. This is a "direct" action
    supported natively by the SES machinery.
-2. Fetch the file frmo the S3 bucket and send it as an email to some other
+2. Fetch the file from the S3 bucket and send it as an email to some other
    email address. This is not a native SES action, so instead we're going to
    implement that through a call to AWS Lambda (with the code of the Lambda
    function itself kindly provided by [the AWS blog post][aws]).
@@ -320,10 +312,10 @@ data "archive_file" "email" {
 }
 ```
 
-AWS Lambda wants a zip file, but storing zip files in git is bad. This allows
-us to check in the Python file itself (as `forward_email.py` in the same folder
-as our Terraform file). The `work` folder here is assumed to be ignored by git
-(through `.gitignore`).
+AWS Lambda wants a zip file, but [storing zip files in git is bad][git]. This
+allows us to check in the Python file itself (as `forward_email.py` in the same
+folder as our Terraform file). The `work` folder here is assumed to be ignored
+by git (through `.gitignore`).
 
 Then, we create the function proper:
 
@@ -353,7 +345,7 @@ resource "aws_lambda_function" "email" {
 The environment variables are documented in the [AWS blog post][aws], or can be
 gleaned by reading the Python code. Importantly, the prefix here must match the
 prefix in our permissions, but does not include the final `/`. Also note that
-the `handler` property must be the name off the Python file followed by the
+the `handler` property must be the name of the Python file followed by the
 name of the function to call in said file.
 
 ## Tying thing together with SES rule set
@@ -394,7 +386,7 @@ rule. But Terraform does not do step-wise deployments like that, at least as
 far as I know, so we'll need to run Terraform twice. What this looks like in
 practice is that we'll run Terraform once with the action commented out, then
 uncomment the action, and run it again. On the second run, the only thing it
-will do is add that one action to the rule.
+will do is add that one action to the — now-existing and permissioned — rule.
 
 With that out of the way, here is the rule, with the Lambda action commented
 out:
@@ -412,8 +404,8 @@ resource "aws_ses_receipt_rule" "email" {
     bucket_name       = aws_s3_bucket.email.bucket
     object_key_prefix = "email/"
   }
-  # Needs commenting on first deployment because of circular dependency between
-  # this and lambda permission.
+  # Needs commenting on first deployment because of circular
+  # dependency between this and lambda permission.
   /*
   lambda_action {
     position     = 2
@@ -455,13 +447,12 @@ resource "aws_ses_email_identity" "email" {
 }
 ```
 
-It's a bit special, though, in a way similar to
-`aws_ses_domain_identity_verification`: while this one does create a record at
-the SES level, it will also wait for confirmation. The creation of this
-resource will trigger an email from AWS to the given email address, and the
-`terraform apply` command will wait until the link in said email has been
-clicked, validating that the owner of that address agrees to let SES send
-emails on their behalf.
+It's a bit special, though, like `aws_ses_domain_identity_verification`: while
+this one does create a record at the SES level, it will also wait for
+confirmation. The creation of this resource will trigger an email from AWS to
+the given email address, and the `terraform apply` command will wait until the
+link in said email has been clicked, validating that the owner of that address
+agrees to let SES send emails on their behalf.
 
 ## Conclusion
 
@@ -472,7 +463,7 @@ simpler way, please let me know.
 It should also be noted that, as email forwarding goes, this is not exactly
 what I was expecting. With my previous provider, forwarded emails got into my
 inbox pretty much as they had been sent, with even the `to` field appearing to
-still point to the forwarded destination.
+still point to the original destination.
 
 Instead, with the above setup, I get this:
 
@@ -488,3 +479,4 @@ That's obviously not ideal.
 [aws]: https://aws.amazon.com/blogs/messaging-and-targeting/forward-incoming-email-to-an-external-destination/
 [tf]: /posts/2021-10-10-tyska-terraform
 [aws-tf]: https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication
+[git]: /posts/2021-09-19-git-elements
