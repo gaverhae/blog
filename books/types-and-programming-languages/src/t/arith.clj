@@ -44,3 +44,25 @@
   (if-let [next (step exp)]
     (eval next)
     [(if (value? exp) :value :stuck) exp]))
+
+(defn big-eval
+  [exp]
+  (match exp
+    (v :guard value?) [:value v]
+    [:if t1 t2 t3] (match (big-eval t1)
+                     [:value :true] (big-eval t2)
+                     [:value :false] (big-eval t3)
+                     else [:stuck exp])
+    [:succ t1] (match (big-eval t1)
+                 [:value (nv :guard numeric?)] [:value [:succ nv]]
+                 else [:stuck exp])
+    [:pred t1] (match (big-eval t1)
+                 [:value :0] [:value :0]
+                 [:value [:succ (nv :guard numeric?)]] [:value nv]
+                 else [:stuck exp])
+    [:zero? t1] (match (big-eval t1)
+                   [:value :0] [:value :true]
+                   [:value [:succ (nv :guard numeric?)]] [:value :false]
+                   [:value v] [:stuck [:zero? v]]
+                   else [:stuck exp])
+    else [:stuck exp]))
