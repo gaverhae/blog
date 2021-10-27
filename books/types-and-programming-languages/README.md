@@ -471,4 +471,17 @@ derive to the same value in the other approach.
 
 :shrug:
 
-## 5 -
+## 5 - The Untyped Lambda-Calculus
+
+The lambda-calulus, invented by Alonzo Church in the 1920s and introduced to
+computer science by Peter Landin in the 1960s, is a popular model for
+computation because it can be viewed simultaneously as a programming language
+in which computations happen and as a mathematical object about which rigorous
+statements can be proven.
+
+### 5.1 - Basics
+
+Everything is a function. The syntax of the lambda-calculus comprises just
+three sorts of terms:
+
+* Variables, usually single letters.
