@@ -484,4 +484,67 @@ statements can be proven.
 Everything is a function. The syntax of the lambda-calculus comprises just
 three sorts of terms:
 
-* Variables, usually single letters.
+- Variables, usually single letters.
+- Abstractions, `λx.t`, where `x` is a variable and `t` is a term.
+- Applications: `t t`, where both `t` are possibly-different terms.
+
+#### Abstract and Concrete Syntax
+
+People hate parentheses and complicate their lives to get rid of them. Let's
+not do that here.
+
+Rather than memorizing the rules for parsing `λx.λy.xyx`, we'll just write
+explicitly:
+
+```clojure
+(fn [x] (fn [y] ((x y) x)))
+```
+
+#### Variables and Metavariables
+
+Trying to get everything to be a single letter is confusing, so let's not do
+that. When denoting metavariables, we'll just enclose them in braces. For
+example, the term `(fn [x] (fn [y] (x y)))` has the form `(fn [{z}] {s})`,
+where `{z}` is `x` and `{s}` is `(fn [y] (x y))`.
+
+#### Scope
+
+An occurrence of `x` is said to be _bound_ when it appears in the body `{t}` of
+an abstraction `(fn [x] {t})`. It is _free_ if it is not bound. For example, in
+`((fn [x] x) x)`, the first `x` is bound and the second one is free.
+
+A term with no free variables is _closed_ and is sometimes called a
+_combinator_.
+
+#### Operational Semantics
+
+Each step consists of rewriting an application by replacing the appearances of
+the variable in the body with the given argument. We write that process:
+
+```clojure
+((fn [x] {t1}) {t2}) --> [x -> {t2}]{t1}
+```
+
+where `[x -> {t2}]{t1}` is the term obtained by replacing all _free_
+occurrences of `x` with `{t2}` in `{t1}`. This is called beta-reduction.
+
+In general, a single lambda term can contain many such reducible expressions
+("redex"); how we choose which redex to reduce next is called an _evaluation
+strategy_. _Full beta-reduction_ does all the possible reductions in any order
+it pleases, which means single-step evaluation is not deterministic.
+
+In the other strategies we'll mention, single-step evaluation is
+deterministic._Normal order_ always starts with the leftmost, outermost redex.
+_Call by name_ is similar but never descends into an abstraction; in effect it
+can be seen as a variant of normal order that "stops earlier". In _call by
+value_, used by most practical languages, we only evaluate the outermost
+redexes (i.e. no descending into abstractions) and only after their argument
+(`{t2}` in `((fn [{x}] {t1}) {t2})`) has itself been fully evaluated.
+
+Call by value is said to be _strict_ in the sense that the argument to a
+function is always evaluated, regardless of whether the function ends up
+actually using it.
+
+This book uses call by value.
+
+### 5.2 - Programming in the Lambda-Calculus
