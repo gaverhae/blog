@@ -1,6 +1,6 @@
 {:title "Safer Bash: fail on pipes"
  :layout :post
- :tags ["bash" "unix"]}
+ :tags ["bash"]}
 
 Over the past two blog posts, I have explained why I always start my Bash
 scripts with [`set -o errexit`] and [`set -o nounset`], respectively

@@ -1,6 +1,6 @@
 {:title "Bash redirections"
  :layout :post
- :tags ["bash" "unix"]}
+ :tags ["bash"]}
 
 ### File descriptors
 

@@ -1,6 +1,6 @@
 {:title "Safer Bash: avoid nesting"
  :layout :post
- :tags ["bash" "unix"]}
+ :tags ["bash"]}
 
 In the past three blog posts ([`set -e`], [`set -u`], [`set -o pipefail`]), I
 have described the header I put as the first line of all my Bash scripts and

@@ -1,6 +1,6 @@
 {:title "Safer Bash: no unset"
  :layout :post
- :tags ["bash" "unix"]}
+ :tags ["bash"]}
 
 [Last week], I talked about `set -e`; while it does add a layer of security on
 many potential Bash errors, it is unfortunately not quite enough by itself. In

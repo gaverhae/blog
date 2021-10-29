@@ -1,6 +1,6 @@
 {:title "Merge sort in Bash"
  :layout :post
- :tags ["bash" "unix"]}
+ :tags ["bash"]}
 
 Upon reading [my previous post], a friend decided to try and write an
 implementation of [merge sort] in Bash, using subprocesses and file

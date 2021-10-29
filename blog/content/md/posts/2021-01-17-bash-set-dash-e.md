@@ -1,6 +1,6 @@
 {:title "Safer Bash: die on error"
  :layout :post
- :tags ["bash" "unix"]}
+ :tags ["bash"]}
 
 Bash is a great programming environment, in the same sense that JavaScript is a
 great programming language. That is, it's a pretty terrible design by any

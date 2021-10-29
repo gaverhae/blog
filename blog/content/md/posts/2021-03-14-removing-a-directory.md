@@ -1,6 +1,6 @@
 {:title "Removing a directory"
  :layout :post
- :tags ["unix"]}
+ :tags ["bash"]}
 
 Around the middle of January, my boss asked me if I could look into deleting a
 folder on our CI machines. To this day I have not been able to do it. Sounds

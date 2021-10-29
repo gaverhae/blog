@@ -1,6 +1,6 @@
 {:title "How to break a computer"
  :layout :post
- :tags ["unix" "windows"]}
+ :tags ["windows"]}
 
 For as long as I can remember, people have come to me with computer problems.
 I'm not quite sure why they do it at first — probably my awkward social skills
