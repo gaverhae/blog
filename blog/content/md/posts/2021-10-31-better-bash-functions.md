@@ -84,7 +84,7 @@ $
 Chances are you did not know that. I didn't until recently. Overall, since the
 first (arguably accidental) introduction of the idea in the original Lisp in
 1958, the programming world seems to have largely agreed that _dynamic scope is
-a **bad idea**_, and that we should use lexical scope instead.
+**bad**_, and that we should use lexical scope instead.
 
 Now, perhaps you're thinking "if it's a bad idea, I can just not use it", and
 that's the right attitude. However, there is a chance it may still happen to
@@ -173,8 +173,7 @@ $
 
 So that doesn't work. Of course, you can still "just not call" `func3` outside
 the scope where you _intend_ for it to be defined, and make sure that _at that
-point_ it has the right definition, and that should work out. Right? And who
-doesn't like programming with tools that you can trust _that_ much?
+point_ it has the right definition, and that should work out. Right?
 
 ## Cleanup
 
@@ -194,10 +193,10 @@ Not only do you not need to remember to delete that file twenty lines below,
 you're also guaranteed that you will (at least try to) delete that file even if
 the program exits with an error, or gets killed.
 
-Why am I mentioning this in the context fo functions? Well, because it simply
+Why am I mentioning this in the context of functions? Well, because it simply
 doesn't work for them: returning from a function does not trigger the `EXIT`
 signal. So if you want to write composable functions in Bash that have some
-clean-up side-effect you want to encapsulate, you have two options:
+side-effect-y clean-up you want to encapsulate, you have two options:
 
 - Give up on clean-up if you crash. That's the easy way out, but in many cases
   it's decidedly _not great_. You shouldn't have to make your software more
@@ -226,7 +225,7 @@ this one, where parentheses shine.
 
 ## Subshell awesomeness
 
-So, say we define our functions with a slightly different syntax:
+Now, say we define our functions with a slightly different syntax:
 
 ```bash
 my_func() (
@@ -234,8 +233,9 @@ my_func() (
 )
 ```
 
-It may look like a benign change, but now, whenever that function is invoked,
-it will be _run within a subshell_. What does that mean? Well, it means that:
+All we've done is replace the `{}` with `()`. It may look like a benign change,
+but now, whenever that function is invoked, it will be _run within a subshell_.
+What does that mean? Well, it means that:
 
 - Variables are lexically scoped. You can read variables from the outer shell
   from within a subshell, but you cannot write to them. Variables defined
