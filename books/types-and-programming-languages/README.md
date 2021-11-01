@@ -548,3 +548,48 @@ actually using it.
 This book uses call by value.
 
 ### 5.2 - Programming in the Lambda-Calculus
+
+Lambda-calculus can be extended in various ways, but even in its simplest form,
+it is very powerful. WHile staying within the bounds of the language, one can
+fairly easily define conventions for representing multi-arg functions,
+booleans, integers, and pairs.
+
+It is, however, foten useful to enrich the lambda calculus with more concrete
+versions of those. In our case, we cna do so by "merging" the syntax (and
+evaluation rules) for lambda calculus with the boolean and arithmetic language
+we have defined earlier.
+
+This is our first language featuring divergence: some terms cannot be evaluated
+to a normal form. For example:
+
+```clojure
+(def omega
+  ((fn [x] (x x)) (fn [x] (x x))))
+```
+
+Usually called `omega`, this lambda term on-step-evaluates to itself.
+
+The operator `fix` lets us define recursive functions in a call-by-value
+setting:
+
+```clojure
+(def fix
+  (fn [f]
+    ((fn [x] (f (fn [y] ((x x) y))))
+     (fn [x] (f (fn [y] ((x x) y)))))))
+```
+
+For example:
+
+```clojure
+(def factorial
+  (fix (fn [fct]
+         (fn [n]
+           (if (realeq n c0)
+             c1
+             (times n (fct (prd n))))))))
+```
+
+where `c0` and `c1` are, respectively, the Church representations of 0 and 1.
+
+### 5.3 - Formalities
