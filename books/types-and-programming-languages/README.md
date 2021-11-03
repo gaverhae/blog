@@ -659,3 +659,17 @@ Here is a working definition:
 ```
 
 #### Operational Semantics
+
+```plaintext
+t := x
+   | λx.t
+   | t t
+v := λx.t
+t1 --> t1' ==> t1 t2 --> t1' t2
+t2 --> t2' ==> v1 t2 --> t2'
+(λx.t1) v2 --> [x -> v2] t1
+```
+
+This formalizes the evaluation order we have chosen.
+
+## 6 -
