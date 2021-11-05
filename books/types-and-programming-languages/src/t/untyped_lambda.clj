@@ -12,8 +12,8 @@
   (match in
     [:var var-name] with
     [:var other] in
-    [:fn [var-name] t] nil ;; TODO
-    [:fn [other] t] nil ;; TODO
+    [:fn [var-name] t] in
+    [:fn [other] t] :undefined
     [:app t1 t2] [:app (substitute var-name with t1)
                        (substitute var-name with t2)]))
 
