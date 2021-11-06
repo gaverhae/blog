@@ -27,7 +27,7 @@ not. So I started frantically researching how to actually do that with AWS, and
 since I had a bit of trouble putting all the pieces together, I decided to
 record the results of that research here.
 
-## AWS blog to the rescue
+### AWS blog to the rescue
 
 After quite a bit of research, mostly about finding the right keywords to
 Google for, I eventually found [this blog post][aws] on the AWS blog itself. It
@@ -43,7 +43,7 @@ blog to Terraform syntax.
 All of the code snippets in this post are meant to be part of a single
 Terraform file.
 
-## Setting up the provider
+### Setting up the provider
 
 Any Terraform configuration must start with a _provider_, which tells Terraform
 which API it's going to interact with and how to do that. (A single Terraform
@@ -87,7 +87,7 @@ extract the default zone (which we set up in the `provider` configuration block
 just above) and the ID of the current user, which the AWS provider will be able
 to derive from the credentials at run time.
 
-## DNS configuration
+### DNS configuration
 
 In order to make this blog self-contained, the next block set up a minimal DNS
 zone for the domain. In practice, it's likely that by the time you want to add
@@ -158,7 +158,7 @@ resource "aws_route53_record" "email" {
 
 And that's it for the DNS setup.
 
-## Storing received emails: S3 bucket
+### Storing received emails: S3 bucket
 
 There does not seem to be a way to tell SES to directly forward emails.
 Instead, what we're going to do is set up a series of two actions to be taken
@@ -224,7 +224,7 @@ More precisely, this gives the `PutObject` permission for the SES service if
 and only if it is currently being directed by our own account, and only for S3
 objects under the `email/` prefix.
 
-## Sending stored emails: Lambda
+### Sending stored emails: Lambda
 
 The next step is to setup AWS Lambda to send emails from that bucket. First, of
 course, we'll have to setup the appropriate permissions.
@@ -348,7 +348,7 @@ prefix in our permissions, but does not include the final `/`. Also note that
 the `handler` property must be the name of the Python file followed by the
 name of the function to call in said file.
 
-## Tying thing together with SES rule set
+### Tying thing together with SES rule set
 
 Finally, we need to tell SES that, upon receiving an email, it needs to store
 it on S3 and then fire the Lambda function. First, we need to create a "rule
@@ -433,7 +433,7 @@ resource "aws_lambda_permission" "email" {
 }
 ```
 
-## The final touch
+### The final touch
 
 We're almost done. The astute reader will have noted that, when we set up the
 Lambda function, we set the `MailSender` and `MailRecipient` values to
@@ -454,7 +454,7 @@ the given email address, and the `terraform apply` command will wait until the
 link in said email has been clicked, validating that the owner of that address
 agrees to let SES send emails on their behalf.
 
-## Conclusion
+### Conclusion
 
 There you have it. It's a bit more complex than I'd have liked, but this is the
 simplest way I could find to set up email forwarding on AWS. If you know a

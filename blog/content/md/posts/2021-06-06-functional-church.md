@@ -7,7 +7,7 @@ and the associated programming model, imperative programming. In this post, I
 present a similarly informal introduction to lambda calculus and the associated
 "functional programming" model.
 
-## Lambda calculus
+### Lambda calculus
 
 Lambda calculus is formally defined as performing _reduction operations_ on
 _lambda terms_, where lambda terms are built using these:
@@ -115,7 +115,7 @@ in the definition of lambda calculus that prescribes whether one should first
 completely reduce \\(E\\) (or \\(M\\)) before doing the top-level
 \\(\\beta\\)-reduction.
 
-## Extending lambda calculus
+### Extending lambda calculus
 
 It should be pretty obvious that the lambda calculus, as a model, is a lot
 simpler than the Turing machine. It is composed of fewer moving parts, and, more
@@ -194,7 +194,7 @@ or, less formally:
 
 \\[(\\lambda +. \\lambda 2.\\lambda 1. + 2 1)(\\textrm{def. of }+)(\\textrm{def. of } 2)(\\textrm{def. of }1)\\]
 
-## Programming languages
+### Programming languages
 
 Just like we can recover numbers, we can recover booleans and an if-then-else
 construct. Additionally, it is possible to define anonymous recursion using the
@@ -264,7 +264,7 @@ In a very real way, an expression in a (purely) functional language _is_ a
 lambda term. Functional programming _is_ lambda calculus, just with a slightly
 enriched notation.
 
-## Why lambda calculus?
+### Why lambda calculus?
 
 Last week we looked at Turing machines, which I argued were important because
 _they can be built_. In contrast, lambda calculus is important because _it is
@@ -306,7 +306,7 @@ through composition and that makes it a lot more powerful[^power] in practice.
   functions are easier to represent in lambda calculus than using Turing machines,
   even though they _can_ be represented with both.
 
-## Up next
+### Up next
 
 In the next post in this series, I will take a look at the relationship between
 lambda calculus and Turing machines, and what that relationship means for

@@ -31,7 +31,7 @@ this week.
 > - JIT is not explicitly excluded in the talk, but it is completely absent. This
 >   is probably also a consequence of the "cheap" constraint.
 
-## The <strike>first</strike> second clue
+### The <strike>first</strike> second clue
 
 I completely missed the first clue. If you've read the previous parts of [this
 series][series], and you haven't picked up on it, you've missed it too. It was
@@ -53,7 +53,7 @@ quite confident in the underlying principles, though. Much more than I was in
 my ability to benchmark Haskell, which I've mentioned [before][part 3] I very
 much am not. So I started thinking maybe something was a bit off.
 
-## The third clue
+### The third clue
 
 I spent a bit of time playing with the code, and suddenly the results, **for
 the exact same code**, became:
@@ -97,7 +97,7 @@ hundred times faster_ (2.7µs vs. 1068µs). With Haskell being a compiled
 language and Clojure running on top of a VM, this should definitely have raised
 some sort of alarm.
 
-## Solving the new problem: why is it so fast?
+### Solving the new problem: why is it so fast?
 
 So what's going on there? Haskell is either way too fast to measure at all, or
 it's way slower than is even remotely reasonable. At that point I had two sets
@@ -191,7 +191,7 @@ summary:
 Neither of these is _completely_ free from a performance perspective, but they
 both should be negligible overall.
 
-## Solving the old problem: why was it so slow?
+### Solving the old problem: why was it so slow?
 
 This brings us to the other problem: why were my original numbers so slow? This
 one is a lot less interesting and a little bit embarrassing, as that is totally
@@ -240,7 +240,7 @@ actually invokes the compiler to build the program (if needed) and _then_ runs
 the resulting, properly compiled executable, and that's what I somewhat
 accidentally did for the first time in this project last week.
 
-## New conclusions
+### New conclusions
 
 So, new numbers. What do they tell us? First, here they are:
 

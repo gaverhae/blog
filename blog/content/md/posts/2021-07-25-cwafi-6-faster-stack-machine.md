@@ -32,7 +32,7 @@ justifies the inclusion of stack machines in this series.
 > - JIT is not explicitly excluded in the talk, but it is completely absent. This
 >   is probably also a consequence of the "cheap" constraint.
 
-## Faster interpreter
+### Faster interpreter
 
 The important point about having a stack machine, when it comes to performance,
 is that we're shrinking a possibly fairly large surface language to a
@@ -167,7 +167,7 @@ Whether that's enough of a performance gain to justify mutable state and
 possible off-by-ones will depend on context, but it's not a negligible
 performance boost.
 
-## Disabling laziness
+### Disabling laziness
 
 One of the [comments on reddit][kovacs] yielded significantly faster numbers
 for all of the previous approaches. You can read the comment itself, and the
@@ -215,7 +215,7 @@ relative speeds of the other ones have changed quite a bit, though, so if
 disabling laziness is an option in your project, that's a good one to know
 about.
 
-## Better code representation
+### Better code representation
 
 We've kept our code as an unboxed vector of `StackOp`. It is not very difficult
 to turn the code itself into an unboxed vector of `Int`: every operation but
@@ -232,7 +232,7 @@ different optimizations can sometimes interact in unexpected ways, so going for
 incremental improvements by introducing one optimization at a time may not
 always lead to the best overall result.
 
-## Better opcodes
+### Better opcodes
 
 Another way to make this stack interpreter faster would be to change the design
 of our stack language. For example, adding an operation that directly adds an
@@ -262,7 +262,7 @@ post about them), and the performance requirements push you towards a
 about the specifics of your use-case and designing the bytecode language
 specifically to make your use-case fast.
 
-## What's next?
+### What's next?
 
 That's all I have for now about stack machines. In the next part of this
 series, we'll take a look at another type of "bytecode" interpreter, called a

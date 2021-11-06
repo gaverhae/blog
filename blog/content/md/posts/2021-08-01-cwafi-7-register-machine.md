@@ -30,7 +30,7 @@ register machine.
 > - JIT is not explicitly excluded in the talk, but it is completely absent. This
 >   is probably also a consequence of the "cheap" constraint.
 
-## Overview
+### Overview
 
 As the name suggests, a register machine is a bit like a stack machine, except
 for the fact that state is stored in a set of registers instead of a stack.
@@ -79,7 +79,7 @@ the instruction pointer by one, unless it sets it to a specific value. A
 program for our register machine will be a list of such instructions, i.e.
 `[RegOp]`.
 
-## Number of registers
+### Number of registers
 
 At first glance, it may look like we have to decide on a number of registers
 before we can move forward from here. This turns out not to be the case: we can
@@ -100,7 +100,7 @@ has.
 Just like we stored our variables on the stack in the [stack machine][part 4],
 we'll use the "bottom" registers for our variables here.
 
-## Compilation monad
+### Compilation monad
 
 Whereas the compilation process for the [stack machine][part 4] only needed to
 keep track of the size of the generated code, the register machine compilation
@@ -292,7 +292,7 @@ that, the compiler produces this code:
 ]
 ```
 
-## Simple interpreter
+### Simple interpreter
 
 It's easy to write a simple, inefficient interpreter for a register language,
 by emulating the registers with a map (I've reused [my `Env` type][part 2] for
@@ -319,7 +319,7 @@ run_registers code =
 As one would expect, this is very slow. In fact, it's the slowest interpreter
 we've seen so far, even slower than the slow stack interpreter.
 
-## Next steps
+### Next steps
 
 In the next post, I'll show a few things one can do to make this faster. If
 you've read the [faster stack machines][part 6] post in this series, you

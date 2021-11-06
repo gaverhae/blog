@@ -24,7 +24,7 @@ a much slower language (Clojure) to end up with a much faster interpreter.
 > - JIT is not explicitly excluded in the talk, but it is completely absent. This
 >   is probably also a consequence of the "cheap" constraint.
 
-## From Haskell to Clojure
+### From Haskell to Clojure
 
 We use the same design for our register machine and its compiler. The
 translation to Clojure is straightforward: we omit the data definition and all
@@ -86,7 +86,7 @@ So what can we do in Clojure that we cannot do in Haskell, and results in such
 a big speedup that it actually makes the Clojure version faster? Glad you
 asked.
 
-## "Cheap" restriction
+### "Cheap" restriction
 
 First, a clarification on that grand announcement: it's not that this is
 _impossible_ to do in Haskell, but trying to replicate this technique in
@@ -95,7 +95,7 @@ interpreter "cheap", i.e. roughly speaking "easy to maintain for people who
 don't know another programming language than the one the interpreter is written
 in".
 
-## Host interpreter
+### Host interpreter
 
 Clojure is a _dynamic language_. I'm deliberately not saying _dynamically
 typed_ here, because that misses the point. The point of being dynamic is not
@@ -131,7 +131,7 @@ into a runnable function is just one `eval` call away.
 All that's left for us to do now is think about exactly _what_ code we're going
 to generate.
 
-## Instruction pointer
+### Instruction pointer
 
 Let's take a closer look at the [array-based interpreter from last week][part
 8].  We've gone through quite a bit of effort there to minimize the work done
@@ -152,7 +152,7 @@ Ideally, we'd want to generate a single block of code for our host language
 interpreter. But since our source language (in this context, the register
 machine language) has jumps, that may not be possible.
 
-## Jumps
+### Jumps
 
 The Clojure language does not have `goto`, so we can't translate those `:jump`
 instructions directly. Instead, we'll start by identifying the possible
@@ -240,7 +240,7 @@ t.core=> (find-segments (:code (compile-register ast)))
 t.core=>
 ```
 
-## Generating Clojure code
+### Generating Clojure code
 
 The next step in assembling our little compiler is to turn each of these segments into a block of Clojure code.
 
@@ -326,7 +326,7 @@ t.core=> (compile-segment-arr (first *1) {2 0, 4 4, 7 3, 8 2, 11 -1} 'regs)
 t.core=>
 ```
 
-## Compiling Clojure code
+### Compiling Clojure code
 
 The only step left is to assemble all the segments into one big block of code,
 somehow. We'll do that by running a loop around them, with an instruction
@@ -421,7 +421,7 @@ t.core=> (*1)
 t.core=>
 ```
 
-## Next step
+### Next step
 
 Yes, "step" singular. Probably.
 

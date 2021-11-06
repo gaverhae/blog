@@ -9,7 +9,7 @@ The goal of this post is to give you just enough understanding of the git
 internals that you can build up a correct intuition of what various git
 commands actually do under the hood.
 
-## The git behind the curtain
+### The git behind the curtain
 
 `git` is a fraud. You may think it's a complicated piece of code that does a
 lot of impressive things. After all, that's the command you invoke all the
@@ -27,7 +27,7 @@ together pretty seamlessly.
 
 How do they achieve that kind of collaboration? Glad you asked.
 
-## The git data model
+### The git data model
 
 The secret is that git is, first and foremost, an on-disk data structure
 (hereafter "git repo"). It's very well-defined and documented, which means that
@@ -48,7 +48,7 @@ The other nice property of having a suite of tools built around a common data
 model is that, if one understands the data model, one can very quickly grasp
 what any new tool does with it. This is what the rest of this post is about.
 
-## Objects and refs
+### Objects and refs
 
 The git model is primarily composed of, on the one hand, four types of objects,
 and on the other hand, refs to said objects.
@@ -82,14 +82,14 @@ the git object named by that SHA1.
 There are four object types and three ref types; we're now going to take a look
 at each of those in order.
 
-### `blob` objects
+#### `blob` objects
 
 The simplest type of git object is the blob. A blob is just a delimited stream
 of bytes, with no further structure as far as git is concerned. They are
 opaque, atomic units of content. In practice, blob objects will represent the
 content of files in your git worktree.
 
-### `tree` objects
+#### `tree` objects
 
 A tree object represents a directory. It is (conceptually) a simple text file
 where each line represents an entry in the directory; entries can themselves be
@@ -122,7 +122,7 @@ only requires changing the parent tree, not the blob itself. (And recursively
 all parent trees, so renaming a file deeply nested down is more "costly",
 though that's a negligible cost on most filesystems.)
 
-### `commit` objects
+#### `commit` objects
 
 This is the one that ties everything together. Like `tree` objects, `commit`
 objects can be thought of as text files. Their structure is a little bit more
@@ -158,7 +158,7 @@ Note that git is a blockchain. A blockchain is a succession of "blocks" that
 are identified by a hash of [their content _and_ a reference to their parent],
 which is how the "chain" is formed.
 
-### `tag` objects
+#### `tag` objects
 
 Tag objects have a similar structure to commit objects, but a different set
 of possible headers. In particular, tags do not have a parent, and can point to
@@ -168,7 +168,7 @@ a specific tree or blob (or, I suppose, a tag).
 The git UX makes it sometimes hard to differentiate between tag objects and tag
 refs. See the "`tag` ref" section below for more information.
 
-### `branch` ref
+#### `branch` ref
 
 Branch refs are text file that contain a SHA1. They can represent either local
 or remote branches, respectively under `.git/refs/heads` and
@@ -180,7 +180,7 @@ in a branch name; the file will then be nested in subfolders under
 
 Branch refs always point to a commit.
 
-### `tag` ref
+#### `tag` ref
 
 Tag refs are stored under `.git/refs/tags`. They are, by themselves, not
 different from branch tags; they differ only in how the special ref `HEAD`
@@ -192,7 +192,7 @@ metadata with the tag (beyond its name). You create a tag ref by using the
 to a tag (for example, a signature), you need a tag object, which is created by
 the `git tag -a <tagname> <object>` command.
 
-### Special refs
+#### Special refs
 
 In addition to tags and branches, git keeps track of a number of "special"
 refs, directly under `.git`. The most important one is `.git/HEAD`, which
@@ -225,7 +225,7 @@ _without losing your work_.
 The other special refs are mostly for the internal workings of various git
 commands, and we're not going to go into more details in this post.
 
-## How this all fits together
+### How this all fits together
 
 In the simplest case, a git repo will have:
 
@@ -249,7 +249,7 @@ completely new copy of that file. This may seem fairly wasteful in terms of
 storage space, and to our first approximation it would be. Fortunately, there
 is an easy solution to that.
 
-## git packs
+### git packs
 
 If you look into `.git/objects`, you'll see a bunch of two-letter folders, as
 described above, but you'll also see two folders named `pack` and `info`.
@@ -268,7 +268,7 @@ repeating large chunks of identical text too many times.
 You can explicitly ask git to "repack" all of its objects with the `git repack`
 command.
 
-## git garbage
+### git garbage
 
 In "normal" git operations, all objects should be saved forever. When you
 create a new commit, it points to its parent, which means that you can't throw
@@ -290,7 +290,7 @@ that cannot be reached from either HEAD or any of the user refs (branches and
 tags). You can ask git to scan its object files (and packs) for such orphan
 objects and remove them with the `git gc` command.
 
-## Why git does not work with large binary files
+### Why git does not work with large binary files
 
 By this point, you should be able to deduce why git repos would struggle with
 large binary files: as every change is stored as a separate file, binary files
@@ -302,7 +302,7 @@ be quite fast, it _assumes_ it's dealing with small files, and some of its
 algorithms reflect that. For example, the diff algorithm will (try to) load
 both blobs in memory to compare them.
 
-## Conclusion
+### Conclusion
 
 You can use git every day for years without ever feeling like you need to know
 any of this. But a lot of people express some level of frustration with git and

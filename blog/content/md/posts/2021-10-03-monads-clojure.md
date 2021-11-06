@@ -10,7 +10,7 @@ My goal with this post is not to convince you to start using monads everywhere;
 I only aim to make the technique easy to understand, using Clojure notation to
 explain it.
 
-## What is it for?
+### What is it for?
 
 Monads are good for reifying side-effects while keeping your code pure. A
 single monad can reify all possible side-effects (like the `IO` monad in
@@ -31,7 +31,7 @@ that way).
 A monad with just those two is (usually) not very useful, so in general you
 will add more.
 
-## What makes a monad
+### What makes a monad
 
 As promised, no category theory definition. For our purposes, a monad is made
 out of:
@@ -57,7 +57,7 @@ Because Clojure is a dynamic language, and because the `run` function will be
 written as a case analysis on the type of its argument(s), we can fully
 formalize a specific monad by just specifying its `run` function.
 
-## A bit of syntax
+### A bit of syntax
 
 There is a reason why most monad tutorials use Haskell: without syntactic
 support, monads are pretty clunky to use. Clojure does not have syntactic
@@ -178,7 +178,7 @@ The semantics we want here is that the `run` function will, when running on a
 the result of evaluating `ma` as the argument. This may be a bit clearer with
 an example.
 
-## A first example: ambient state
+### A first example: ambient state
 
 Let's make all of that a little bit more concrete. We start by defining an
 "ambient state" monad, one in which you can, at any point, reach out to a
@@ -299,7 +299,7 @@ An interesting note to make about `count-exprs` is that there is no explicit
 threading of state through the recursive calls. The code reads as imperative,
 mutable code, while there is in fact no mutation going on.
 
-## Second example: non-deterministic computation
+### Second example: non-deterministic computation
 
 Monads are not just about state management: they can also be used to change the
 computation model. As a simple example, here is a monad that allows every
@@ -389,7 +389,7 @@ Just like there was no explicit threading of state through the body of
 `count-exprs`, there is no explicit handling of multiple values in the body of
 `solve-2nd`.
 
-## What about category theory?
+### What about category theory?
 
 In order for a monad to be useful, the behaviour of `:return` and `:bind` need
 to follow a set of rules, generally known as "the monad laws" (sometimes
@@ -409,7 +409,7 @@ described in this post), the laws would be:
 
 Category theory gives a mathematical justification for those laws. That's it.
 
-## Conclusion
+### Conclusion
 
 This only scratched the surface. Similarly to the first example, you could
 define a monad that represents the effect of interacting with your database.

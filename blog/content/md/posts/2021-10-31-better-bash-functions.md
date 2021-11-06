@@ -7,7 +7,7 @@ last week I discovered that they can be much better than I thought. In this
 post, I'll explain how I thought they worked, why I was wrong, and how that
 makes them better.
 
-## Function syntax
+### Function syntax
 
 I've always seen the syntax of Bash functions presented as:
 
@@ -35,7 +35,7 @@ subshell_.
 So what? Why am I excited about that? First, let's take a look at a few of the
 drawbacks of Bash functions (specifically, the ones defined using `{}`).
 
-## Function local state
+### Function local state
 
 Bash functions can have "local" variables declared with the keyword `local`.
 Otherwise, variables defined within a function body are global variables,
@@ -91,7 +91,7 @@ that's the right attitude. However, there is a chance it may still happen to
 you accidentally through some typo or refactoring. It's just one more trap to
 look out for.
 
-## Nested functions
+### Nested functions
 
 Nested functions are a great tool to organize code into little, well-scoped
 chunks. But with Bash functions (`{}`) living in their parent's scope, they may
@@ -175,7 +175,7 @@ So that doesn't work. Of course, you can still "just not call" `func3` outside
 the scope where you _intend_ for it to be defined, and make sure that _at that
 point_ it has the right definition, and that should work out. Right?
 
-## Cleanup
+### Cleanup
 
 One of my favourite Bash features I discovered recently (i.e. in the last
 couple years) is the ability to trap `EXIT`. I had been aware of signals for a
@@ -223,7 +223,7 @@ Now, what was the point of all this? Surely I did not set out to bash bash...
 Oh, yes, parentheses. As a lisp enthusiast, I can appreciate occasions, like
 this one, where parentheses shine.
 
-## Subshell awesomeness
+### Subshell awesomeness
 
 Now, say we define our functions with a slightly different syntax:
 
@@ -255,7 +255,7 @@ What does that mean? Well, it means that:
   its exit code to the parent, which may at that point still run its own `EXIT`
   handler. It all nests as you'd want.
 
-## Conclusion
+### Conclusion
 
 Given all that, I simply do not understand why people keep recommending the
 `{}` syntax _at all_. It's a rare case where you'd want all the associated

@@ -2,7 +2,7 @@
  :layout :post
  :tags ["tyska"]}
 
-## In a nutshell
+### In a nutshell
 
 From the official wiki:
 
@@ -14,7 +14,7 @@ Alternatively, you can think of it as a tiling window manager for your
 terminal: it lets you split your terminal in "windows", which tmux calls
 "panes", and even simulate multiple "screens", which tmux calls "windows".
 
-## Why you should know about it
+### Why you should know about it
 
 I use tmux all the time. I hardly ever have a terminal open _without_ running
 tmux inside it. In fact, I'm typing this text in a Vim instance running in
@@ -29,14 +29,14 @@ for it.
 So I'd really recommend using it all the time, once you've learned it. And
 there really isn't that much to learn to get huge mileage out of it.
 
-## Feature highlights
+### Feature highlights
 
 tmux can do a lot of things; there's [a whole book][book] about it. I am
 obviously not going to try and replicate a whole book in a single blog post,
 but I will provide a few highlights of ways in which tmux has been tremendously
 useful for me.
 
-### Panes
+#### Panes
 
 tmux gives me the ability to divide a single OS window into multiple panes.
 It's pretty rare that I'd only want a single terminal, so this comes in handy.
@@ -59,7 +59,7 @@ can set these three panes up to be layed out how I like them in my terminal
 window, and I don't have to mess with that layout if I suddenly need to work on
 something unrelated.
 
-### Sessions
+#### Sessions
 
 When you run tmux, it starts a server in the background, which starts a
 session, and then you connect to it. This means that you can detach your
@@ -99,7 +99,7 @@ just running one command gets the bar low enough that people reviewing my PR
 can look at the rendered HTML instead of having to infer it from an RST diff on
 GitHub.
 
-### Synchronized panes
+#### Synchronized panes
 
 This may be a somewhat more specialized use-case, but it occasionally happens
 to me that I want to apply the same set of operations to multiple servers, or
@@ -129,7 +129,7 @@ them.
 It's not a feature I use _very_ often, but when I do use it I'm very glad I
 have it.
 
-## My config file
+### My config file
 
 Like many unix tools, tmux has a high degree of configurability. Here is my
 configuration file for it (`~/.tmux.conf`):
@@ -210,7 +210,7 @@ The most important commands I use regularly are:
 If you're just starting, I'd recommend focusing on the first three.  There's
 already quite a bit of value in those.
 
-## Conclusion
+### Conclusion
 
 That's all for today. I really hope you give tmux a try; it's made my work so
 much more conveninent. I'm tempted to say I coudln't imagine working without

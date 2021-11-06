@@ -24,7 +24,7 @@ this example quite a bit faster.
 > - JIT is not explicitly excluded in the talk, but it is completely absent. This
 >   is probably also a consequence of the "cheap" constraint.
 
-## Array-based interpreter
+### Array-based interpreter
 
 The first thing we'll do should be no surprise if you've read the [faster stack
 machines][part 6] part of [this series][series]: we're going to rewrite our
@@ -112,7 +112,7 @@ run_registers_2 (3000 runs): 257.63 ms (85 µs/run)
 
 We can do a bit better, though.
 
-## Setting variables
+### Setting variables
 
 At this point the interpreter is optimized to the best of my Haskell knowledge
 (which, granted, doesn't mean all that much). I can imagine there may be a few
@@ -280,7 +280,7 @@ or a little bit less with `Strict`:
 run_registers_2 (3000 runs): 236.87 ms (78 µs/run)
 ```
 
-## Constants should not change
+### Constants should not change
 
 Looking at that code, there's still quite a bit of waste, though. By
 definition, literals don't change, so it's a bit of a shame that we have so
@@ -418,7 +418,7 @@ or, with `Strict`:
 run_registers_2 (3000 runs): 148.69 ms (49 µs/run)
 ```
 
-## Going further
+### Going further
 
 We're still over a hundred times slower than the baseline, which clocks in at
 about 0.3 microseconds (regardless of `Strict`), so in principle it should be
@@ -471,7 +471,7 @@ RegState { hoisted = mt_env,
 
 yields a runtime of 30ns using the same benchmark I've used so far.
 
-## What's next?
+### What's next?
 
 This series has been all about writing interpreters, and so far we've been
 doing so from a statically compiled language. In the next part of this series,

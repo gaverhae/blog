@@ -17,7 +17,7 @@ previous posts. Then, I'll expand on what that specific proof implies for
 real-world programming languages, and finally what that means for practical
 code writing.
 
-## Equivalence proof
+### Equivalence proof
 
 The formal proof of equivalence is way outside the scope of this blog. The
 general principle behind the proof, however, has profound implications for the
@@ -128,7 +128,7 @@ What's going on here? Let's walk through each step in this proof:
 
 [brainfuck]: https://esolangs.org/wiki/Brainfuck
 
-## There is no pure (and useful) language
+### There is no pure (and useful) language
 
 Let's take a second look at the _structure_ of that proof. This is, in effect,
 an _existence_ proof: we prove that lambda calculus can do anything a Turing
@@ -165,7 +165,7 @@ language was used. So what's the point of all this theory if we're ultimately
 forced to use both? Glad you asked. Let's start with the pollution problem that
 arises when mixing functional and imperative code.
 
-## The pollution problem
+### The pollution problem
 
 It may not yet be entirely obvious why Turing machines are necessary (at the
 "writing programs" level). If we can have a compiler from lambda terms to CPU
@@ -220,7 +220,7 @@ from a Turing machine_, is to keep all of the side-effects as high in the call
 stack as possible and "drop down" to pure lambda terms as early (and as often)
 as possible. Which brings us to Haskell.
 
-## So what is functional programming?
+### So what is functional programming?
 
 In light of all the context I have built up over this and the
 [previous][turing] [two][lambda] posts, I feel I can now give a useful,

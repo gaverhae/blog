@@ -7,7 +7,7 @@ they are. In the next parts of this series, I will contrast Turing machines
 with lambda calculus and expand on why understanding both models is useful for
 everyday programming.
 
-## Functional v. object-oriented
+### Functional v. object-oriented
 
 Over the past fifteen years or so, fear of the flattening of Moore's law has
 driven renewed interest in functional programming. Many programmers are still
@@ -46,7 +46,7 @@ definition per programming language that claims to be it.
   language, or across languages if the messages are passed through some sort of
   network or queue.
 
-## Models of computation
+### Models of computation
 
 Functional programming, however, is a _model of computation_ based on Church's
 "lambda calculus". It is _code of a different nature_, not a different way to
@@ -108,7 +108,7 @@ lambda calculus and Turing machines turn out to be really important for modern
 computing, and because understanding them, even at a superficial level, can
 give you deep insights into computer programming.
 
-## Turing machines
+### Turing machines
 
 Formally, a Turing machine is a 7-tuple \\(M=\\langle Q, \\Gamma, b, \\Sigma,
 \\delta, q\_0, F\\rangle\\) where:
@@ -287,7 +287,7 @@ computation would proceed as follows:
 
 We can now read the ribbon, and we have computed \\(2 + 1 = 3\\).
 
-## Programmable machines
+### Programmable machines
 
 The example Turing machine above is running a specific program. This may seem a
 bit limiting, but, as programmers, we know that if you can write a program in
@@ -355,7 +355,7 @@ the input alphabet, and the transition between each bullet point can easily be
 encoded as a \\(\\delta\\) function. As described, the value of all variables
 can also be easily encoded into a state representation.
 
-## CPUs
+### CPUs
 
 This correspondence between Turing machines and C code is no accident. The
 reason Turing machines are the most important model of computation we have is
@@ -367,7 +367,7 @@ universal Turing machine (albeit with a finite ribbon of memory).
 > 1. How to update the internal state of a processor, and
 > 2. Where to look for the next instruction.
 
-## Up next
+### Up next
 
 This is why imperative code is the dominant programming paradigm: we started
 with a handful of models of computation, were able to build one of them, and

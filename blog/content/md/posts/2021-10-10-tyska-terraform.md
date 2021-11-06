@@ -2,7 +2,7 @@
  :layout :post
  :tags ["tyska" "terraform"]}
 
-## In a nutshell
+### In a nutshell
 
 From [the homepage]:
 
@@ -14,7 +14,7 @@ The terms "infrastructure" and "cloud services" in that description are often
 thought of meaning the obvious big ones like AWS or Azure. Terraform is, in
 fact, much broader than that.
 
-## Why you should know about it
+### Why you should know about it
 
 As a programmer in the twenty-first century, you interact with cloud services.
 If you don't yet know about Terraform, you manage these services through a mix
@@ -30,9 +30,9 @@ git solves a number of problems people typically have with infrastructure:
 - Keeping an audit log of who made what change.
 - Building blocks for change requests through branching & merging.
 
-## Misconceptions
+### Misconceptions
 
-### A common language
+#### A common language
 
 As mentioned, many people who have heard of Terraform think of it as a common
 language to manage cloud resources on AWS, Azure & GCP. This is missing the
@@ -58,7 +58,7 @@ be extremely tied into that one specific provider.
 
 It's a common syntax, not an abstraction layer.
 
-### Cloud infrastructure means AWS & co
+#### Cloud infrastructure means AWS & co
 
 While I'm sure AWS, GCP and Azure make up the majority of Terraform usage, the
 tool itself is very agnostic. Any situation where you can manage the state of
@@ -85,9 +85,9 @@ Terraform. If you're using any kind of cloud service (a.k.a. remote resource),
 it may be worth [checking if there's a provider for it][providers]. Or building
 your own, but I've never needed to do that myself.
 
-## Feature highlights
+### Feature highlights
 
-### Text files
+#### Text files
 
 Terraform offers a big advantage over manual management through either API
 calls or web UIs: text files enable all sorts of _process_ automation, as well
@@ -98,7 +98,7 @@ current state by looking at said files.
 All using your familiar text editor and your familiar source code management
 tool.
 
-### Common language
+#### Common language
 
 Some cloud providers understand the power of text files and thus provide their
 own configuration language. That's great, but that means you have to learn a
@@ -110,7 +110,7 @@ has its own set of quirks and idiosyncracies. But investing in learning it
 gives you a lot of leverage given the range of services you can configure using
 it.
 
-### Drift detection / declarative approach
+#### Drift detection / declarative approach
 
 A perhaps more obvious way to turn a cloud configuration into a set of text
 files would be to just write down a set of curl commands in a Bash script to
@@ -124,7 +124,7 @@ stays in sync with your provided description. If you remove a resource
 description from your configuration files, Terraform will also detect that and
 offer to delete the corresponding resource.
 
-### Dependency tracking
+#### Dependency tracking
 
 If you want to create resources that depend on each other, Terraform will
 detect that and create them in the correct order (provided there is one). For
@@ -142,7 +142,7 @@ express that in a single Terraform configuration, and Terraform would be able
 to infer that the machine needs to be created first so Terraform can get its IP
 and put it in the StatusCake configuration.
 
-### Auditing
+#### Auditing
 
 Going through text files means that, assuming you keep those text files under
 source control, you get a log of who changed what when.
@@ -156,7 +156,7 @@ While it is possible to set up your system such that Terraform is the only way
 to interact with your infrastructure configuration, Terraform itself does not
 try to prevent additional manual changes.
 
-## Conclusion
+### Conclusion
 
 Like other entries in [this series][tyska], the goal of this article is to let
 you know Terraform exists and give you a sense for when you'd want to use it.
