@@ -1,7 +1,7 @@
 {:title "Shadowing a ball"
  :layout :post
  :tags ["art/learn-procreate"]
- :image "/Users/gary/cuddly-octo-palm-tree/blog/content/img/art/misc/20210709_-_Shadows.jpg"}
+ :image "/img/art/misc/20210709_-_Shadows.jpg"}
 
 This was drawn while following the [Procreate: Draw, Sketch, Paint, and Design
 on Your iPad][udemy] course on Udemy.
