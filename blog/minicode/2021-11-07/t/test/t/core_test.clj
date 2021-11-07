@@ -25,9 +25,15 @@
        53 true)
   (is (= [2 3 5 7 11 13 17 19 23 29]
          (take 10 t/primes)))
-  (are [x y] (= y (t/nth-prime x))
+  (are [x y] (= y (nth t/primes x))
        0 2
        1 3
        2 5
        100 547
-       1000 7927))
+       500 3581))
+
+(deftest others
+  (let [t (t/get-primes)
+        sqrt (t/get-primes-sqrt)]
+    (is (= (take 100 (t/get-primes))
+           (take 100 (t/get-primes-sqrt))))))

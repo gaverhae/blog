@@ -6,4 +6,5 @@
   :plugins [[com.jakemccrary/lein-test-refresh "0.24.1"]]
   :test-refresh {:quiet true
                  :changes-only true}
+  :global-vars {*warn-on-reflection* true}
   :profiles {:uberjar {:aot :all}})
