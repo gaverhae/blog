@@ -551,7 +551,7 @@ practical application to computing a list of prime numbers. There are
 applications for checking primeness (primacy?), and for generating very large
 primes, but I'm not aware of any for "a lazy list of all primes".
 
-This post is mostly about me sharing a toy roblem I've played with. If you've
+This post is mostly about me sharing a toy problem I've played with. If you've
 reached this point, I hope you found the above interesting, but more
 importantly, I encourage you to, like I did, pick out a small, simple, abstract
 problem and play with it in order to gain a deeper understanding of a
