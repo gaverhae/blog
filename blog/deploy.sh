@@ -55,8 +55,11 @@ else
     find public/img \
          -not -path '*/\.*' \
          -type f \
-         -exec bash -c \
-         "convert '{}' -resize 800x2000 '{}.out.jpg' && mv '{}.out.jpg' '{}'" \;
+         -exec bash -c '
+         ext=$(echo $1 | grep -o "\.[^.]*")
+         base=$(echo $1 | sed "s/\(.*\)\.[^.]*/\1/")
+         convert "$1" -resize 800x2000 "$base.tmp$ext" && mv "$base.tmp$ext" "$1"
+         ' -s '{}' \;
 
     # create tar
     ( cd public && tar czf ../public.tar.gz . )
