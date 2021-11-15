@@ -9,16 +9,16 @@
   (are [x] (t/value? x)
        [:fn ["x"] [:app [:var "x"] [:var "x"]]]
        [:fn ["x"] :t])
-  (are [x y] (= x (t/step y))
-       nil [:var "x"]
-       id [:app id id]
-       [:app id id] [:app id [:app id id]]
-       [:app id [:app id id]] [:app [:app id id] [:app id id]]
-       id         [:app [:fn ["x"] [:var "x"]] id]
-       [:var "y"] [:app [:fn ["x"] [:var "y"]] id]
-       id [:app [:fn ["x"] id] [:fn ["y"] [:var "y"]]]
-       [:app id id] [:app [:fn ["x"] [:app [:var "x"] [:var "x"]]] id]
+  (are [x _ y] (= y (t/step x))
+       [:var "x"] => nil
+       [:app id id] => id
+       [:app id [:app id id]] => [:app id id]
+       [:app [:app id id] [:app id id]] => [:app id [:app id id]]
+       [:app [:fn ["x"] [:var "x"]] id] => id
+       [:app [:fn ["x"] [:var "y"]] id] => [:var "y"]
+       [:app [:fn ["x"] id] [:fn ["y"] [:var "y"]]] => id
+       [:app [:fn ["x"] [:app [:var "x"] [:var "x"]]] id] => [:app id id]
 
-       :undefined #_[:fn ["y"] [:app [:fn ["z"] [:var "z"]] [:var "y"]]]
        [:app [:fn ["x"] [:fn ["y"] [:app [:var "x"] [:var "y"]]]] [:fn ["z"] [:var "z"]]]
+       => [:fn ["y"] [:app [:fn ["z"] [:var "z"]] [:var "y"]]]
        ))

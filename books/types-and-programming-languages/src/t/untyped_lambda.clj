@@ -1,5 +1,6 @@
 (ns t.untyped-lambda
-  (:require [clojure.core.match :refer [match]]))
+  (:require [clojure.core.match :refer [match]]
+            [clojure.set :as set]))
 
 (defn value?
   [exp]
@@ -7,13 +8,31 @@
     [:fn [v] t] true
     _ false))
 
+(defn free-variables
+  [exp]
+  (match exp
+    [:var x] #{x}
+    [:app t1 t2] (set/union (free-variables t1)
+                            (free-variables t2))
+    [:fn [x] t] (disj (free-variables t)
+                      x)))
+
+(defn avoid-collisions
+  [exp n]
+  (let [fv (free-variables exp)]
+    (if (fv n)
+      :undefined
+      exp)))
+
 (defn substitute
   [var-name with in]
   (match in
     [:var var-name] with
     [:var other] in
     [:fn [var-name] t] in
-    [:fn [other] t] :undefined
+    [:fn [other] t] [:fn [other] (substitute var-name
+                                             (avoid-collisions with other)
+                                             t)]
     [:app t1 t2] [:app (substitute var-name with t1)
                        (substitute var-name with t2)]))
 
