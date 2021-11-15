@@ -17,22 +17,16 @@
     [:fn [x] t] (disj (free-variables t)
                       x)))
 
-(defn avoid-collisions
-  [exp n]
-  (let [fv (free-variables exp)]
-    (if (fv n)
-      :undefined
-      exp)))
-
 (defn substitute
   [var-name with in]
   (match in
     [:var var-name] with
     [:var other] in
     [:fn [var-name] t] in
-    [:fn [other] t] [:fn [other] (substitute var-name
-                                             (avoid-collisions with other)
-                                             t)]
+    [:fn [other] t] (let [fv (free-variables with)]
+                      (if (contains? fv other)
+                        :undefined
+                        [:fn [other] (substitute var-name with t)]))
     [:app t1 t2] [:app (substitute var-name with t1)
                        (substitute var-name with t2)]))
 

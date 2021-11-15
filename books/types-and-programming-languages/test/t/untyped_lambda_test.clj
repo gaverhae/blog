@@ -21,4 +21,11 @@
 
        [:app [:fn ["x"] [:fn ["y"] [:app [:var "x"] [:var "y"]]]] [:fn ["z"] [:var "z"]]]
        => [:fn ["y"] [:app [:fn ["z"] [:var "z"]] [:var "y"]]]
+
+       [:app [:fn ["x"] [:fn ["y"] [:app [:var "x"] [:var "y"]]]] [:fn ["z"] [:app [:var "z"] [:var "t"]]]]
+       => [:fn ["y"] [:app [:fn ["z"] [:app [:var "z"] [:var "t"]]] [:var "y"]]]
+
+       [:app [:fn ["x"] [:fn ["y"] [:app [:var "x"] [:var "y"]]]] [:fn ["z"] [:app [:var "z"] [:var "y"]]]]
+       => :undefined
+       ;=> [:fn ["a"] [:app [:fn ["z"] [:app [:var "z"] [:var "y"]]] [:var "a"]]]
        ))
