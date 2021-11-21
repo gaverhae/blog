@@ -29,9 +29,9 @@ let's break that down.
 
 At the core of the problem is [lambda calculus]. Without going into all of the
 details, the idea here is to simplify the notion of a programming language to
-the extreme, an specifically to the point where the language is composed of
+the extreme, and specifically to the point where the language is composed of
 only three forms: variables, single-argument function definitions, and function
-application.
+applications.
 
 It turns out these three forms are enough to form a complete model of
 computation, but that's not quite what I want to focus on here. For our
@@ -193,22 +193,26 @@ we set it to `2`, we _capture_ the free variable, and end up with a function
 that applies its argument to itself, rather than a function that applies its
 argument to an externally-scoped value.
 
-Now, where could that `[:var 2]` come from? If we construct expressions only
-using `app` and `abs`, at first glance it looks like we cannot generate a _free
-variable_. And that is true, at the level of a complete expression. But when
-constructing an expression, subexpressions can (and will) have free variables.
+Now, where could that free `[:var 2]` come from? If we construct expressions
+only using `app` and `abs`, at first glance it looks like we cannot generate a
+_free variable_. And that is true, at the level of a complete expression. But
+when constructing an expression, subexpressions can (and often will) have free
+variables.
 
 For example, on our `+` operator above, when considering the abstraction that
 introduces the binding `3`, all three other bindings look like free variables
 to the body of that abstraction.
 
 The second error case we want to avoid is to generate a binding that then gets
-captured by a function "above" in the call stack.
+captured by a function "above" in the call stack. The paper goes into that in
+more details, but the gist of it is that if we construct our name generation to
+look "down" and only generate "bigger" names, _and this is the only API we ever
+use to create expressions_, then that works out.
 
-This poses an obvious problem: because what we give `abs` is a _function_, the
-only way it has of looking at the _expression_ of its body is to actually apply
-the function and look at the result. Continuing with our example, we're
-basically in a situation where we're trying to solve for:
+Having to look "down" poses an obvious problem: because what we give `abs` is a
+_function_, the only way it has of looking at the _expression_ of its body is
+to actually apply the function and look at the result. Continuing with our
+example, we're basically in a situation where we're trying to solve for:
 
 ```clojure
 (abs (fn [n] [:app [:var n] [:var 2]]))
@@ -295,11 +299,6 @@ abstractions, but, crucially, _not_ look at variables. Trying to write the same
 `abs` with our previous definition of `exp-max` _would_ result in an infinite
 loop.
 
-In a way, this make sense: while we can't predict which variables are being
-used in the body, we _can_ predict that a new binding has to introduce a new
-variable (which may end up not being used, but there is no cost to introducing
-an unused variable name at this level).
-
 The paper goes on to prove that this method works (i.e. it produces "safe"
 bindings) and that one can improve the complexity class from quadratic to
 linear by tweaking `exp_max`, but in this post I am not interested in that.
@@ -347,8 +346,8 @@ different things, and promises do need to be explicitly dereferenced.
 
 This means that we have no choice but to change our underlying type
 representation to account for promises, and that any code using the (implicit)
-"exp" type ha to know about them. Assuming that's an acceptable cost, the
-implementation looks something like:
+"exp" type has to know about them. (Or does it? More on that later.) Assuming
+that's an acceptable cost, the implementation looks something like:
 
 ```clojure
 (defn app
@@ -371,15 +370,12 @@ implementation looks something like:
 ```
 
 The evaluation of `abs` works because `exp-max` never looks at the value of a
-`[:var _]`; specifically, because the promise in a var never gets dereferenced.
+`:var`; specifically, because the promise in a var never gets dereferenced.
 
 > One could wonder what `promise` gives us here that we wouldn't get from using
 > `atom`, `var` or `volatile`. While those could work just as well, `promise`
 > implies that the value will only ever be set once, and that's a useful thing
-> to know for people reading such code. The approach is already quite unusual
-> for Clojure code, I think it's worth letting the reader know that this is
-> definitely not meant as a _mutable_ cell, just one that we compute in a
-> slightly delayed fashion.
+> to know for people reading such code.
 >
 > This is especially important here because the promises do end up being part
 > of the "api" (i.e. the data representation) of the language.
