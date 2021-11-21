@@ -1,4 +1,4 @@
-{:title "Circular Programs in Clojure"
+{:title "Circular Programming in Clojure"
  :layout :post
  :tags ["clojure" "papers"]}
 
@@ -243,7 +243,7 @@ Under that assumption, the implementation is fairly straightforward:
 
 (defn exp-max
   [exp]
-  (match exp
+  (match exp ;; see core.match
     [:var n] n
     [:app e1 e2] (max (exp-max e1)
                       (exp-max e2))
@@ -263,8 +263,206 @@ generate our expression _again_ using a higher variable than that.
 This works, but we call `f` twice at each level, meaning it's exponential in
 the nesting level of our function definitions. That's obviously not ideal.
 
+### Circular speculation (Haskell)
 
+The solution presented in the paper is to implement the above using what the
+authors call circular programming:
 
+```haskell
+exp_max :: Exp -> Int
+exp_max (Var _) = 0 -- not looking at the variable anymore
+exp_max (App f a) = max (exp_max f) (exp_max a)
+exp_max (Abs n a) = max n (exp_max a) -- we now look at n here
+
+app :: Exp -> Exp -> Exp
+app = App
+
+abs :: (Exp -> Exp) -> Exp
+abs f = Abs n body
+  where
+    body = f (Var n)       -- Note that body depends on n ...
+    n = 1 + (exp_max body) -- ... and n depends on body
+```
+
+The "circular" part refers to the fact that the definition of `body` depends on
+`n`, while at the same time the definition of `n` depends on `body`. It is
+possible to write this in Haskell because the language is lazy. The computation
+actually works because there actually exists a sequence of computation here
+that ends up defining both `body` and `n` without triggering an infinite loop.
+
+The main "trick" here is to rewrite `exp-max` to look at the bindings of
+abstractions, but, crucially, _not_ look at variables. Trying to write the same
+`abs` with our previous definition of `exp-max` _would_ result in an infinite
+loop.
+
+In a way, this make sense: while we can't predict which variables are being
+used in the body, we _can_ predict that a new binding has to introduce a new
+variable (which may end up not being used, but there is no cost to introducing
+an unused variable name at this level).
+
+The paper goes on to prove that this method works (i.e. it produces "safe"
+bindings) and that one can improve the complexity class from quadratic to
+linear by tweaking `exp_max`, but in this post I am not interested in that.
+What I am interested in is whether this can be made to work in Clojure.
+
+### Circular programming in Clojure
+
+A word-for-word translation would not work, because Clojure's `let` bindings
+are not recursive:
+
+```clojure
+;; DOES NOT COMPILE
+(defn abs
+  [f]
+  (let [body (f [:var n])
+        n (inc (exp-max body))]
+    [:abs n body]))
+```
+
+will, if we're lucky, fail to compile with a message along the lines of:
+
+```plaintext
+Unable to resolve symbol: n in this context
+```
+
+If we're not lucky, `n` may get resolved to some global name if we happen to
+have a var named `n` in the current namespace (or, more likely, if we decided
+to name this variable differently).
+
+I mentioned in the introduction that this post was inspired by my rediscovery
+of promises last week, so it should come as no surprise that the solution I'm
+going to present here relies on promises.
+
+In a way, a Clojure promise for an integer is very similar to a Haskell binding
+for an integer: in both cases, it does not really matter exactly when the value
+is computed, so long as it is present when we actually need it.[^delay]
+
+[^delay]: Haskell bindings are arguably closer to Clojure `delay`s, but `delay`
+  does not help in defining circular sets of variables.
+
+Unfortunately, we can't quite get all the way to the same level as Haskell:
+because Haskell has pervasive laziness, there is no difference between an
+integer and a promise for an integer. In Clojure, though, those are very
+different things, and promises do need to be explicitly dereferenced.
+
+This means that we have no choice but to change our underlying type
+representation to account for promises, and that any code using the (implicit)
+"exp" type ha to know about them. Assuming that's an acceptable cost, the
+implementation looks something like:
+
+```clojure
+(defn app
+  [e1 e2]
+  [:app e1 e2])
+
+(defn exp-max
+  [e]
+  (match e ;; see core.match
+    [:var _] 0
+    [:app e1 e2] (max (exp-max e1) (exp-max e2))
+    [:abs n _] @n)) ;; this is the quadratic -> linear change
+
+(defn abs
+  [f]
+  (let [n (promise)
+        body (f [:var n])]
+    (deliver n (inc (exp-max body)))
+    [:abs n body]))
+```
+
+The evaluation of `abs` works because `exp-max` never looks at the value of a
+`[:var _]`; specifically, because the promise in a var never gets dereferenced.
+
+> One could wonder what `promise` gives us here that we wouldn't get from using
+> `atom`, `var` or `volatile`. While those could work just as well, `promise`
+> implies that the value will only ever be set once, and that's a useful thing
+> to know for people reading such code. The approach is already quite unusual
+> for Clojure code, I think it's worth letting the reader know that this is
+> definitely not meant as a _mutable_ cell, just one that we compute in a
+> slightly delayed fashion.
+>
+> This is especially important here because the promises do end up being part
+> of the "api" (i.e. the data representation) of the language.
+
+At this point, one might try to look for ways to get rid of the promises in the
+final representation. I do not think this is possible. We could easily remove
+them from `:abs` forms, by just changing the return expression of the `abs`
+function to:
+
+```clojure
+[:abs @n body]
+```
+
+and that would work, but there is no way to get rid of the promises in `:var`
+forms without calling `f` again, and that leads us back to an exponential
+complexity. And if we're going to have them in `var` forms, I believe it's more
+consistent to keep them in `:abs` forms too.
+
+We could also just post-process the complete forms to get rid of the promises:
+
+```clojure
+(defn printable-exp
+  [exp]
+  (match exp
+    [:var p] [:var @p]
+    [:app e1 e2] [:app (printable-exp e1) (printable-exp e2)]
+    [:abs p b] [:abs @p (printable-exp b)]))
+```
+
+```clojure-repl
+t.core=> (printable-exp (abs (fn [m]
+    #_=>                  (abs (fn [n]
+    #_=>                    (abs (fn [f]
+    #_=>                      (abs (fn [x]
+    #_=>                        (app (app m f)
+    #_=>                             (app (app n f)
+    #_=>                                  x)))))))))))
+[:abs 4
+  [:abs 3
+    [:abs 2
+      [:abs 1
+        [:app [:app [:var 4] [:var 2]]
+              [:app [:app [:var 3] [:var 2]]
+                    [:var 1]]]]]]]
+t.core=>
+```
+
+but I would recommend doing that only for printing, and actually restoring the
+promises on reading, as otherwise one might end up with mixed forms.
+
+### Conclusion
+
+Haskell obviously has an edge here, as it allows us to work with circular
+values without any extra ceremony. In Clojure, where strict evaluation is the
+default, we have to be a bit more explicit about introducing, and resolving,
+lazy values (circular or otherwise).
+
+It's a bit annoying, in principle, that this implementation choice leaks to the
+value domain and may have to be taken into account by other code manipulating
+expressions. One could observe, though, that we started this with the desire to
+assign a unique name for each variable, and that the only operation we really
+need to support on variable names is `=`.
+
+It turns out that Clojure promises (like other Clojure mutable cells) compare
+for equality with `identical?`, meaning that, by construction, we do get a new,
+unique value for each binding using this technique, and "client" code could
+simply use equality checks and not care about how the variable names print.
+This means that we have switched our domain of names from integers to,
+essentially, Java memory pointers, but apart from that it should all work out.
+
+Pushing this idea further, one could actually define `abs` along the lines of:
+
+```clojure
+(defn abs
+  [f]
+  (let [n (promise)]
+    [:abs n (f [:var n])]))
+```
+
+and any code that only relies on equality of variable names would work with
+that directly. The mapping of promises to integers (or other name domain) could
+then be done at printing time. Not that I'd recommend it, but it does result in
+a faster, arguably more lazy, `abs` implementation than the Haskell one.
 
 [lambda calculus]: /tags/paradigms
 [interpreters]: /tags/cheap%20interpreter
