@@ -485,7 +485,7 @@ Everything is a function. The syntax of the lambda-calculus comprises just
 three sorts of terms:
 
 - Variables: `[:var {x}]`, where `{x}` is a string, usually a single letter.
-- Abstractions, `[:fn [{x}] {t}]`, where `{x}` is a string and `{t}` is a term.
+- Abstractions, `[:fn {x} {t}]`, where `{x}` is a string and `{t}` is a term.
 - Applications: `[:app {t1} {t2}]`, where both `{t1}` and `{t2}` are arbitrary
   terms.
 
@@ -498,22 +498,22 @@ Rather than memorizing the rules for parsing `λx.λy.xyx`, we'll just write
 explicitly:
 
 ```clojure
-[:fn ["x"] [:fn ["y"] [:app [:app [:var "x"] [:var "y"]] [:var "x"]]]]
+[:fn "x" [:fn "y" [:app [:app [:var "x"] [:var "y"]] [:var "x"]]]]
 ```
 
 #### Variables and Metavariables
 
 Trying to get everything to be a single letter is confusing, so let's not do
 that. When denoting metavariables, we'll just enclose them in braces. For
-example, the term `[:fn ["x"] [:fn ["y"] [:app [:var "x"] [:var "y"]]]]` has
-the form `[:fn [{z}] {s}]`, where `{z}` is `"x"` and `{s}` is `[:fn ["y"] [:app
+example, the term `[:fn "x" [:fn "y" [:app [:var "x"] [:var "y"]]]]` has
+the form `[:fn {z} {s}]`, where `{z}` is `"x"` and `{s}` is `[:fn "y" [:app
 [:var "x"] [:var "y"]]]`.
 
 #### Scope
 
 An occurrence of `[:var "x"]` is said to be _bound_ when it appears in the body
-`{t}` of an abstraction `[:fn ["x"] {t}]`. It is _free_ if it is not bound. For
-example, in `[:app [:fn ["x"] [:var "x"]] [:var "x"]]`, the first `x` is bound
+`{t}` of an abstraction `[:fn "x" {t}]`. It is _free_ if it is not bound. For
+example, in `[:app [:fn "x" [:var "x"]] [:var "x"]]`, the first `x` is bound
 and the second one is free.
 
 A term with no free variables is _closed_ and is sometimes called a
@@ -525,7 +525,7 @@ Each step consists of rewriting an application by replacing the appearances of
 the variable in the body with the given argument. We write that process:
 
 ```clojure
-(== (step [:app [:fn ["x"] {t1}] {t2}])
+(== (step [:app [:fn "x" {t1}] {t2}])
     (substitute "x" {t2} {t1}))
 ```
 
@@ -543,7 +543,7 @@ _Call by name_ is similar but never descends into an abstraction; in effect it
 can be seen as a variant of normal order that "stops earlier". In _call by
 value_, used by most practical languages, we only evaluate the outermost
 redexes (i.e. no descending into abstractions) and only after their argument
-(`{t2}` in `[:app [:fn [{x}] {t1}] {t2}]`) has itself been fully evaluated.
+(`{t2}` in `[:app [:fn {x} {t1}] {t2}]`) has itself been fully evaluated.
 
 Call by value is said to be _strict_ in the sense that the argument to a
 function is always evaluated, regardless of whether the function ends up
@@ -568,8 +568,8 @@ to a normal form. For example:
 
 ```clojure
 (def omega
-  [:app [:fn ["x"] [:app [:var "x"] [:var "x"]]]
-        [:fn ["x"] [:app [:var "x"] [:var "x"]]]])
+  [:app [:fn "x" [:app [:var "x"] [:var "x"]]]
+        [:fn "x" [:app [:var "x"] [:var "x"]]]])
 ```
 
 Usually called `omega`, this lambda term one-step-evaluates to itself.
@@ -579,13 +579,13 @@ setting:
 
 ```clojure
 (def fix
-  [:fn ["f"]
-    [:app [:fn ["x"] [:app [:var "f"]
-                           [:fn ["y"] [:app [:app [:var "x"] [:var "x"]]
-                                            [:var "y"]]]]]
-          [:fn ["x"] [:app [:var "f"]
-                           [:fn ["y"] [:app [:app [:var "x"] [:var "x"]]
-                                            [:var "y"]]]]]]])
+  [:fn "f"
+    [:app [:fn "x" [:app [:var "f"]
+                         [:fn "y" [:app [:app [:var "x"] [:var "x"]]
+                                        [:var "y"]]]]]
+          [:fn "x" [:app [:var "f"]
+                         [:fn "y" [:app [:app [:var "x"] [:var "x"]]
+                                        [:var "y"]]]]]]])
 ```
 
 For example:
@@ -593,8 +593,8 @@ For example:
 ```clojure
 (def factorial
   [:app [:var "fix"]
-        [:fn ["fct"]
-         [:fn ["n"]
+        [:fn "fct"
+         [:fn "n"
           [:if [:app [:app [:var "realeq"] [:var "n"]]
                                            [:var "c0"]]
                [:var "c1"]
@@ -614,7 +614,7 @@ Let V be a countable set of variable names. The set of terms is the smallest
 set T such that:
 
 1. Every element `"x"` of V is in T.
-2. If `t1` is in T and `"x"` is in V, `[:fn ["x"] {t1}]` is in T.
+2. If `t1` is in T and `"x"` is in V, `[:fn "x" {t1}]` is in T.
 3. If `t1` is in T and `t2` is in T, `[:app {t1} {t2}]` is in T.
 
 The set of free variables of a term can be defined as:
@@ -624,7 +624,7 @@ The set of free variables of a term can be defined as:
   [expr]
   (match expr
     [:var v] #{v}
-    [:fn [v] t] (set/difference (free-variables t) #{v})
+    [:fn v t] (set/difference (free-variables t) #{v})
     [:app t1 t2] (set/union (free-variables t1)
                             (free-variables t2))))
 ```
@@ -650,10 +650,10 @@ Here is a working definition:
   [to-replace replacement expression]
   (match expression
     [:var to-replace] replacement
-    (:or [:var other] [:fn [to-replace] t]) expression
-    [:fn [(other :guard (free-variable? replacement))] t]
+    (:or [:var other] [:fn to-replace t]) expression
+    [:fn (other :guard (free-variable? replacement)) t]
       (substitute to-replace (alpha replacement other) expression)
-    [:fn [other] t] [:fn [other] (substitute to-replace replacement t)]
+    [:fn other t] [:fn other (substitute to-replace replacement t)]
     [:app t1 t2] [:app (substitute to-replace replacement t1)
                        (substitute to-replace replacement t2)]))
 ```
