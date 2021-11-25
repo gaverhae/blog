@@ -17,6 +17,13 @@
     [:fn x t] (disj (free-variables t)
                     x)))
 
+(defn generate-name
+  [free-vars]
+  (->> (range)
+       (map #(Integer/toString % 36))
+       (remove (set free-vars))
+       first))
+
 (defn substitute
   [var-name with in]
   (match in
@@ -25,7 +32,10 @@
     [:fn var-name t] in
     [:fn other t] (let [fv (free-variables with)]
                     (if (contains? fv other)
-                      :undefined
+                      (let [new-name (generate-name fv)]
+                        [:fn new-name (->> t
+                                           (substitute other [:var new-name])
+                                           (substitute var-name with))])
                       [:fn other (substitute var-name with t)]))
     [:app t1 t2] [:app (substitute var-name with t1)
                        (substitute var-name with t2)]))
