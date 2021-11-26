@@ -1,4 +1,5 @@
 (ns t.untyped-lambda
+  (:refer-clojure :exclude [test eval and])
   (:require [clojure.core.match :refer [match]]
             [clojure.set :as set]))
 
@@ -53,3 +54,14 @@
 (defn normal?
   [exp]
   (nil? (step exp)))
+
+(defn eval
+  [exp]
+  (if-let [next (step exp)]
+    (eval next)
+    [(if (value? exp) :value :stuck) exp]))
+
+(def tru [:fn "t" [:fn "f" [:var "t"]]])
+(def fls [:fn "t" [:fn "f" [:var "f"]]])
+(def test [:fn "l" [:fn "m" [:fn "n" [:app [:app [:var "l"] [:var "m"]] [:var "n"]]]]])
+(def and [:fn "b" [:fn "c" [:app [:app [:var "b"] [:var "c"]] fls]]])

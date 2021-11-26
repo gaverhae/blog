@@ -479,6 +479,12 @@ computation because it can be viewed simultaneously as a programming language
 in which computations happen and as a mathematical object about which rigorous
 statements can be proven.
 
+In general, a language can be understood as a smaller _core calculus_ and a
+collection of _derived forms_ (also known as syntactic sugar_). The
+lambda-calculus is a popular choice for the core calculus of a language, though
+it is usually enriched in a variety of ways to make it more convenient, as
+we'll see in later chapters. In this one, we focus on "pure" lambda calculus.
+
 ### 5.1 - Basics
 
 Everything is a function. The syntax of the lambda-calculus comprises just
@@ -529,7 +535,7 @@ the variable in the body with the given argument. We write that process:
     (substitute "x" {t2} {t1}))
 ```
 
-where `(substitute "x" {t1} {t2}` is the term obtained by replacing all _free_
+where `(substitute "x" {t1} {t2})` is the term obtained by replacing all _free_
 occurrences of `x` with `{t2}` in `{t1}`. This is called beta-reduction.
 
 In general, a single lambda term can contain many such reducible expressions
@@ -554,12 +560,12 @@ This book uses call by value.
 ### 5.2 - Programming in the Lambda-Calculus
 
 Lambda-calculus can be extended in various ways, but even in its simplest form,
-it is very powerful. WHile staying within the bounds of the language, one can
+it is very powerful. While staying within the bounds of the language, one can
 fairly easily define conventions for representing multi-arg functions,
 booleans, integers, and pairs.
 
-It is, however, foten useful to enrich the lambda calculus with more concrete
-versions of those. In our case, we cna do so by "merging" the syntax (and
+It is, however, often useful to enrich the lambda calculus with more concrete
+versions of those. In our case, we can do so by "merging" the syntax (and
 evaluation rules) for lambda calculus with the boolean and arithmetic language
 we have defined earlier.
 

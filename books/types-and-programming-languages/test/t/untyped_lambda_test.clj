@@ -5,6 +5,9 @@
 (def id
   [:fn "x" [:var "x"]])
 
+(def v [:fn "v" [:var "v"]])
+(def w [:fn "w" [:var "w"]])
+
 (deftest basic
   (are [x] (t/value? x)
        [:fn "x" [:app [:var "x"] [:var "x"]]]
@@ -26,5 +29,15 @@
        => [:fn "y" [:app [:fn "z" [:app [:var "z"] [:var "t"]]] [:var "y"]]]
 
        [:app [:fn "x" [:fn "y" [:app [:var "x"] [:var "y"]]]] [:fn "z" [:app [:var "z"] [:var "y"]]]]
-       => [:fn "0" [:app [:fn "z" [:app [:var "z"] [:var "y"]]] [:var "0"]]]
+       => [:fn "0" [:app [:fn "z" [:app [:var "z"] [:var "y"]]] [:var "0"]]])
+  (are [x _ y] (= y (->> x (iterate t/step) rest (take (count y))))
+       [:app [:app [:app t/test t/tru] v] w]
+       => [[:app [:app [:fn "m" [:fn "n" [:app [:app t/tru [:var "m"]] [:var "n"]]]] v] w]
+           [:app [:fn "n" [:app [:app t/tru v] [:var "n"]]] w]
+           [:app [:app t/tru v] w]
+           [:app [:fn "f" v] w]
+           v])
+  (are [x _ y] (= y (t/eval x))
+       [:app [:app [:app t/test t/tru] v] w] => [:value v]
+       [:app [:app t/and t/tru] t/tru] => t/tru
        ))
