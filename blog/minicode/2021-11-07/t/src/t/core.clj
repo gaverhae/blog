@@ -80,7 +80,7 @@
           [primes bound] (if (< idx (count primes))
                            [primes bound]
                            (loop [bound (* 2 bound)]
-                             (let [primes (sieve-upto bound)]
+                             (let [primes (sieve-fn bound)]
                                (if (> (count primes) idx)
                                  [primes bound]
                                  (recur (* 2 bound))))))

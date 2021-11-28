@@ -364,6 +364,11 @@ This yields something like:
       [idx bound primes prime])))
 ```
 
+> **EDIT 2021-11-28**: There is a mistake in the above function: it is
+> hardcoding `sieve-upto` instead of using the passed-in `sieve-fn`. This
+> invalidates all of the following discussion on performance of our two sieve
+> implementations.
+
 And we can now have a sieve-generated list of primes using our bounded sieve
 calculation:
 
@@ -458,6 +463,40 @@ t.core=> (time (nth (get-primes-sieve-arr) 1000000))
 t.core=>
 ```
 
+> **EDIT 2021-11-28**: Here are the numbers with a corrected `generate-sieve`:
+>
+> ```clojure-repl
+> t.core=> (time (nth (get-primes-sieve-arr) 100))
+> "Elapsed time: 0.580081 msecs"
+> 547
+> t.core=> (time (nth (get-primes-sieve-arr) 1000))
+> "Elapsed time: 8.277411 msecs"
+> 7927
+> t.core=> (time (nth (get-primes-sieve-arr) 10000))
+> "Elapsed time: 133.175033 msecs"
+> 104743
+> t.core=> (time (nth (get-primes-sieve-arr) 100000))
+> "Elapsed time: 1102.844058 msecs"
+> 1299721
+> t.core=> (time (nth (get-primes-sieve-arr) 1000000))
+> "Elapsed time: 20240.842127 msecs"
+> 15485867
+> t.core=>
+> ```
+>
+> which make a lot more sense. It also looks like the difference between the
+> numbers in the original post can be explained by JVM warmup:
+>
+> ```clojure-repl
+> t.core=> (time (nth (get-primes-sieve-vec) 1000000))
+> "Elapsed time: 133711.154576 msecs"
+> 15485867
+> t.core=> (time (nth (get-primes-sieve-vec) 1000000))
+> "Elapsed time: 105065.534808 msecs"
+> 15485867
+> t.core=>
+> ```
+
 This is not as big a difference as I'd have expected. Let's look at just the
 sieves:
 
@@ -497,6 +536,24 @@ t.core=> (time (nth (->> [0 10 [2 3 5 7] 2]
 15485867
 t.core=>
 ```
+
+> **EDIT 2021-11-28**: The above is, again, completely bogus because of the bug
+> in `generate-sieve`. With a corrected version, this looks like:
+> ```clojure-repl
+> t.core=> (time (nth (->> [0 10 [2 3 5 7] 2]
+>                          (iterate (generate-sieve memo-sieve))
+>                          (map peek))
+>                1000000))
+> "Elapsed time: 20214.719821 msecs"
+> 15485867
+> t.core=> (time (nth (->> [0 10 [2 3 5 7] 2]
+>                                (iterate (generate-sieve memo-sieve))
+>                                (map peek))
+>                     1000000))
+> "Elapsed time: 411.981361 msecs"
+> 15485867
+> t.core=>
+> ```
 
 So that `iterate` trick, while cute, seems to be taking up quite a bit of time.
 Let's try condensing our computation a bit, and producing that list of primes
@@ -548,8 +605,8 @@ I suppose I may have grown a bit too ambitious towards the end there.
 
 As mentioned in the introduction, this is not about prime numbers. There's no
 practical application to computing a list of prime numbers. There are
-applications for checking primeness (primacy?), and for generating very large
-primes, but I'm not aware of any for "a lazy list of all primes".
+applications for checking primality, and for generating very large primes, but
+I'm not aware of any for "a lazy list of all primes".
 
 This post is mostly about me sharing a toy problem I've played with. If you've
 reached this point, I hope you found the above interesting, but more
