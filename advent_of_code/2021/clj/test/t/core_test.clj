@@ -22,10 +22,11 @@
          (day1/parse (sample 1))))
   (is (= 7 (day1/part1 (day1/parse (sample 1)))))
   (is (= 1292 (day1/part1 (day1/parse (data 1)))))
+  (is (= 5 (day1/part2 (day1/parse (sample 1)))))
   (is (= 1262 (day1/part2 (day1/parse (data 1))))))
 
 (deftest day2
-  (is (= [[5 0] [0 5] [8 0] [0 -3] [0 8] [2 0]]
+  (is (= [[:forward 5] [:down 5] [:forward 8] [:up 3] [:down 8] [:forward 2]]
          (day2/parse (sample 2))))
   (is (= 150 (day2/part1 (day2/parse (sample 2)))))
   (is (= 1660158 (day2/part1 (day2/parse (data 2)))))
