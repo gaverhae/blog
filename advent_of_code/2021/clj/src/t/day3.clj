@@ -1,6 +1,4 @@
-(ns t.day3
-  (:require [clojure.string :as string]
-            [clojure.core.match :refer [match]]))
+(ns t.day3)
 
 (defn parse
   [lines]
