@@ -1,5 +1,23 @@
 (ns t.day3)
 
+(def flip {\0 \1, \1 \0})
+
+(defn transpose
+  [s]
+  (apply mapv vector s))
+
+(defn most-frequent
+  [s]
+  (->> s frequencies (sort-by (juxt val key)) last key))
+
+(defn bins->int
+  [s]
+  (Long/parseLong (apply str s) 2))
+
+(defn binprod
+  [& s]
+  (->> s (map bins->int) (reduce * 1)))
+
 (defn parse
   [lines]
   lines)
@@ -7,44 +25,25 @@
 (defn part1
   [input]
   (let [gamma (->> input
-                   (apply mapv vector)
-                   (map frequencies)
-                   (map (fn [s] (->> s (sort-by val) last key))))
-        epsilon (->> gamma
-                     (map {\0 \1, \1 \0}))]
-    (->> [gamma epsilon]
-         (map (fn [s] (apply str s)))
-         (map (fn [s] (Long/parseLong s 2)))
-         (reduce * 1))))
+                   transpose
+                   (map most-frequent))]
+    (binprod gamma
+             (map flip gamma))))
+
+(most-frequent (map first [[\0 \0 \1]]))
 
 (defn part2
   [input]
-  (let [len (->> input first count)
-        most-common (fn [s]
-                      (->> s
-                           (map first)
-                           frequencies
-                           (sort-by (juxt val key))
-                           last
-                           key))
-        least-common (fn [s]
-                       (let [m (most-common s)]
-                         ({\1 \0, \0 \1} m)))
+  (let [most-common-bit #(most-frequent (map first %))
         rating (fn [f]
-                 (loop [r input
-                        p 0
+                 (loop [lines input
                         s ""]
-                   (cond (= p len)
-                         (Long/parseLong s 2)
-                         (= 1 (count r))
-                         (Long/parseLong (apply str s (first r)) 2)
-                         :else
-                         (let [next-bit (f r)]
-                           (recur (->> r
-                                       (filter (fn [r] (= next-bit (first r))))
-                                       (map rest))
-                                  (inc p)
-                                  (str s next-bit))))))]
-    (* (rating most-common)
-       (rating least-common))))
-
+                   (if (= 1 (count lines))
+                     (str s (first lines))
+                     (let [next-bit (f lines)]
+                       (recur (->> lines
+                                   (filter (fn [r] (= next-bit (first r))))
+                                   (map #(subs % 1)))
+                              (str s next-bit))))))]
+    (binprod (rating most-common-bit)
+             (rating (comp flip most-common-bit)))))
