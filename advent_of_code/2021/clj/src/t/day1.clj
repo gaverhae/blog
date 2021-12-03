@@ -1,8 +1,7 @@
-(ns t.day1)
+(ns t.day1
+  (:require [t.util :as util]))
 
-(defn parse
-  [lines]
-  (vec (map #(Long/parseLong %) lines)))
+(def parse util/parse-integers)
 
 (defn part1
   [input]
