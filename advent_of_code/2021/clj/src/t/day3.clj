@@ -26,10 +26,9 @@
                       (->> s
                            (map first)
                            frequencies
-                           ((fn [f]
-                              (if (= (f \0) (f \1))
-                                \1
-                                (->> f (sort-by val) last key))))))
+                           (sort-by (juxt val key))
+                           last
+                           key))
         least-common (fn [s]
                        (let [m (most-common s)]
                          ({\1 \0, \0 \1} m)))
@@ -48,7 +47,6 @@
                                        (map rest))
                                   (inc p)
                                   (str s next-bit))))))]
-
     (* (rating most-common)
-     (rating least-common))))
+       (rating least-common))))
 
