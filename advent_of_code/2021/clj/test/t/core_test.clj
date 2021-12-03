@@ -28,18 +28,21 @@
                          part1 (symbol d "part1")
                          part2 (symbol d "part2")
                          sample `(sample ~(:day spec))
-                         data `(data ~(:day spec))]
+                         data `(data ~(:day spec))
+                         check (fn [expected actual]
+                                 (when expected
+                                   `(is (= ~expected ~actual))))]
                      `(deftest ~(symbol d)
-                        (is (= ~(:sample spec)
-                               (~parse ~sample)))
-                        (is (= ~(get-in spec [:part1 0])
-                               (~part1 (~parse ~sample))))
-                        (is (= ~(get-in spec [:part1 1])
-                               (~part1 (~parse ~data))))
-                        (is (= ~(get-in spec [:part2 0])
-                               (~part2 (~parse ~sample))))
-                        (is (= ~(get-in spec [:part2 1])
-                               (~part2 (~parse ~data)))))))))))
+                        ~(check (:sample spec)
+                                `(~parse ~sample))
+                        ~(check (get-in spec [:part1 0])
+                                `(~part1 (~parse ~sample)))
+                        ~(check (get-in spec [:part1 1])
+                                `(~part1 (~parse ~data)))
+                        ~(check (get-in spec [:part2 0])
+                                `(~part2 (~parse ~sample)))
+                        ~(check (get-in spec [:part2 1])
+                                `(~part2 (~parse ~data))))))))))
 
 (make-tests
 
