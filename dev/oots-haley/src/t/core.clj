@@ -262,6 +262,7 @@ conditions:
   []
   (->> strips
        (sort-by key)
-       (map (fn [[_ {:keys [key secret]}]]
+       (map (fn [[p {:keys [key secret]}]]
+              (println "## " p)
               (print-strip secret (string->dict key))))
        doall))
