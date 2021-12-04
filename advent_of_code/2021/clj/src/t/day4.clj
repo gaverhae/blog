@@ -25,18 +25,18 @@
 (let [winner? #(some empty? %)]
   (defn winners
     [boards nums]
-    (when (seq nums)
+    (when-let [[n & nums] (seq nums)]
       (let [boards (->> boards
-                        (map (fn [b] (map #(disj % (first nums)) b))))]
+                        (map (fn [b] (map #(disj % n) b))))]
         (concat (->> boards
                      (filter winner?)
                      (map (fn [board]
                             (->> board
                                  (reduce set/union)
                                  (reduce +)
-                                 (* (first nums))))))
+                                 (* n)))))
                 (lazy-seq (winners (remove winner? boards)
-                                   (rest nums))))))))
+                                   nums)))))))
 
 (defn part1
   [{:keys [boards numbers]}]
