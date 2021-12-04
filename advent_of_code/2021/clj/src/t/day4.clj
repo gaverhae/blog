@@ -18,14 +18,9 @@
                                    (map (fn [l]
                                           (->> l
                                                (remove empty?)
-                                               (mapv #(Long/parseLong %)))))))))})
-
-(defn rows-and-lines
-  [boards]
-  (->> boards
-       (map (fn [lines]
-              (->> (concat lines (transpose lines))
-                   (map set))))))
+                                               (mapv #(Long/parseLong %)))))
+                                   (#(concat % (transpose %)))
+                                   (map set)))))})
 
 (defn compute-score
   [drawn]
@@ -46,23 +41,21 @@
 
 (defn part1
   [input]
-  (let [rals (rows-and-lines (:boards input))
-        nums (:numbers input)]
+  (let [nums (:numbers input)]
     (->> (for [i (range (count nums))
                :let [drawn (take (inc i) nums)
-                     winners (filter (winner? drawn) rals)]
+                     winners (filter (winner? drawn) (:boards input))]
                :when (not-empty winners)]
            (map (compute-score drawn) winners))
          ffirst)))
 
 (defn part2
   [input]
-  (let [rals (rows-and-lines (:boards input))]
-    (loop [boards (set rals)
-           idx 0]
-      (let [drawn (take idx (:numbers input))]
-        (if (and (= 1 (count boards))
-                 ((winner? drawn) (first boards)))
-          ((compute-score drawn) (first boards))
-          (recur (remove (winner? drawn) boards)
-                 (inc idx)))))))
+  (loop [boards (set (:boards input))
+         idx 0]
+    (let [drawn (take idx (:numbers input))]
+      (if (and (= 1 (count boards))
+               ((winner? drawn) (first boards)))
+        ((compute-score drawn) (first boards))
+        (recur (remove (winner? drawn) boards)
+               (inc idx))))))
