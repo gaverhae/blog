@@ -24,7 +24,7 @@
 
 (defn winners
   [boards nums]
-  (let [winner? (fn [b] (some #{#{}} b))]
+  (let [winner? #(some empty? %)]
     (->> (reductions
            (fn [[_ boards] n]
              (let [boards (->> boards
