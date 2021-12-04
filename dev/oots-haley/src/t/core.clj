@@ -257,3 +257,11 @@ conditions:
   [i]
   (run (get-in strips [i :secret])
        (get-in strips [i :key])))
+
+(defn all-oots
+  []
+  (->> strips
+       (sort-by key)
+       (map (fn [[_ {:keys [key secret]}]]
+              (print-strip secret (string->dict key))))
+       doall))
