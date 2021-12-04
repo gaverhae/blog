@@ -33,18 +33,22 @@
                          data `(data ~(:day spec))
                          check (fn [expected actual]
                                  (when expected
-                                   `(is (= ~expected ~actual))))]
+                                   `(is (= ~expected ~actual))))
+                         samp-sym (gensym "sample")
+                         data-sym (gensym "data")]
                      `(deftest ~(symbol d)
-                        ~(check (:sample spec)
-                                `(~parse ~sample))
-                        ~(check (get-in spec [:part1 0])
-                                `(~part1 (~parse ~sample)))
-                        ~(check (get-in spec [:part1 1])
-                                `(~part1 (~parse ~data)))
-                        ~(check (get-in spec [:part2 0])
-                                `(~part2 (~parse ~sample)))
-                        ~(check (get-in spec [:part2 1])
-                                `(~part2 (~parse ~data))))))))))
+                        (let [~samp-sym (delay (~parse ~sample))
+                              ~data-sym (delay (~parse ~data))]
+                          ~(check (:sample spec)
+                                  `@~samp-sym)
+                          ~(check (get-in spec [:part1 0])
+                                  `(~part1 @~samp-sym))
+                          ~(check (get-in spec [:part1 1])
+                                  `(~part1 @~data-sym))
+                          ~(check (get-in spec [:part2 0])
+                                  `(~part2 @~samp-sym))
+                          ~(check (get-in spec [:part2 1])
+                                  `(~part2 @~data-sym))))))))))
 
 (make-tests
 
