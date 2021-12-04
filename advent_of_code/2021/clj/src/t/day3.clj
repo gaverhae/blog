@@ -1,10 +1,7 @@
-(ns t.day3)
+(ns t.day3
+  (:require [t.util :refer [transpose]]))
 
 (def flip {\0 \1, \1 \0})
-
-(defn transpose
-  [s]
-  (apply mapv vector s))
 
 (defn most-frequent
   [s]
