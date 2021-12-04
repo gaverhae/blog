@@ -24,19 +24,17 @@
 
 (defn winners
   [boards nums]
-  (let [winner? #(some empty? %)]
-    (->> (reductions
-           (fn [[_ boards] n]
-             (let [boards (->> boards
-                               (map (fn [b] (map #(disj % n) b))))]
-               [(->> boards
-                     (filter winner?)
-                     (map (fn [b] [b n])))
-                (->> boards
-                     (remove winner?))]))
-           [[] boards]
-           nums)
-         (mapcat first)
+  (let [winner? #(some empty? %)
+        draw (fn rec [boards nums]
+               (when (seq nums)
+                 (let [boards (->> boards
+                                   (map (fn [b] (map #(disj % (first nums)) b))))]
+                   (concat (->> boards
+                                (filter winner?)
+                                (map (fn [b] [b (first nums)])))
+                           (lazy-seq (rec (remove winner? boards)
+                                          (rest nums)))))))]
+    (->> (draw boards nums)
          (map (fn [[board n]]
                 (->> board
                      (reduce set/union)
