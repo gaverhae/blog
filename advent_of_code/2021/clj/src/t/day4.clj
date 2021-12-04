@@ -22,40 +22,33 @@
                                    (#(concat % (transpose %)))
                                    (map set)))))})
 
-(defn compute-score
-  [drawn]
-  (fn [ral]
-    (-> (reduce set/union ral)
-        (set/difference (set drawn))
-        (->> (reduce +))
-        (* (last drawn)))))
-
-(defn winner?
-  [drawn]
-  (let [drawn (set drawn)]
-    (fn [ral]
-      (->> ral
-           (filter #(set/subset? % drawn))
-           count
-           (<= 1)))))
+(defn winners
+  [boards nums]
+  (let [winner? (fn [b] (some #{#{}} b))]
+    (->> (reductions
+           (fn [[_ boards] n]
+             (let [boards (->> boards
+                               (map (fn [b] (map #(disj % n) b))))]
+               [(->> boards
+                     (filter winner?)
+                     (map (fn [b] [b n])))
+                (->> boards
+                     (remove winner?))]))
+           [[] boards]
+           nums)
+         (mapcat first)
+         (map (fn [[board n]]
+                (->> board
+                     (reduce set/union)
+                     (reduce +)
+                     (* n)))))))
 
 (defn part1
-  [input]
-  (let [nums (:numbers input)]
-    (->> (for [i (range (count nums))
-               :let [drawn (take (inc i) nums)
-                     winners (filter (winner? drawn) (:boards input))]
-               :when (not-empty winners)]
-           (map (compute-score drawn) winners))
-         ffirst)))
+  [{:keys [boards numbers]}]
+  (->> (winners boards numbers)
+       first))
 
 (defn part2
-  [input]
-  (loop [boards (set (:boards input))
-         idx 0]
-    (let [drawn (take idx (:numbers input))]
-      (if (and (= 1 (count boards))
-               ((winner? drawn) (first boards)))
-        ((compute-score drawn) (first boards))
-        (recur (remove (winner? drawn) boards)
-               (inc idx))))))
+  [{:keys [boards numbers]}]
+  (->> (winners boards numbers)
+       last))
