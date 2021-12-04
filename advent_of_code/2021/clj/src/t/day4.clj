@@ -22,23 +22,21 @@
                                    (#(concat % (transpose %)))
                                    (map set)))))})
 
-(defn winners
-  [boards nums]
-  (let [winner? #(some empty? %)
-        draw (fn rec [boards nums]
-               (when (seq nums)
-                 (let [boards (->> boards
-                                   (map (fn [b] (map #(disj % (first nums)) b))))]
-                   (concat (->> boards
-                                (filter winner?)
-                                (map (fn [board]
-                                       (->> board
-                                            (reduce set/union)
-                                            (reduce +)
-                                            (* (first nums))))))
-                           (lazy-seq (rec (remove winner? boards)
-                                          (rest nums)))))))]
-    (draw boards nums)))
+(let [winner? #(some empty? %)]
+  (defn winners
+    [boards nums]
+    (when (seq nums)
+      (let [boards (->> boards
+                        (map (fn [b] (map #(disj % (first nums)) b))))]
+        (concat (->> boards
+                     (filter winner?)
+                     (map (fn [board]
+                            (->> board
+                                 (reduce set/union)
+                                 (reduce +)
+                                 (* (first nums))))))
+                (lazy-seq (winners (remove winner? boards)
+                                   (rest nums))))))))
 
 (defn part1
   [{:keys [boards numbers]}]
