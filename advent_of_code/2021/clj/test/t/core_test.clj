@@ -16,7 +16,7 @@
          start# (System/currentTimeMillis)
          _# (clojure.test/is ~form)
          t# (- (System/currentTimeMillis) start#)]
-     (when (> t# 100)
+     (when (> t# 10)
        (println (format "%d %s" t# (nth form# 2))))))
 
 (defmacro make-tests
@@ -83,4 +83,4 @@
                       [22 11 13  6  5]
                       [2  0 12  3  7]]]}
    :part1 [4512 82440]
-   :part2 [1924 0]})
+   :part2 [1924 20774]})
