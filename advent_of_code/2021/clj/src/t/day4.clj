@@ -31,15 +31,15 @@
                                    (map (fn [b] (map #(disj % (first nums)) b))))]
                    (concat (->> boards
                                 (filter winner?)
-                                (map (fn [b] [b (first nums)])))
+                                (map (fn [b] [b (first nums)]))
+                                (map (fn [[board n]]
+                                       (->> board
+                                            (reduce set/union)
+                                            (reduce +)
+                                            (* n)))))
                            (lazy-seq (rec (remove winner? boards)
                                           (rest nums)))))))]
-    (->> (draw boards nums)
-         (map (fn [[board n]]
-                (->> board
-                     (reduce set/union)
-                     (reduce +)
-                     (* n)))))))
+    (draw boards nums)))
 
 (defn part1
   [{:keys [boards numbers]}]
