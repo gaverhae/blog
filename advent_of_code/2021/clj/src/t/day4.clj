@@ -40,10 +40,8 @@
 
 (defn part1
   [{:keys [boards numbers]}]
-  (->> (winners boards numbers)
-       first))
+  (first (winners boards numbers)))
 
 (defn part2
   [{:keys [boards numbers]}]
-  (->> (winners boards numbers)
-       last))
+  (last (winners boards numbers)))
