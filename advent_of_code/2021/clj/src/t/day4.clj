@@ -12,7 +12,7 @@
    :boards (->> lines
                 rest
                 (partition-by empty?)
-                (remove #{'("")})
+                (remove #{[""]})
                 (mapv (fn [b] (->> b
                                    (map #(string/split % #" "))
                                    (map (fn [l]
@@ -22,21 +22,32 @@
                                    (#(concat % (transpose %)))
                                    (map set)))))})
 
-(let [winner? #(some empty? %)]
-  (defn winners
-    [boards nums]
-    (when-let [[n & nums] (seq nums)]
-      (let [boards (->> boards
-                        (map (fn [b] (map #(disj % n) b))))]
-        (concat (->> boards
-                     (filter winner?)
-                     (map (fn [board]
-                            (->> board
-                                 (reduce set/union)
-                                 (reduce +)
-                                 (* n)))))
-                (lazy-seq (winners (remove winner? boards)
-                                   nums)))))))
+(defn winner?
+  [board]
+  (boolean (some empty? board)))
+
+(defn score
+  [n]
+  (fn [board]
+    (->> board
+         (reduce set/union)
+         (reduce +)
+         (* n))))
+
+(defn mark
+  [n]
+  (fn [board]
+    (map #(disj % n) board)))
+
+(defn winners
+  [boards nums]
+  (when-let [[n & nums] (seq nums)]
+    (let [{won true, remaining false}
+          (->> boards
+               (map (mark n))
+               (group-by winner?))]
+      (concat (map (score n) won)
+              (lazy-seq (winners remaining nums))))))
 
 (defn part1
   [{:keys [boards numbers]}]
