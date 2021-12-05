@@ -123,8 +123,8 @@
     (take-while pos? (iterate #(.nextSetBit candidates (inc %)) 2))))
 
 (defn bench
-  [primes-fn label sizes]
-  (let [results (->> sizes
+  [primes-fn label]
+  (let [results (->> [1000 3000 10000 30000 100000]
                      (map (fn [s]
                             (format "%6.3f"
                                     (-> (crit/benchmark (nth (primes-fn) s) {})
@@ -135,12 +135,11 @@
 
 (defn -main
   [& args]
-  (let [sizes [1000 3000 10000 30000 100000]]
-    (bench #(trial-division) :trial-division sizes)
-    (bench #(sieve (iterate inc 2)) :sieve sizes)
-    (bench #(sieve-sm (iterate inc 2)) :sieve-sm sizes)
-    (bench #(sieve-pq (iterate inc 2)) :sieve-pq sizes)
-    (bench #(spin-primes sieve-sm) :spin-sm sizes)
-    (bench #(spin-primes sieve-pq) :spin-pq sizes)
-    (bench #(sieve-based array-sieve) :array-sieve sizes)
-    (bench #(sieve-based bitset-sieve) :bitset-sieve sizes)))
+  (bench #(trial-division) :trial-division)
+  (bench #(sieve (iterate inc 2)) :sieve)
+  (bench #(sieve-sm (iterate inc 2)) :sieve-sm)
+  (bench #(sieve-pq (iterate inc 2)) :sieve-pq)
+  (bench #(spin-primes sieve-sm) :spin-sm)
+  (bench #(spin-primes sieve-pq) :spin-pq)
+  (bench #(sieve-based array-sieve) :array-sieve)
+  (bench #(sieve-based bitset-sieve) :bitset-sieve))
