@@ -5,11 +5,12 @@
             [t.day1 :as day1]
             [t.day2 :as day2]
             [t.day3 :as day3]
-            [t.day4 :as day4]))
+            [t.day4 :as day4]
+            [t.day5 :as day5]))
 
 (defn -main
   [& args]
-  (doseq [i [1 2 3 4]]
+  (doseq [i [1 2 3 4 5]]
     (let [parse (ns-resolve 't.core (symbol (str "day" i) "parse"))
           part1 (ns-resolve 't.core (symbol (str "day" i) "part1"))
           part2 (ns-resolve 't.core (symbol (str "day" i) "part2"))
@@ -19,8 +20,8 @@
                      i
                      (part1 input)
                      (part2 input)))
-      (when (= i 4)
+      (when (= i 5)
         (flush)
-        #_(read-line)
+        (read-line)
         (crit/bench (part2 input)))))
   (flush))
