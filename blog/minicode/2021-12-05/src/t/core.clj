@@ -1,5 +1,6 @@
 (ns t.core
   (:gen-class)
+  (:import [java.util PriorityQueue])
   (:require [criterium.core :as crit]))
 
 (defn unfaithful
@@ -26,8 +27,50 @@
                        factors))
      (cons x (lazy-seq (sieve xs (assoc table (* x x) [x])))))))
 
-(def primes
-  (sieve (iterate inc 2)))
+(let [insert-prime (fn [table x xs]
+                     (assoc table (* x x) [(map #(* x %) xs)]))]
+  (defn sieve-sm
+    ([[i & is]] (sieve-sm is (insert-prime (sorted-map) i is)))
+    ([[x & xs] table]
+     (let [[next-composite factors] (first table)]
+       (if (> next-composite x) ;; x is prime
+         (cons x (lazy-seq (sieve-sm xs (insert-prime table x xs))))
+         (sieve-sm xs (reduce (fn [table [next-comp & future-comps]]
+                                (update table next-comp
+                                        conj future-comps))
+                              (dissoc table next-composite)
+                              factors)))))))
+
+(let [insert-prime (fn [^PriorityQueue table x xs]
+                     (.add table [(* x x) (map #(* x %) xs)])
+                     table)]
+  (defn sieve-pq
+    ([[i & is]] (sieve-pq
+                  is
+                  (insert-prime
+                    (PriorityQueue. 10 (fn [[x] [y]] (< x y)))
+                    i is)))
+    ([[x & xs] ^PriorityQueue table]
+     (let [[next-composite] (.peek table)]
+       (if (> next-composite x)
+         (cons x (lazy-seq (sieve-pq xs (insert-prime table x xs))))
+         (do (while (== x (first (.peek table)))
+               (let [[_ [f & fs]] (.poll table)]
+                 (.add table [f fs])))
+             (sieve-pq xs table)))))))
+
+(def wheel2357
+  (cycle [2 4 2 4 6 2 6 4 2 4 6 6 2 6 4 2 6 4 6 8 4 2 4 2 4 8
+          6 4 6 2 4 6 2 6 6 4 2 4 6 2 6 4 2 4 2 10 2 10]))
+
+(defn spin
+  [[x & xs] n]
+  (cons n (lazy-seq (spin xs (+ n x)))))
+
+(defn spin-primes
+  [sieve-fn]
+  (concat [2 3 5 7]
+          (sieve-fn (spin wheel2357 11))))
 
 (defn sieve-based
   [sieve]
@@ -92,6 +135,12 @@
 
 (defn -main
   [& args]
-  (bench #(trial-division) :trial-division)
-  (bench #(sieve-based array-sieve) :array-sieve)
-  (bench #(sieve-based bitset-sieve) :bitset-sieve))
+  (let [sizes [1000 3000 10000 30000 100000]]
+    (bench #(trial-division) :trial-division sizes)
+    (bench #(sieve (iterate inc 2)) :sieve sizes)
+    (bench #(sieve-sm (iterate inc 2)) :sieve-sm sizes)
+    (bench #(sieve-pq (iterate inc 2)) :sieve-pq sizes)
+    (bench #(spin-primes sieve-sm) :spin-sm sizes)
+    (bench #(spin-primes sieve-pq) :spin-pq sizes)
+    (bench #(sieve-based array-sieve) :array-sieve sizes)
+    (bench #(sieve-based bitset-sieve) :bitset-sieve sizes)))
