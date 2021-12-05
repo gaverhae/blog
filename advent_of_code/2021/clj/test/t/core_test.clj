@@ -5,7 +5,8 @@
             [t.day1 :as day1]
             [t.day2 :as day2]
             [t.day3 :as day3]
-            [t.day4 :as day4]))
+            [t.day4 :as day4]
+            [t.day5 :as day5]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -90,4 +91,18 @@
                          (map (fn [b] (->> (concat b (transpose b))
                                            (map set)))))}
    :part1 [4512 82440]
-   :part2 [1924 20774]})
+   :part2 [1924 20774]}
+
+  {:day 5
+   :sample [[[0 9] [5 9]]
+            [[8 0] [0 8]]
+            [[9 4] [3 4]]
+            [[2 2] [2 1]]
+            [[7 0] [7 4]]
+            [[6 4] [2 0]]
+            [[0 9] [2 9]]
+            [[3 4] [1 4]]
+            [[0 0] [8 8]]
+            [[5 5] [8 2]]]
+   :part1 [5 4993]
+   :part2 [12 21101]})
