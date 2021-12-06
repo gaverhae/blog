@@ -11,18 +11,21 @@
 
 (defn count-overlaps
   [segments]
-  (->> segments
-       (mapcat (fn [[x1 y1 x2 y2]]
-                 (let [[dx dy] [(sign (- x2 x1)) (sign (- y2 y1))]
-                       num-step (max (Math/abs (long (- x1 x2)))
-                                     (Math/abs (long (- y1 y2))))]
-                   (for [n (range (inc num-step))]
-                     [(+ x1 (* n dx))
-                      (+ y1 (* n dy))]))))
-       frequencies
-       vals
-       (filter (fn [x] (>= x 2)))
-       count))
+  (let [arr (int-array (* 1000 1000))]
+    (doseq [[x1 y1 x2 y2] segments]
+      (let [dx (- x2 x1)
+            dy (- y2 y1)
+            sign-dx (sign dx)
+            sign-dy (sign dy)
+            num-steps (max (* sign-dx dx)
+                           (* sign-dy dy))]
+        (dotimes [n (inc num-steps)]
+          (let [idx (+ (* 1000 (+ x1 (* n sign-dx)))
+                       (+ y1 (* n sign-dy)))]
+            (aset arr idx (inc (aget arr idx)))))))
+    (->> arr
+         (filter (fn [x] (>= x 2)))
+         count)))
 
 (defn parse
   [lines]
