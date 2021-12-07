@@ -31,6 +31,6 @@
   (let [cost (fn [target]
                (->> input
                     (map (fn [p] (- (max p target) (min p target))))
-                    (map (fn [c] (reduce + (range (inc c)))))
+                    (map (fn [c] (/ (* c (inc c)) 2)))
                     (reduce + 0)))]
     (search input cost)))
