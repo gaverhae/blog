@@ -1,13 +1,7 @@
 (ns t.core
   (:gen-class)
   (:require [clojure.string :as string]
-            [criterium.core :as crit]
-            [t.day1 :as day1]
-            [t.day2 :as day2]
-            [t.day3 :as day3]
-            [t.day4 :as day4]
-            [t.day5 :as day5]
-            [t.day6 :as day6]))
+            [criterium.core :as crit]))
 
 (defn bench
   [f]
@@ -15,10 +9,12 @@
 
 (defn -main
   [& args]
-  (doseq [i [1 2 3 4 5 6]]
-    (let [parse (ns-resolve 't.core (symbol (str "day" i) "parse"))
-          part1 (ns-resolve 't.core (symbol (str "day" i) "part1"))
-          part2 (ns-resolve 't.core (symbol (str "day" i) "part2"))
+  (doseq [i (map inc (range 7))]
+    (let [ns (symbol (str "t.day" i))
+          _ (require ns)
+          parse (ns-resolve ns (symbol "parse"))
+          part1 (ns-resolve ns (symbol "part1"))
+          part2 (ns-resolve ns (symbol "part2"))
           data (string/split-lines (slurp (str "data/day" i)))
           input (parse data)]
       (print (format (str "Day %02d, part 1: %15d\n"
