@@ -7,7 +7,8 @@
             [t.day3 :as day3]
             [t.day4 :as day4]
             [t.day5 :as day5]
-            [t.day6 :as day6]))
+            [t.day6 :as day6]
+            [t.day7 :as day7]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -111,4 +112,9 @@
   {:day 6
    :sample {3 2, 4 1, 1 1, 2 1}
    :part1 [5934 351092]
-   :part2 [26984457539 1595330616005]})
+   :part2 [26984457539 1595330616005]}
+
+  {:day 7
+   :sample [16,1,2,0,4,2,7,1,2,14]
+   :part1 [37 337833]
+   :part2 [168 0]})
