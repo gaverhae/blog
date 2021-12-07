@@ -1,6 +1,16 @@
 (ns t.day7
   (:require [clojure.string :as string]))
 
+(defn search
+  [space cost]
+  (loop [low (apply min space)
+         high (apply max space)]
+   (let [mid (quot (+ low high) 2)
+         [a b c] (mapv cost [(dec mid) mid (inc mid)])]
+     (cond (and (< b a) (< b c)) b
+           (<= a b c) (recur low mid)
+           (>= a b c) (recur mid high)))))
+
 (defn parse
   [lines]
   (-> lines
@@ -13,15 +23,8 @@
   (let [cost (fn [target]
                (->> input
                     (map (fn [p] (- (max p target) (min p target))))
-                    (reduce + 0)))
-        low (apply min input)
-        high (apply max input)]
-    (->> (range low (inc high))
-         (map (fn [n] [(cost n) n]))
-         sort
-         first
-         first)))
-
+                    (reduce + 0)))]
+    (search input cost)))
 
 (defn part2
   [input]
@@ -29,11 +32,5 @@
                (->> input
                     (map (fn [p] (- (max p target) (min p target))))
                     (map (fn [c] (reduce + (range (inc c)))))
-                    (reduce + 0)))
-        low (apply min input)
-        high (apply max input)]
-    (->> (range low (inc high))
-         (map (fn [n] [(cost n) n]))
-         sort
-         first
-         first)))
+                    (reduce + 0)))]
+    (search input cost)))
