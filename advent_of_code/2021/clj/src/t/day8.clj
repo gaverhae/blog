@@ -11,42 +11,28 @@
                   (->> (split-with (comp not #{"|"}))
                        (map (fn [x] (remove #{"|"} x)))))))))
 
+(defn letters-appearing
+  [n _ _ inputs]
+  (->> "abcdefg"
+       (filter (fn [c]
+                 (->> inputs
+                      (filter #(contains? (set %) c))
+                      count
+                      (== n))))
+       set))
+
 (defn decode
   [[inputs outputs]]
-  (let [e (->> "abcdefg"
-               (filter (fn [c]
-                         (->> inputs
-                              (filter #(contains? (set %) c))
-                              count
-                              (== 4))))
-               set)
-        b (->> "abcdefg"
-               (filter (fn [c]
-                         (->> inputs
-                              (filter #(contains? (set %) c))
-                              count
-                              (== 6))))
-               set)
+  (let [e (letters-appearing 4 :times :in inputs)
+        b (letters-appearing 6 :times :in inputs)
         d (set/intersection
-            (->> "abcdefg"
-                 (filter (fn [c]
-                           (->> inputs
-                                (filter #(contains? (set %) c))
-                                count
-                                (== 7))))
-                 set)
+            (letters-appearing 7 :times :in inputs)
             (->> inputs
                  (filter #(= (count %) 4))
                  first
                  set))
         g (set/difference
-            (->> "abcdefg"
-                 (filter (fn [c]
-                           (->> inputs
-                                (filter #(contains? (set %) c))
-                                count
-                                (== 7))))
-                 set)
+            (letters-appearing 7 :times :in inputs)
             d)
         a (set/difference
             (set "abcdefg")
