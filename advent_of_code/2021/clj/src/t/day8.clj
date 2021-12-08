@@ -63,7 +63,6 @@
                  first
                  set)
             a b d e g)
-
         c (set/difference
             (set "abcdefg")
             a b d e f g)
@@ -87,61 +86,6 @@
                "abcdfg" "9"})
          (apply str)
          (Long/parseLong))))
-
-
-;  (loop [unknowns inputs
-;         decoder (into {} (map (fn [x] [x (set "abcdefg")]) "abcdefg"))]
-;    (prn [unknowns decoder])
-;
-;    (if (every? #(= 1 (count %)) (vals decoder))
-;      [decoder (->> outputs
-;           (map #(map decoder %))
-;           (map sort)
-;           (map #(apply str %))
-;           #_(map {[0 1 2 4 5 6] 0
-;                 [2 5] 1
-;                 [0 2 3 4 6] 2
-;                 [0 2 3 5 6] 3
-;                 [1 2 3 5] 4
-;                 [0 1 3 5 6] 5
-;                 [0 1 3 4 5 6] 6
-;                 [0 2 5] 7
-;                 [0 1 2 3 4 5 6] 8
-;                 [0 1 2 3 5 6] 9}))]
-;      (let [f (first unknowns)]
-;        (case (count f)
-;          ;; 1
-;          2 (recur (rest unknowns)
-;                   (reduce (fn [m k]
-;                             (update m k set/intersection (set "cf")))
-;                             decoder
-;                             f))
-;          ;; 7
-;          3 (recur (rest unknowns)
-;                   (reduce (fn [m k]
-;                             (update m k set/intersection (set "acf"))
-;                             decoder
-;                             f)))
-;          ;; 4
-;          4 (recur (rest unknowns)
-;                   (reduce (fn [m k]
-;                             (update m k set/intersection (set "bcdf")))
-;                           decoder
-;                           f))
-;          ;; 8
-;          7 (recur (rest unknowns)
-;                   decoder)
-;          ;;
-;
-;
-;
-;          decoder
-;          )))))
-;          4 (recur (rest unknowns)
-;                   (into decoder (map vector f "bcdf")))
-;          7 (recur (rest unknowns)
-;                   (into decoder (map vector f "abcdefg")))
-;          ::decoder)))))
 
 (defn part1
   [input]
