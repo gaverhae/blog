@@ -8,7 +8,8 @@
             [t.day4 :as day4]
             [t.day5 :as day5]
             [t.day6 :as day6]
-            [t.day7 :as day7]))
+            [t.day7 :as day7]
+            [t.day8 :as day8]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -117,4 +118,28 @@
   {:day 7
    :sample [16,1,2,0,4,2,7,1,2,14]
    :part1 [37 337833]
-   :part2 [168 96678050]})
+   :part2 [168 96678050]}
+
+  {:day 8
+   :sample [[["be" "cfbegad" "cbdgef" "fgaecd" "cgeb" "fdcge" "agebfd" "fecdb" "fabcd" "edb"]
+             ["fdgacbe" "cefdb" "cefbgd" "gcbe"]]
+            [["edbfga" "begcd" "cbg" "gc" "gcadebf" "fbgde" "acbgfd" "abcde" "gfcbed" "gfec"]
+             ["fcgedb" "cgb" "dgebacf" "gc"]]
+            [["fgaebd" "cg" "bdaec" "gdafb" "agbcfd" "gdcbef" "bgcad" "gfac" "gcb" "cdgabef"]
+             ["cg" "cg" "fdcagb" "cbg"]]
+            [["fbegcd" "cbd" "adcefb" "dageb" "afcb" "bc" "aefdc" "ecdab" "fgdeca" "fcdbega"]
+             ["efabcd" "cedba" "gadfec" "cb"]]
+            [["aecbfdg" "fbg" "gf" "bafeg" "dbefa" "fcge" "gcbea" "fcaegb" "dgceab" "fcbdga"]
+             ["gecf" "egdcabf" "bgf" "bfgea"]]
+            [["fgeab" "ca" "afcebg" "bdacfeg" "cfaedg" "gcfdb" "baec" "bfadeg" "bafgc" "acf"]
+             ["gebdcfa" "ecba" "ca" "fadegcb"]]
+            [["dbcfg" "fgd" "bdegcaf" "fgec" "aegbdf" "ecdfab" "fbedc" "dacgb" "gdcebf" "gf"]
+             ["cefg" "dcbef" "fcge" "gbcadfe"]]
+            [["bdfegc" "cbegaf" "gecbf" "dfcage" "bdacg" "ed" "bedf" "ced" "adcbefg" "gebcd"]
+             ["ed" "bcgafe" "cdgba" "cbgef"]]
+            [["egadfb" "cdbfeg" "cegd" "fecab" "cgb" "gbdefca" "cg" "fgcdab" "egfdb" "bfceg"]
+             ["gbdfcae" "bgc" "cg" "cgb"]]
+            [["gcafb" "gcf" "dcaebfg" "ecagb" "gf" "abcdeg" "gaef" "cafbge" "fdbac" "fegbdc"]
+             ["fgae" "cfgab" "fg" "bagce"]]]
+   :part1 [26 381]
+   :part2 [61229 1023686]})
