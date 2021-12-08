@@ -21,26 +21,27 @@
                       (== n))))
        set))
 
+(defn letters-in-word-with
+  [n _ _ inputs]
+  (->> inputs
+       (filter #(= (count %) n))
+       first
+       set))
+
 (defn decode
   [[inputs outputs]]
   (let [e (letters-appearing 4 :times :in inputs)
         b (letters-appearing 6 :times :in inputs)
         d (set/intersection
             (letters-appearing 7 :times :in inputs)
-            (->> inputs
-                 (filter #(= (count %) 4))
-                 first
-                 set))
+            (letters-in-word-with 4 :letters :in inputs))
         g (set/difference
             (letters-appearing 7 :times :in inputs)
             d)
         a (set/difference
             (set "abcdefg")
             e b d g
-            (->> inputs
-                 (filter #(= (count %) 2))
-                 first
-                 set))
+            (letters-in-word-with 2 :letters :in inputs))
         f (set/difference
             (->> inputs
                  (filter #(= (count %) 6))
