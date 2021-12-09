@@ -9,7 +9,8 @@
             [t.day5 :as day5]
             [t.day6 :as day6]
             [t.day7 :as day7]
-            [t.day8 :as day8]))
+            [t.day8 :as day8]
+            [t.day9 :as day9]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -142,4 +143,13 @@
             [["gcafb" "gcf" "dcaebfg" "ecagb" "gf" "abcdeg" "gaef" "cafbge" "fdbac" "fegbdc"]
              ["fgae" "cfgab" "fg" "bagce"]]]
    :part1 [26 381]
-   :part2 [61229 1023686]})
+   :part2 [61229 1023686]}
+
+  {:day 9
+   :sample [[2 1 9 9 9 4 3 2 1 0]
+            [3 9 8 7 8 9 4 9 2 1]
+            [9 8 5 6 7 8 9 8 9 2]
+            [8 7 6 7 8 9 6 7 8 9]
+            [9 8 9 9 9 6 5 6 7 8]]
+   :part1 [15 591]
+   :part2 [1134 1113424]})
