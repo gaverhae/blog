@@ -123,26 +123,26 @@
    :part2 [168 96678050]}
 
   {:day 8
-   :sample [[["be" "cfbegad" "cbdgef" "fgaecd" "cgeb" "fdcge" "agebfd" "fecdb" "fabcd" "edb"]
-             ["fdgacbe" "cefdb" "cefbgd" "gcbe"]]
-            [["edbfga" "begcd" "cbg" "gc" "gcadebf" "fbgde" "acbgfd" "abcde" "gfcbed" "gfec"]
-             ["fcgedb" "cgb" "dgebacf" "gc"]]
-            [["fgaebd" "cg" "bdaec" "gdafb" "agbcfd" "gdcbef" "bgcad" "gfac" "gcb" "cdgabef"]
-             ["cg" "cg" "fdcagb" "cbg"]]
-            [["fbegcd" "cbd" "adcefb" "dageb" "afcb" "bc" "aefdc" "ecdab" "fgdeca" "fcdbega"]
-             ["efabcd" "cedba" "gadfec" "cb"]]
-            [["aecbfdg" "fbg" "gf" "bafeg" "dbefa" "fcge" "gcbea" "fcaegb" "dgceab" "fcbdga"]
-             ["gecf" "egdcabf" "bgf" "bfgea"]]
-            [["fgeab" "ca" "afcebg" "bdacfeg" "cfaedg" "gcfdb" "baec" "bfadeg" "bafgc" "acf"]
-             ["gebdcfa" "ecba" "ca" "fadegcb"]]
-            [["dbcfg" "fgd" "bdegcaf" "fgec" "aegbdf" "ecdfab" "fbedc" "dacgb" "gdcebf" "gf"]
-             ["cefg" "dcbef" "fcge" "gbcadfe"]]
-            [["bdfegc" "cbegaf" "gecbf" "dfcage" "bdacg" "ed" "bedf" "ced" "adcbefg" "gebcd"]
-             ["ed" "bcgafe" "cdgba" "cbgef"]]
-            [["egadfb" "cdbfeg" "cegd" "fecab" "cgb" "gbdefca" "cg" "fgcdab" "egfdb" "bfceg"]
-             ["gbdfcae" "bgc" "cg" "cgb"]]
-            [["gcafb" "gcf" "dcaebfg" "ecagb" "gf" "abcdeg" "gaef" "cafbge" "fdbac" "fegbdc"]
-             ["fgae" "cfgab" "fg" "bagce"]]]
+   :sample [[#{"bcdef" "abcdefg" "abdefg" "be" "bcdefg" "acdefg" "bde" "bceg" "abcdf" "cdefg"}
+             ["abcdefg" "bcdef" "bcdefg" "bceg"]]
+            [#{"cg" "bcg" "abcdefg" "abdefg" "abcde" "bcdefg" "bcdeg" "cefg" "abcdfg" "bdefg"}
+             ["bcdefg" "bcg" "abcdefg" "cg"]]
+            [#{"cg" "acfg" "bcg" "abdfg" "abcdefg" "abcdg" "abdefg" "abcde" "bcdefg" "abcdfg"}
+             ["cg" "cg" "abcdfg" "bcg"]]
+            [#{"abdeg" "abcdef" "abcf" "abcdefg" "abcde" "bcdefg" "bcd" "acdefg" "bc" "acdef"}
+             ["abcdef" "abcde" "acdefg" "bc"]]
+            [#{"bfg" "abdef" "abcdefg" "abefg" "abcefg" "cefg" "fg" "abcdeg" "abcdfg" "abceg"}
+             ["cefg" "abcdefg" "bfg" "abefg"]]
+            [#{"acf" "ac" "bcdfg" "abcdefg" "abefg" "abce" "abcefg" "abcfg" "abdefg" "acdefg"}
+             ["abcdefg" "abce" "ac" "abcdefg"]]
+            [#{"dfg" "abcdef" "bcdfg" "bcdef" "abcdefg" "abcdg" "abdefg" "bcdefg" "cefg" "fg"}
+             ["cefg" "bcdef" "cefg" "abcdefg"]]
+            [#{"bdef" "abcdefg" "abcdg" "abcefg" "de" "bcefg" "bcdefg" "bcdeg" "acdefg" "cde"}
+             ["de" "abcefg" "abcdg" "bcefg"]]
+            [#{"cg" "cdeg" "bcg" "abcdefg" "abcef" "abdefg" "bcefg" "bcdefg" "abcdfg" "bdefg"}
+             ["abcdefg" "bcg" "cg" "bcg"]]
+            [#{"cfg" "abcdefg" "abcefg" "abcfg" "bcdefg" "fg" "abcdeg" "abceg" "aefg" "abcdf"}
+             ["aefg" "abcfg" "fg" "abceg"]]]
    :part1 [26 381]
    :part2 [61229 1023686]}
 
