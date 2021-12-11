@@ -11,7 +11,8 @@
             [t.day7 :as day7]
             [t.day8 :as day8]
             [t.day9 :as day9]
-            [t.day10 :as day10]))
+            [t.day10 :as day10]
+            [t.day11 :as day11]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -167,4 +168,26 @@
             [:incorrect 25137]
             [:incomplete 294]]
    :part1 [26397 392043]
-   :part2 [288957 1605968119]})
+   :part2 [288957 1605968119]}
+
+  {:day 11
+   :sample (->> [[5 4 8 3 1 4 3 2 2 3]
+                 [2 7 4 5 8 5 4 7 1 1]
+                 [5 2 6 4 5 5 6 1 7 3]
+                 [6 1 4 1 3 3 6 1 4 6]
+                 [6 3 5 7 3 8 5 4 7 8]
+                 [4 1 6 7 5 2 4 6 4 5]
+                 [2 1 7 6 8 4 1 7 2 1]
+                 [6 8 8 2 8 8 1 1 3 4]
+                 [4 8 4 6 8 4 8 5 5 4]
+                 [5 2 8 3 7 5 1 5 2 6]]
+                (map-indexed
+                  (fn [y line]
+                    (map-indexed
+                      (fn [x v]
+                        [[y x] (Long/parseLong (str v))])
+                      line)))
+                (apply concat)
+                (into {}))
+   :part1 [1656 1673]
+   :part2 [195 0]})
