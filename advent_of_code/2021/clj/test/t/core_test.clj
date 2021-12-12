@@ -12,7 +12,8 @@
             [t.day8 :as day8]
             [t.day9 :as day9]
             [t.day10 :as day10]
-            [t.day11 :as day11]))
+            [t.day11 :as day11]
+            [t.day12 :as day12]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -190,4 +191,14 @@
                 (apply concat)
                 (into {}))
    :part1 [1656 1673]
-   :part2 [195 279]})
+   :part2 [195 279]}
+
+  {:day 12
+   :sample {"start" #{"A" "b"}
+            "c" #{"A"}
+            "A" #{"c" "start" "end" "b"}
+            "b" #{"start" "A" "d" "end"}
+            "d" #{"b"}
+            "end" #{"A" "b"}}
+   :part1 [10 4104]
+   :part2 [36 0]})
