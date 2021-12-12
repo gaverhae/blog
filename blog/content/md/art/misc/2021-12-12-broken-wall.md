@@ -1,0 +1,12 @@
+{:title "Blender: Broken Wall"
+ :layout :post
+ :tags ["art/blender"]
+ :image "/img/art/misc/20211212-broken-wall.jpg"}
+
+Another [blender] project. This one took quite a bit of effort.
+
+This was done following the [Creating 3D environments in Blender][course]
+course on Udemy.
+
+[blender]: https://www.blender.org
+[course]: https://www.udemy.com/course/blender-environments/
