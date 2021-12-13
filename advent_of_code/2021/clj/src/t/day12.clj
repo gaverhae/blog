@@ -16,19 +16,19 @@
   (= s (.toLowerCase s)))
 
 (defn ends?
-  [[path _]]
-  (= (last path) "end"))
+  [[pos]]
+  (= pos "end"))
 
 (defn part1
   [input]
   (loop [num-paths 0
-         paths [[["start"] #{"start"}]]]
+         paths [["start" #{"start"}]]]
     (if (empty? paths)
       num-paths
-      (let [p (for [[path visited] paths
-                    next-step (get input (last path))
+      (let [p (for [[pos visited] paths
+                    next-step (get input pos)
                     :when (not (visited next-step))]
-                [(conj path next-step)
+                [next-step
                  (if (small? next-step)
                    (conj visited next-step)
                    visited)])]
@@ -38,15 +38,15 @@
 (defn part2
   [input]
   (loop [num-paths 0
-         paths [[["start"] #{"start"} false]]]
+         paths [["start" #{"start"} false]]]
     (if (empty? paths)
       num-paths
-      (let [p (for [[path visited twice?] paths
-                    next-step (get input (last path))
+      (let [p (for [[pos visited twice?] paths
+                    next-step (get input pos)
                     :when (or (not (visited next-step))
                               (and (not= "start" next-step)
                                    (not twice?)))]
-                [(conj path next-step)
+                [next-step
                  (if (small? next-step)
                    (conj visited next-step)
                    visited)
