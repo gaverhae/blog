@@ -13,7 +13,8 @@
             [t.day9 :as day9]
             [t.day10 :as day10]
             [t.day11 :as day11]
-            [t.day12 :as day12]))
+            [t.day12 :as day12]
+            [t.day13 :as day13]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -124,7 +125,7 @@
    :part1 [37 337833]
    :part2 [168 96678050]}
 
-  {:day 8
+  #_{:day 8
    :sample [[#{"bcdef" "abcdefg" "abdefg" "be" "bcdefg" "acdefg" "bde" "bceg" "abcdf" "cdefg"}
              ["abcdefg" "bcdef" "bcdefg" "bceg"]]
             [#{"cg" "bcg" "abcdefg" "abdefg" "abcde" "bcdefg" "bcdeg" "cefg" "abcdfg" "bdefg"}
@@ -193,7 +194,7 @@
    :part1 [1656 1673]
    :part2 [195 279]}
 
-  {:day 12
+  #_{:day 12
    :sample {"start" #{"A" "b"}
             "c" #{"A"}
             "A" #{"c" "start" "end" "b"}
@@ -201,4 +202,21 @@
             "d" #{"b"}
             "end" #{"A" "b"}}
    :part1 [10 4104]
-   :part2 [36 0]})
+   :part2 [36 119760]}
+
+  {:day 13
+   :sample {:dots #{[6 10] [0 14] [9 10] [0 3] [10 4] [4 11] [6 0] [6 12] [4 1]
+                    [0 13] [10 12] [3 4] [3 0] [8 4] [1 10] [2 14] [8 10] [9 0]}
+            :folds [[:y 7] [:x 5]]}
+   :part1 [17 785]
+   :part2 [["#####"
+            "#...#"
+            "#...#"
+            "#...#"
+            "#####"]
+           ["####...##..##..#..#...##..##...##..#..#"
+            "#.......#.#..#.#..#....#.#..#.#..#.#..#"
+            "###.....#.#..#.####....#.#....#..#.####"
+            "#.......#.####.#..#....#.#.##.####.#..#"
+            "#....#..#.#..#.#..#.#..#.#..#.#..#.#..#"
+            "#.....##..#..#.#..#..##...###.#..#.#..#"]]})
