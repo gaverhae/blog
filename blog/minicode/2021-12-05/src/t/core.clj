@@ -133,6 +133,56 @@
                      (apply str))]
     (println (format "[%-15s %s]" label results))))
 
+(defmacro halve
+  "Efficiently halve a number."
+  [n]
+  `(bit-shift-right ~n 1))
+
+(defmacro doubl
+  "Efficiently double a number."
+  [n]
+  `(bit-shift-left ~n 1))
+
+(defn sieve-1bit
+  [^long limit]
+  (let [q (inc (Math/sqrt limit))
+        sieve (java.util.BitSet.)]
+    ;; Highly optimised Sieve of Eratosthenes algorithm.
+    (loop [factor 3]
+      (when (< factor q)
+        (if-not (.get sieve (halve factor))
+          (let [factor*2 (doubl factor)]
+            (loop [num (* factor factor)]
+              (when (<= num limit)
+                (.set sieve (halve num) true)
+                (recur (+ num factor*2))))))
+        (recur (+ 2 factor))))
+    ;; Return sequence of found prime numbers.
+    (cons 2 (->> (range 3 limit 2)
+                 (map (fn [^long n]
+                        (if-not (.get sieve (halve n)) n)))
+                 (filter some?)))))
+
+(defn sieve-8bit
+  [^long limit]
+  (let [q (inc (Math/sqrt limit))
+        ^booleans sieve (make-array Boolean/TYPE (halve limit))]
+    ;; Highly optimised Sieve of Eratosthenes algorithm.
+    (loop [factor 3]
+      (when (< factor q)
+        (if-not (aget sieve (halve factor))
+          (let [factor*2 (doubl factor)]
+            (loop [num (* factor factor)]
+              (when (<= num limit)
+                (aset sieve (halve num) true)
+                (recur (+ num factor*2))))))
+        (recur (+ 2 factor))))
+    ;; Return sequence of found prime numbers.
+    (cons 2 (->> (range 3 limit 2)
+                 (map (fn [^long n]
+                        (if-not (aget sieve (halve n)) n)))
+                 (filter some?)))))
+
 (defn -main
   [& args]
   (bench #(trial-division) :trial-division)

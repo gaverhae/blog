@@ -14,7 +14,8 @@
             [t.day10 :as day10]
             [t.day11 :as day11]
             [t.day12 :as day12]
-            [t.day13 :as day13]))
+            [t.day13 :as day13]
+            [t.day14 :as day14]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -125,7 +126,7 @@
    :part1 [37 337833]
    :part2 [168 96678050]}
 
-  #_{:day 8
+  {:day 8
    :sample [[#{"bcdef" "abcdefg" "abdefg" "be" "bcdefg" "acdefg" "bde" "bceg" "abcdf" "cdefg"}
              ["abcdefg" "bcdef" "bcdefg" "bceg"]]
             [#{"cg" "bcg" "abcdefg" "abdefg" "abcde" "bcdefg" "bcdeg" "cefg" "abcdfg" "bdefg"}
@@ -194,7 +195,7 @@
    :part1 [1656 1673]
    :part2 [195 279]}
 
-  #_{:day 12
+  {:day 12
    :sample {"start" #{"A" "b"}
             "c" #{"A"}
             "A" #{"c" "start" "end" "b"}
@@ -219,4 +220,25 @@
             "###.....#.#..#.####....#.#....#..#.####"
             "#.......#.####.#..#....#.#.##.####.#..#"
             "#....#..#.#..#.#..#.#..#.#..#.#..#.#..#"
-            "#.....##..#..#.#..#..##...###.#..#.#..#"]]})
+            "#.....##..#..#.#..#..##...###.#..#.#..#"]]}
+
+  {:day 14
+   :sample {:start ["NN" "NC" "CB"]
+            :ops {"CH" "B"
+                  "HH" "N"
+                  "CB" "H"
+                  "NH" "C"
+                  "HB" "C"
+                  "HC" "B"
+                  "HN" "C"
+                  "NN" "C"
+                  "BH" "H"
+                  "NC" "B"
+                  "NB" "B"
+                  "BN" "B"
+                  "BB" "N"
+                  "BC" "B"
+                  "CC" "N"
+                  "CN" "C"}}
+   :part1 [1588 3306]
+   :part2 [2188189693529 0]})
