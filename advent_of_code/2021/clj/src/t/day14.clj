@@ -29,27 +29,33 @@
          ((juxt first last))
          ((fn [[small large]] (- large small))))))
 
+"CBNBOKHVBONCPPBBCKVH"
+
 (defn part2
   [{:keys [start ops]}]
-  (let [traverse' (fn [mem]
-                    (fn [[a b :as pair] n]
-                      (let [rec (mem mem)]
-                        (if (zero? n)
-                          (frequencies pair)
-                          (let [i (ops pair)]
-                            (merge-with +
-                                        (rec (str a i) (dec n))
-                                        (rec (str i b) (dec n))
-                                        {(first i) -1}))))))
-        traverse (traverse' traverse')]
+  (let [traverse' (fn [mem [a b :as pair] n]
+                    (let [rec (fn [pair n] (mem mem pair n))]
+                      (if (zero? n)
+                        (frequencies pair)
+                        (let [i (ops pair)]
+                          (merge-with +
+                                      (rec (str a i) (dec n))
+                                      (rec (str i b) (dec n))
+                                      {(first i) -1})))))
+        mem-t (memoize traverse')
+        traverse (partial mem-t mem-t)]
     (->> start
-         (map #(traverse % 21))
+         (map #(traverse % 40))
          (apply merge-with +
                 (->> start
                      butlast
                      (map second)
-                     (map #(-> [% -1]))
-                     (into {})))))
+                     (map #(-> {% -1}))
+                     (apply merge-with + {})))
+         (map val)
+         sort
+         ((juxt first last))
+         ((fn [[small large]] (- large small)))))
 
   #_(let [final (second (nth (iterate (fn [[n chain]]
                               (prn n)
