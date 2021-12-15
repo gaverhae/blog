@@ -1,7 +1,8 @@
 (ns t.day15
   (:require [clojure.core.match :refer [match]]
             [clojure.string :as string]
-            [clojure.set :as set]))
+            [clojure.set :as set])
+  (:import [java.util PriorityQueue]))
 
 (defn parse
   [lines]
@@ -13,7 +14,7 @@
   [[x y]]
   #{[(inc x) y] [(dec x) y] [x (inc y)] [x (dec y)]})
 
-(defn part1
+(defn shortest-path
   [input]
   (let [cost-of-entering (->> input
                               (map-indexed (fn [y line]
@@ -28,23 +29,34 @@
            unvisited (dissoc (->> cost-of-entering
                                   (map (fn [[k v]] [k Long/MAX_VALUE]))
                                   (into {}))
-                             [0 0])]
+                             [0 0])
+           pq ^PriorityQueue (reduce (fn [^PriorityQueue pq [pos cost]]
+                                       (.add pq [cost pos])
+                                       pq)
+                                     (PriorityQueue. (count cost-of-entering) compare)
+                                     unvisited)]
       (if (= pos target)
-        (unvisited pos)
-        (let [new-unvisited (reduce (fn [unvisited neighbour]
+        cost
+        (let [neighs (->> (neighbours pos)
+                          (filter unvisited))
+              new-unvisited (reduce (fn [unvisited neighbour]
                                       (update unvisited
                                               neighbour
                                               (fn [old]
                                                 (min old (+ cost
                                                             (cost-of-entering neighbour))))))
                                     (dissoc unvisited pos)
-                                    (->> (neighbours pos)
-                                         (filter unvisited)))]
-          (recur (->> new-unvisited
-                      (map (fn [[k v]] [v k]))
-                      sort
-                      first)
-                 new-unvisited))))))
+                                    neighs)]
+          (doseq [n neighs]
+            (.remove pq [(unvisited n) n])
+            (.add pq [(new-unvisited n) n]))
+          (recur (.poll pq)
+                 new-unvisited
+                 pq))))))
+
+(defn part1
+  [input]
+  (shortest-path input))
 
 (defn part2
   [input])
