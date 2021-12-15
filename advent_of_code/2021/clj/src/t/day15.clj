@@ -1,7 +1,5 @@
 (ns t.day15
-  (:require [clojure.core.match :refer [match]]
-            [clojure.string :as string]
-            [clojure.set :as set])
+  (:require [clojure.set :as set])
   (:import [java.util PriorityQueue]))
 
 (defn parse
@@ -23,36 +21,27 @@
                                                           line)))
                               (apply concat)
                               (into {}))
+        start [0 0]
         target [(dec (count (first input)))
                 (dec (count input))]]
-    (loop [[cost pos] [0 [0 0]]
-           unvisited (dissoc (->> cost-of-entering
-                                  (map (fn [[k v]] [k Long/MAX_VALUE]))
-                                  (into {}))
-                             [0 0])
-           pq ^PriorityQueue (reduce (fn [^PriorityQueue pq [pos cost]]
-                                       (.add pq [cost pos])
-                                       pq)
-                                     (PriorityQueue. (count cost-of-entering) compare)
-                                     unvisited)]
-      (if (= pos target)
-        cost
-        (let [neighs (->> (neighbours pos)
-                          (filter unvisited))
-              new-unvisited (reduce (fn [unvisited neighbour]
-                                      (update unvisited
-                                              neighbour
-                                              (fn [old]
-                                                (min old (+ cost
-                                                            (cost-of-entering neighbour))))))
-                                    (dissoc unvisited pos)
-                                    neighs)]
-          (doseq [n neighs]
-            (.remove pq [(unvisited n) n])
-            (.add pq [(new-unvisited n) n]))
-          (recur (.poll pq)
-                 new-unvisited
-                 pq))))))
+    (loop [frontier {0 #{start}}
+           visited #{start}
+           distance 0]
+      (let [nodes-to-process (frontier distance)]
+        (if (contains? nodes-to-process target)
+          distance
+          (recur (->> nodes-to-process
+                      (mapcat neighbours)
+                      (remove visited)
+                      set
+                      (keep (fn [n]
+                              (when-let [c (cost-of-entering n)]
+                                [n (+ distance c)])))
+                      (reduce (fn [f [n c]]
+                                (update f c (fnil conj #{}) n))
+                              frontier))
+                 (set/union nodes-to-process visited)
+                 (inc distance)))))))
 
 (defn a*
   [input]
@@ -100,7 +89,7 @@
 
 (defn part1
   [input]
-  (a* input))
+  (shortest-path input))
 
 (defn part2
   [input]
@@ -117,4 +106,4 @@
                       (take 5)
                       (apply concat)
                       vec)]
-    (a* expanded)))
+    (shortest-path expanded)))
