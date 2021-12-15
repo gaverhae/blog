@@ -4,26 +4,27 @@
 
 (defn parse
   [lines]
-  (->> lines
-       (mapv (fn [line]
-              (mapv (fn [c] (Long/parseLong (str c))) line)))))
+  {:width (count (first lines))
+   :height (count lines)
+   :costs (->> lines
+               (mapv (fn [line]
+                       (mapv (fn [c] (Long/parseLong (str c))) line)))
+               (map-indexed (fn [y line]
+                              (map-indexed (fn [x cost]
+                                             [[x y] cost])
+                                           line)))
+               (apply concat)
+               (into {}))})
 
 (defn neighbours
   [[x y]]
   #{[(inc x) y] [(dec x) y] [x (inc y)] [x (dec y)]})
 
 (defn shortest-path
-  [input]
-  (let [cost-of-entering (->> input
-                              (map-indexed (fn [y line]
-                                             (map-indexed (fn [x cost]
-                                                            [[x y] cost])
-                                                          line)))
-                              (apply concat)
-                              (into {}))
-        start [0 0]
-        target [(dec (count (first input)))
-                (dec (count input))]]
+  [{cost-of-entering :costs :keys [width height]}]
+  (let [start [0 0]
+        target [(dec width)
+                (dec height)]]
     (loop [frontier {0 #{start}}
            visited #{start}
            distance 0]
@@ -44,28 +45,18 @@
                  (inc distance)))))))
 
 (defn a*
-  [input]
-  (let [cost-of-entering (->> input
-                              (map-indexed (fn [y line]
-                                             (map-indexed (fn [x cost]
-                                                            [[x y] cost])
-                                                          line)))
-                              (apply concat)
-                              (into {}))
-        start [0 0]
-        max-y (count input)
-        max-x (count (first input))
-        goal [(dec max-x)
-              (dec max-y)]
+  [{cost-of-entering :costs :keys [width height]}]
+  (let [start [0 0]
+        target [(dec width) (dec height)]
         h (fn [[x y]]
-            (+ (- (first goal) x)
-               (- (second goal) y)))
+            (+ (- (first target) x)
+               (- (second target) y)))
         pq (PriorityQueue. 100 compare)]
     (loop [gscore {start 0}
            fscore {start (h start)}
            open-set {}
            cur-pos start]
-      (if (= cur-pos goal)
+      (if (= cur-pos target)
         (gscore cur-pos)
         (let [neighs (->> (neighbours cur-pos)
                           (keep (fn [p]
@@ -92,18 +83,15 @@
   (shortest-path input))
 
 (defn part2
-  [input]
-  (let [increment {1 2, 2 3, 3 4, 4 5, 5 6, 6 7, 7 8, 8 9, 9 1}
-        expanded (->> input
-                      (map (fn [line]
-                             (->> line
-                                  (iterate #(map increment %))
-                                  (take 5)
-                                  (apply concat)
-                                  vec)))
-                      (iterate (fn [lines]
-                                 (mapv #(mapv increment %) lines)))
-                      (take 5)
-                      (apply concat)
-                      vec)]
-    (shortest-path expanded)))
+  [{:keys [width height costs]}]
+  (let [increment {1 2, 2 3, 3 4, 4 5, 5 6, 6 7, 7 8, 8 9, 9 1}]
+    (shortest-path {:width (* 5 width)
+                    :height (* 5 height)
+                    :costs (->> costs
+                                (mapcat (fn [[[x y] v]]
+                                          (for [dx (range 5)
+                                                dy (range 5)]
+                                            [[(+ x (* dx width))
+                                              (+ y (* dy height))]
+                                             (nth (iterate increment v) (+ dx dy))])))
+                                (into {}))})))
