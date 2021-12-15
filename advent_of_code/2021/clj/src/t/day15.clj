@@ -18,7 +18,7 @@
   [[x y]]
   #{[(inc x) y] [(dec x) y] [x (inc y)] [x (dec y)]})
 
-(defn shortest-path
+(defn dijkstra
   [{cost-of-entering :costs :keys [width height]}]
   (let [start [0 0]
         target [(dec width)
@@ -78,18 +78,18 @@
 
 (defn part1
   [input]
-  (shortest-path input))
+  (dijkstra input))
 
 (defn part2
   [{:keys [width height costs]}]
   (let [increment {1 2, 2 3, 3 4, 4 5, 5 6, 6 7, 7 8, 8 9, 9 1}]
-    (shortest-path {:width (* 5 width)
-                    :height (* 5 height)
-                    :costs (->> costs
-                                (mapcat (fn [[[x y] v]]
-                                          (for [dx (range 5)
-                                                dy (range 5)]
-                                            [[(+ x (* dx width))
-                                              (+ y (* dy height))]
-                                             (nth (iterate increment v) (+ dx dy))])))
-                                (into {}))})))
+    (a* {:width (* 5 width)
+         :height (* 5 height)
+         :costs (->> costs
+                     (mapcat (fn [[[x y] v]]
+                               (for [dx (range 5)
+                                     dy (range 5)]
+                                 [[(+ x (* dx width))
+                                   (+ y (* dy height))]
+                                  (nth (iterate increment v) (+ dx dy))])))
+                     (into {}))})))
