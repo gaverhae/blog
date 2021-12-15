@@ -7,11 +7,9 @@
   {:width (count (first lines))
    :height (count lines)
    :costs (->> lines
-               (mapv (fn [line]
-                       (mapv (fn [c] (Long/parseLong (str c))) line)))
                (map-indexed (fn [y line]
                               (map-indexed (fn [x cost]
-                                             [[x y] cost])
+                                             [[x y] (Long/parseLong (str cost))])
                                            line)))
                (apply concat)
                (into {}))})
