@@ -26,6 +26,7 @@
         target [(dec (count (first input)))
                 (dec (count input))]]
     (loop [[cost pos] [0 [0 0]]
+           i 10
            unvisited (dissoc (->> cost-of-entering
                                   (map (fn [[k v]] [k Long/MAX_VALUE]))
                                   (into {}))
@@ -35,6 +36,7 @@
                                        pq)
                                      (PriorityQueue. (count cost-of-entering) compare)
                                      unvisited)]
+      (when (zero? i) (println [cost pos]))
       (if (= pos target)
         cost
         (let [neighs (->> (neighbours pos)
@@ -51,6 +53,7 @@
             (.remove pq [(unvisited n) n])
             (.add pq [(new-unvisited n) n]))
           (recur (.poll pq)
+                 (mod (inc i) 100)
                  new-unvisited
                  pq))))))
 
@@ -59,4 +62,18 @@
   (shortest-path input))
 
 (defn part2
-  [input])
+  [input]
+  (let [increment {1 2, 2 3, 3 4, 4 5, 5 6, 6 7, 7 8, 8 9, 9 1}
+        expanded (->> input
+                      (map (fn [line]
+                             (->> line
+                                  (iterate #(map increment %))
+                                  (take 5)
+                                  (apply concat)
+                                  vec)))
+                      (iterate (fn [lines]
+                                 (mapv #(mapv increment %) lines)))
+                      (take 5)
+                      (apply concat)
+                      vec)]
+    (shortest-path expanded)))
