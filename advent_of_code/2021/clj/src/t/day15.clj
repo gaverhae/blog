@@ -50,27 +50,24 @@
             (+ (- (first target) x)
                (- (second target) y)))
         pq (PriorityQueue. 100 compare)]
-    (loop [score {start 0}
-           open-set {}
+    (loop [score {start [0 (h start)]}
            cur-pos start]
       (if (= cur-pos target)
-        (score cur-pos)
+        (first (score cur-pos))
         (let [neighs (->> (neighbours cur-pos)
                           set
                           (keep (fn [p]
                                   (when-let [c (cost-of-entering p)]
-                                    (let [new-score (+ (score cur-pos) c)]
-                                      (when (< new-score (score p Long/MAX_VALUE))
+                                    (let [new-score (+ (first (score cur-pos)) c)]
+                                      (when (< new-score (first (score p [Long/MAX_VALUE])))
                                         [p new-score (+ new-score (h p))]))))))]
-          (recur (reduce (fn [score [n g _]]
-                           (assoc score n g))
+          (doseq [[n _ f] neighs]
+            (when-let [[_ old-f] (score n)]
+              (.remove pq [old-f n]))
+            (.add pq [f n]))
+          (recur (reduce (fn [score [n g f]]
+                           (assoc score n [g f]))
                          score neighs)
-                 (reduce (fn [open-set [n _ f]]
-                           (when-let [old-f (open-set n)]
-                             (.remove pq [old-f n]))
-                           (.add pq [f n])
-                           (assoc open-set n f))
-                         open-set neighs)
                  (second (.poll pq))))))))
 
 (defn part1
