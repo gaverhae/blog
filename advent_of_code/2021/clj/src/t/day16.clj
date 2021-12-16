@@ -9,6 +9,16 @@
                        (apply str))
                   2))
 
+(defn parse-operator
+  [[length-id & payload]]
+  (let [length-type ({\0 :bits, \1 :packets} length-id)
+        length-length ({:bits 15, :packets 11} length-type)
+        length (Long/parseLong (apply str (take length-length payload)) 2)
+        payload (drop length-length payload)]
+    {:length [length-type length]
+     :packets nil}))
+
+
 (defn parse-packet
   [[v1 v2 v3 t1 t2 t3 & payload]]
   (let [version (Long/parseLong (str v1 v2 v3) 2)
@@ -17,9 +27,8 @@
      :type-id type-id
      :type ({4 :literal} type-id)
      :payload (match [version type-id]
-                [_ 4] (parse-literal payload))}))
-
-
+                [_ 4] (parse-literal payload)
+                [_ _] (parse-operator payload))}))
 
 (defn parse
   [lines]
