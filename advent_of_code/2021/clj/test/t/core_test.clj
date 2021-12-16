@@ -288,14 +288,10 @@
 
 (deftest day16
   (are [x y] (= y (day16/parse [x]))
-       "D2FE28"
-       [:literal 6 2021]
-       #_"38006F45291200"
-       #_{:version 1
-        :type [:operator 6]
-        :length [:bits 27]
-        :payload [{:version 6, :type [:literal], :value 10}
-                  {:version 2, :type [:literal], :value 20}]}
+       #_"D2FE28"
+       #_[:literal 6 2021]
+       "38006F45291200"
+       [:operator 1 6 [[:literal 6 10] [:literal 2 20]]]
        #_"EE00D40C823060"
        #_{:version 7
         :type [:operator 3]

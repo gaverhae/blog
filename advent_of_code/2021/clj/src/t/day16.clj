@@ -43,23 +43,55 @@
   [bits]
   (letfn [(parse-packet [bits]
             (let [version (Long/parseLong (subs bits 0 3) 2)
-                  type (Long/parseLong (subs bits 3 6) 2)]
+                  type (Long/parseLong (subs bits 3 6) 2)
+                  bits (subs bits 6)]
+              (prn [:parse-packet version type bits])
               (if (= type 4)
-                (let [[value leftovers] (parse-value (subs bits 6))]
-                  [[:literal version value] leftovers])
-                :undefined)))
+                (let [[value bits] (parse-value bits)]
+                  [[:literal version value]
+                   bits])
+                (let [[args bits] (parse-args bits)]
+                  [[:operator version type args]
+                   bits]))))
           (parse-value [bits]
-            (loop [leftover bits
-                   collected ""]
-              (let [continue? (= "1" (subs leftover 0 1))
-                    so-far (str collected (subs leftover 1 5))
-                    left (subs leftover 5)]
+            (loop [bits bits
+                   so-far ""]
+              (let [continue? (= "1" (subs bits 0 1))
+                    so-far (str so-far (subs bits 1 5))
+                    bits (subs bits 5)]
+                (prn [:parse-value continue? so-far bits])
                 (if continue?
-                  (recur left so-far)
-                  [(Long/parseLong so-far 2) left]))))]
-    (let [[top-level-packet leftovers] (parse-packet bits)]
-      (when-not (every? #{\0} leftovers)
-        (throw (RuntimeException. ^String leftovers)))
+                  (recur bits so-far)
+                  [(Long/parseLong so-far 2) bits]))))
+          (parse-args [bits]
+            (let [length-type ({"0" :bits, "1" :packets} (subs bits 0 1))
+                  bits (subs bits 1)]
+              (prn [:parse-args length-type bits])
+              (case length-type
+                :bits (let [length (Long/parseLong (subs bits 0 15) 2)
+                            bits (subs bits 15)
+                            packets (subs bits 0 length)
+                            bits (subs bits length)]
+                        [(loop [so-far []
+                                bits packets]
+                           (prn [:bits length so-far (count bits) bits])
+                           (if (empty? bits)
+                             so-far
+                             (let [[p bits] (parse-packet bits)]
+                               (recur (conj so-far p) bits))))
+                         bits])
+                :packets (let [length (Long/parseLong (subs bits 0 11) 2)
+                               bits (subs bits 11)]
+                           (loop [so-far []
+                                  bits bits]
+                             (prn [:packets so-far bits])
+                             (if (= (count so-far) length)
+                               [so-far bits]
+                               (let [[p bits] (parse-packet bits)]
+                                 (recur (conj so-far p) bits))))))))]
+    (let [[top-level-packet bits] (parse-packet bits)]
+      (when-not (every? #{\0} bits)
+        (throw (RuntimeException. ^String bits)))
       top-level-packet)))
 
 (defn parse
