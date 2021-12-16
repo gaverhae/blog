@@ -100,7 +100,10 @@
        parse-bits))
 
 (defn part1
-  [input])
+  [input]
+  (match input
+    [:literal v _] v
+    [:operator v _ args] (reduce + v (map part1 args))))
 
 (defn part2
   [input])

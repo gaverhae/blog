@@ -261,34 +261,18 @@
    :part1 [40 748]
    :part2 [315 3045]}
 
-  #_{:day 16
-   :sample {:version 5
-            :type [:operator 0]
-            :payload [{:version 1
-                       :type [:operator 0]
-                       :payload [{:version 3
-                                  :type [:operator 0]
-                                  :payload [{:version 7
-                                             :type [:literal]
-                                             :value 6}
-                                            {:version 6
-                                             :type [:literal]
-                                             :value 6}
-                                            {:version 5
-                                             :type [:literal]
-                                             :value 12}
-                                            {:version 2
-                                             :type [:literal]
-                                             :value 15}
-                                            {:version 2
-                                             :type [:literal]
-                                             :value 15}]}]}]}
-   :part1 [nil 0]
+  {:day 16
+   :sample [:operator 5 0 [[:operator 1 0 [[:operator 3 0 [[:literal 7 6]
+                                                           [:literal 6 6]
+                                                           [:literal 5 12]
+                                                           [:literal 2 15]
+                                                           [:literal 2 15]]]]]]]
+   :part1 [31 854]
    :part2 [nil nil]})
 
-(deftest day16
+(deftest extra-day16
   (are [x v y] (and (= y (day16/parse [x]))
-                    #_(= v (day16/part1 (day16/parse [x]))))
+                    (= v (day16/part1 (day16/parse [x]))))
        "D2FE28"
        6
        [:literal 6 2021]
