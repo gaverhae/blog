@@ -69,7 +69,9 @@
 
 (defn part2
   [input]
-  (let [f (fn [f] (comp {true 1, false 0} f))]
+  (let [to-int-result (fn [f] (comp {true 1, false 0} f))
+        ops [+ * min max nil (to-int-result >) (to-int-result <) (to-int-result =)]]
     (match input
       [:literal _ n] n
-      [:operator _ op args] (apply (get [+ * min max nil (f >) (f <) (f =)] op) (map part2 args)))))
+      [:operator _ op args] (apply (get ops op)
+                                   (map part2 args)))))
