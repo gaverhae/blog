@@ -106,4 +106,8 @@
     [:operator v _ args] (reduce + v (map part1 args))))
 
 (defn part2
-  [input])
+  [input]
+  (let [f (fn [f] (comp {true 1, false 0} f))]
+    (match input
+      [:literal _ n] n
+      [:operator _ op args] (apply (get [+ * min max nil (f >) (f <) (f =)] op) (map part2 args)))))

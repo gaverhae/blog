@@ -268,7 +268,7 @@
                                                            [:literal 2 15]
                                                            [:literal 2 15]]]]]]]
    :part1 [31 854]
-   :part2 [nil nil]})
+   :part2 [54 186189840660]})
 
 (deftest extra-day16
   (are [x v y] (and (= y (day16/parse [x]))
