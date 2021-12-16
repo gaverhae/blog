@@ -275,4 +275,10 @@
         :type [:operator 6]
         :payload [{:version 6, :type [:literal], :value 10}
                   {:version 2, :type [:literal], :value 20}]}
+       "EE00D40C823060"
+       {:version 7
+        :type [:operator 3]
+        :payload [{:version 2, :type [:literal], :value 1}
+                  {:version 4, :type [:literal], :value 2}
+                  {:version 1, :type [:literal], :value 3}]}
        ))

@@ -17,7 +17,9 @@
   length-bits = <'0'> #'.{15}'
   length-packets = <'1'> #'.{11}'
   <payload> = #'.*'
-  leftover = #'.*'
+  <leftover> = zeros / more-data
+  zeros = <'0'*>
+  more-data =  #'.*'
   ")
 
 (def to-ast (insta/parser grammar))
@@ -26,9 +28,8 @@
   [tree]
   (prn tree)
   (match tree
-    [:leftover ""] ()
-    [:leftover s] (parse-ast (to-ast s))
-    [:S packet leftover] (cons (parse-ast packet) (parse-ast leftover))
+    [:S packet [:zeros]] [(parse-ast packet)]
+    [:S packet [:more-data data]] (cons (parse-ast packet) (parse-ast (to-ast data)))
     [:packet packet] (parse-ast packet)
     [:literal-packet version & lit]
     {:version (Long/parseLong version 2)
@@ -52,7 +53,8 @@
                 \C "1100" \D "1101" \E "1110" \F "1111"})
        (apply str)
        to-ast
-       parse-ast))
+       parse-ast
+       first))
 
 (defn part1
   [input]
