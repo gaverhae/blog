@@ -26,7 +26,6 @@
 
 (defn parse-ast
   [tree]
-  (prn tree)
   (match tree
     [:S packet [:zeros]] [(parse-ast packet)]
     [:S packet [:more-data data]] (cons (parse-ast packet) (parse-ast (to-ast data)))
@@ -41,8 +40,7 @@
      :payload (let [length (Long/parseLong length 2)]
                 (case length-type
                   :length-bits (parse-ast (to-ast (subs payload 0 length)))
-                  :length-packets (take length (parse-ast (to-ast payload)))))}
-    ))
+                  :length-packets (take length (parse-ast (to-ast payload)))))}))
 
 (defn parse
   [lines]

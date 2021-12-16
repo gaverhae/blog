@@ -281,4 +281,57 @@
         :payload [{:version 2, :type [:literal], :value 1}
                   {:version 4, :type [:literal], :value 2}
                   {:version 1, :type [:literal], :value 3}]}
-       ))
+       "8A004A801A8002F478"
+       {:version 4
+        :type [:operator 2]
+        :payload [{:version 1
+                   :type [:operator 2]
+                   :payload [{:version 5
+                              :type [:operator 2]
+                              :payload [{:version 6
+                                         :type [:literal]
+                                         :value 15}]}]}]}
+       "620080001611562C8802118E34"
+       {:version 3
+        :type [:operator 0]
+        :payload [{:version 0
+                   :type [:operator 0]
+                   :payload [{:version 0
+                              :type [:literal]
+                              :value 10}
+                             {:version 5
+                              :type [:literal]
+                              :value 11}]}]}
+       "C0015000016115A2E0802F182340"
+       {:version 6
+        :type [:operator 0]
+        :payload [{:version 0
+                   :type [:operator 0]
+                   :payload [{:version 0
+                              :type [:literal]
+                              :value 10}
+                             {:version 6
+                              :type [:literal]
+                              :value 11}]}]}
+       "A0016C880162017C3686B18A3D4780"
+       {:version 5
+        :type [:operator 0]
+        :payload [{:version 1
+                   :type [:operator 0]
+                   :payload [{:version 3
+                              :type [:operator 0]
+                              :payload [{:version 7
+                                         :type [:literal]
+                                         :value 6}
+                                        {:version 6
+                                         :type [:literal]
+                                         :value 6}
+                                        {:version 5
+                                         :type [:literal]
+                                         :value 12}
+                                        {:version 2
+                                         :type [:literal]
+                                         :value 15}
+                                        {:version 2
+                                         :type [:literal]
+                                         :value 15}]}]}]}))
