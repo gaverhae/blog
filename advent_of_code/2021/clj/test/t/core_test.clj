@@ -62,25 +62,25 @@
                           ~(check (get-in spec [:part2 1])
                                   `(~part2 @~data-sym))))))))))
 
-#_(make-tests
+(make-tests
 
-  {:day 1
+  #_{:day 1
    :sample [199 200 208 210 200 207 240 269 260 263]
    :part1 [7 1292]
    :part2 [5 1262]}
 
-  {:day 2
+  #_{:day 2
    :sample [[:forward 5] [:down 5] [:forward 8] [:up 3] [:down 8] [:forward 2]]
    :part1 [150 1660158]
    :part2 [900 1604592846]}
 
-  {:day 3
+  #_{:day 3
    :sample ["00100" "11110" "10110" "10111" "10101" "01111"
             "00111" "11100" "10000" "11001" "00010" "01010"]
    :part1 [198 4103154]
    :part2 [230 4245351]}
 
-  {:day 4
+  #_{:day 4
    :sample {:numbers [7 4 9 5 11 17 23 2 0 14 21 24 10 16 13 6 15 25 12 22 18 20 8 19 3 26 1]
             :boards (->> [[[22 13 17 11 0]
                            [8 2 23 4 24]
@@ -104,7 +104,7 @@
    :part1 [4512 82440]
    :part2 [1924 20774]}
 
-  {:day 5
+  #_{:day 5
    :sample [[0 9 5 9]
             [8 0 0 8]
             [9 4 3 4]
@@ -118,17 +118,17 @@
    :part1 [5 4993]
    :part2 [12 21101]}
 
-  {:day 6
+  #_{:day 6
    :sample {3 2, 4 1, 1 1, 2 1}
    :part1 [5934 351092]
    :part2 [26984457539 1595330616005]}
 
-  {:day 7
+  #_{:day 7
    :sample [16,1,2,0,4,2,7,1,2,14]
    :part1 [37 337833]
    :part2 [168 96678050]}
 
-  {:day 8
+  #_{:day 8
    :sample [[#{"bcdef" "abcdefg" "abdefg" "be" "bcdefg" "acdefg" "bde" "bceg" "abcdf" "cdefg"}
              ["abcdefg" "bcdef" "bcdefg" "bceg"]]
             [#{"cg" "bcg" "abcdefg" "abdefg" "abcde" "bcdefg" "bcdeg" "cefg" "abcdfg" "bdefg"}
@@ -152,7 +152,7 @@
    :part1 [26 381]
    :part2 [61229 1023686]}
 
-  {:day 9
+  #_{:day 9
    :sample [[2 1 9 9 9 4 3 2 1 0]
             [3 9 8 7 8 9 4 9 2 1]
             [9 8 5 6 7 8 9 8 9 2]
@@ -161,7 +161,7 @@
    :part1 [15 591]
    :part2 [1134 1113424]}
 
-  {:day 10
+  #_{:day 10
    :sample [[:incomplete 288957]
             [:incomplete 5566]
             [:incorrect 1197]
@@ -175,7 +175,7 @@
    :part1 [26397 392043]
    :part2 [288957 1605968119]}
 
-  {:day 11
+  #_{:day 11
    :sample (->> [[5 4 8 3 1 4 3 2 2 3]
                  [2 7 4 5 8 5 4 7 1 1]
                  [5 2 6 4 5 5 6 1 7 3]
@@ -207,7 +207,7 @@
    :part1 [10 4104]
    :part2 [36 119760]}
 
-  {:day 13
+  #_{:day 13
    :sample {:dots #{[6 10] [0 14] [9 10] [0 3] [10 4] [4 11] [6 0] [6 12] [4 1]
                     [0 13] [10 12] [3 4] [3 0] [8 4] [1 10] [2 14] [8 10] [9 0]}
             :folds [[1 7] [0 5]]}
@@ -224,7 +224,7 @@
             "#....#..#.#..#.#..#.#..#.#..#.#..#.#..#"
             "#.....##..#..#.#..#..##...###.#..#.#..#"]]}
 
-  {:day 14
+  #_{:day 14
    :sample {:start ["NN" "NC" "CB"]
             :ops {"CH" "B"
                   "HH" "N"
@@ -261,9 +261,29 @@
    :part1 [40 748]
    :part2 [315 3045]}
 
-  {:day 16
-   :sample (seq "11101110000000001101010000001100100000100011000001100000")
-   :part1 [7 nil]
+  #_{:day 16
+   :sample {:version 5
+            :type [:operator 0]
+            :payload [{:version 1
+                       :type [:operator 0]
+                       :payload [{:version 3
+                                  :type [:operator 0]
+                                  :payload [{:version 7
+                                             :type [:literal]
+                                             :value 6}
+                                            {:version 6
+                                             :type [:literal]
+                                             :value 6}
+                                            {:version 5
+                                             :type [:literal]
+                                             :value 12}
+                                            {:version 2
+                                             :type [:literal]
+                                             :value 15}
+                                            {:version 2
+                                             :type [:literal]
+                                             :value 15}]}]}]}
+   :part1 [nil 0]
    :part2 [nil nil]})
 
 (deftest day16
@@ -273,26 +293,34 @@
        "38006F45291200"
        {:version 1
         :type [:operator 6]
+        :length [:bits 27]
         :payload [{:version 6, :type [:literal], :value 10}
                   {:version 2, :type [:literal], :value 20}]}
        "EE00D40C823060"
        {:version 7
         :type [:operator 3]
+        :length [:packets 3]
         :payload [{:version 2, :type [:literal], :value 1}
                   {:version 4, :type [:literal], :value 2}
                   {:version 1, :type [:literal], :value 3}]}
+         (= {:version 4, :type [:operator 2], :length [:packets 1], :payload [{:version 1, :type [:operator 2], :length [:packets 1], :payload [{:version 5, :type [:operator 2], :length [:packets 1], :payload [{:version 6, :type [:literal], :value 15}]}]}]}
+            {:version 4, :type [:operator 2], :length [:packets 1], :payload ({:version 1, :type [:operator 2], :length [:packets 1], :payload ({:version 5, :type [:operator 2], :length [:bits 11], :payload ()})} {:version 6, :type [:literal], :value 15})})
+
        "8A004A801A8002F478"
        {:version 4
         :type [:operator 2]
+        :length [:packets 1]
         :payload [{:version 1
                    :type [:operator 2]
+                   :length [:packets 1]
                    :payload [{:version 5
                               :type [:operator 2]
+                              :length [:bits 11]
                               :payload [{:version 6
                                          :type [:literal]
                                          :value 15}]}]}]}
-       "620080001611562C8802118E34"
-       {:version 3
+       #_"620080001611562C8802118E34"
+       #_{:version 3
         :type [:operator 0]
         :payload [{:version 0
                    :type [:operator 0]
@@ -302,8 +330,8 @@
                              {:version 5
                               :type [:literal]
                               :value 11}]}]}
-       "C0015000016115A2E0802F182340"
-       {:version 6
+       #_"C0015000016115A2E0802F182340"
+       #_{:version 6
         :type [:operator 0]
         :payload [{:version 0
                    :type [:operator 0]
@@ -313,8 +341,8 @@
                              {:version 6
                               :type [:literal]
                               :value 11}]}]}
-       "A0016C880162017C3686B18A3D4780"
-       {:version 5
+       #_"A0016C880162017C3686B18A3D4780"
+       #_{:version 5
         :type [:operator 0]
         :payload [{:version 1
                    :type [:operator 0]

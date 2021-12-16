@@ -4,22 +4,20 @@
 
 (def grammar
   "
-  S = packet leftover
+  S = packet zeros
   packet = literal-packet | operator-packet
   literal-packet = version <'100'> literal
   <literal> = (repeated-lit)* ending-lit
   <version> = #'.{3}'
   <repeated-lit> = <'1'> #'.{4}'
   <ending-lit> = <'0'> #'.{4}'
-  operator-packet = version operator-type-id length payload
+  operator-packet = version operator-type-id length packets
+  <packets> = packet*
   <operator-type-id> = '000' | '001' | '010' | '011' | '101' | '110' | '111'
   <length> = length-bits | length-packets
   length-bits = <'0'> #'.{15}'
   length-packets = <'1'> #'.{11}'
-  <payload> = #'.*'
-  <leftover> = zeros / more-data
   zeros = <'0'*>
-  more-data =  #'.*'
   ")
 
 (def to-ast (insta/parser grammar))
@@ -34,13 +32,12 @@
     {:version (Long/parseLong version 2)
      :type [:literal]
      :value (Long/parseLong (apply str lit) 2)}
-    [:operator-packet version type [length-type length] payload]
+    [:operator-packet version type [length-type length] & packets]
     {:version (Long/parseLong version 2)
      :type [:operator (Long/parseLong type 2)]
-     :payload (let [length (Long/parseLong length 2)]
-                (case length-type
-                  :length-bits (parse-ast (to-ast (subs payload 0 length)))
-                  :length-packets (take length (parse-ast (to-ast payload)))))}))
+     :length [({:length-bits :bits, :length-packets :packets} length-type)
+              (Long/parseLong length 2)]
+     :payload (map parse-ast packets)}))
 
 (defn parse
   [lines]
@@ -56,8 +53,10 @@
 
 (defn part1
   [input]
-
-  )
+  (prn input)
+  (match (:type input)
+    [:literal] (:version input)
+    [:operator _] (reduce + (:version input) (map part1 (:payload input)))))
 
 (defn part2
   [input])
