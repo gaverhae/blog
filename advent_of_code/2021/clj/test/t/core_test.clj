@@ -269,34 +269,3 @@
                                                            [:literal 2 15]]]]]]]
    :part1 [31 854]
    :part2 [54 186189840660]})
-
-(deftest extra-day16
-  (are [x v y] (and (= y (day16/parse [x]))
-                    (= v (day16/part1 (day16/parse [x]))))
-       "D2FE28"
-       6
-       [:literal 6 2021]
-       "38006F45291200"
-       9
-       [:operator 1 6 [[:literal 6 10] [:literal 2 20]]]
-       "EE00D40C823060"
-       14
-       [:operator 7 3 [[:literal 2 1] [:literal 4 2] [:literal 1 3]]]
-       "8A004A801A8002F478"
-       16
-       [:operator 4 2 [[:operator 1 2 [[:operator 5 2 [[:literal 6 15]]]]]]]
-       "620080001611562C8802118E34"
-       12
-       [:operator 3 0 [[:operator 0 0 [[:literal 0 10] [:literal 5 11]]]
-                       [:operator 1 0 [[:literal 0 12] [:literal 3 13]]]]]
-       "C0015000016115A2E0802F182340"
-       23
-       [:operator 6 0 [[:operator 0 0 [[:literal 0 10] [:literal 6 11]]]
-                       [:operator 4 0 [[:literal 7 12] [:literal 0 13]]]]]
-       "A0016C880162017C3686B18A3D4780"
-       31
-       [:operator 5 0 [[:operator 1 0 [[:operator 3 0 [[:literal 7 6]
-                                                       [:literal 6 6]
-                                                       [:literal 5 12]
-                                                       [:literal 2 15]
-                                                       [:literal 2 15]]]]]]]))
