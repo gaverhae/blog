@@ -1,5 +1,5 @@
 (ns t.core-test
-  (:require [clojure.test :refer [deftest]]
+  (:require [clojure.test :refer [deftest are]]
             [clojure.string :as string]
             [t.util :refer [transpose]]
             [t.day1 :as day1]
@@ -62,7 +62,7 @@
                           ~(check (get-in spec [:part2 1])
                                   `(~part2 @~data-sym))))))))))
 
-(make-tests
+#_(make-tests
 
   {:day 1
    :sample [199 200 208 210 200 207 240 269 260 263]
@@ -265,3 +265,14 @@
    :sample (seq "11101110000000001101010000001100100000100011000001100000")
    :part1 [7 nil]
    :part2 [nil nil]})
+
+(deftest day16
+  (are [x y] (= y (day16/parse [x]))
+       "D2FE28"
+       {:version 6, :type [:literal], :value 2021}
+       "38006F45291200"
+       {:version 1
+        :type [:operator 6]
+        :payload [{:version 6, :type [:literal], :value 10}
+                  {:version 2, :type [:literal], :value 20}]}
+       ))
