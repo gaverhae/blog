@@ -1,34 +1,31 @@
 (ns t.day16
-  (:require [clojure.core.match :refer [match]]))
+  (:require [clojure.core.match :refer [match]]
+            [instaparse.core :as insta]))
 
-(defn parse-literal
-  [bits]
-  (Long/parseLong (->> bits
-                       (partition 5)
-                       (mapcat rest)
-                       (apply str))
-                  2))
+(def grammar
+  "
+  S = packet <zeros>
+  packet = literal-packet | operator-packet
+  literal-packet = version <'100'> literal
+  <literal> = (repeated-lit)* ending-lit
+  <version> = #'...'
+  <repeated-lit> = <'1'> #'....'
+  <ending-lit> = <'0'> #'....'
+  operator-packet = '11111'
+  zeros = '0'*
+  ")
 
-(defn parse-operator
-  [[length-id & payload]]
-  (let [length-type ({\0 :bits, \1 :packets} length-id)
-        length-length ({:bits 15, :packets 11} length-type)
-        length (Long/parseLong (apply str (take length-length payload)) 2)
-        payload (drop length-length payload)]
-    {:length [length-type length]
-     :packets nil}))
+(def to-ast (insta/parser grammar))
 
-
-(defn parse-packet
-  [[v1 v2 v3 t1 t2 t3 & payload]]
-  (let [version (Long/parseLong (str v1 v2 v3) 2)
-        type-id (Long/parseLong (str t1 t2 t3) 2)]
-    {:version version
-     :type-id type-id
-     :type ({4 :literal} type-id)
-     :payload (match [version type-id]
-                [_ 4] (parse-literal payload)
-                [_ _] (parse-operator payload))}))
+(defn parse-ast
+  [tree]
+  (prn tree)
+  (match tree
+    [:S packet] (parse-ast packet)
+    [:packet packet] (parse-ast packet)
+    [:literal-packet version & lit] {:version (Long/parseLong version 2)
+                                     :type :literal
+                                     :value (Long/parseLong (apply str lit) 2)}))
 
 (defn parse
   [lines]
@@ -38,7 +35,8 @@
                 \6 "0110" \7 "0111" \8 "1000" \9 "1001" \A "1010" \B "1011"
                 \C "1100" \D "1101" \E "1110" \F "1111"})
        (apply str)
-       parse-packet))
+       to-ast
+       parse-ast))
 
 (defn part1
   [input]
