@@ -39,6 +39,29 @@
               (Long/parseLong length 2)]
      :payload (map parse-ast packets)}))
 
+(defn parse-bits
+  [bits]
+  (letfn [(parse-packet [bits]
+            (let [version (Long/parseLong (subs bits 0 3) 2)
+                  type (Long/parseLong (subs bits 3 6) 2)]
+              (if (= type 4)
+                (let [[value leftovers] (parse-value (subs bits 6))]
+                  [[:literal version value] leftovers])
+                :undefined)))
+          (parse-value [bits]
+            (loop [leftover bits
+                   collected ""]
+              (let [continue? (= "1" (subs leftover 0 1))
+                    so-far (str collected (subs leftover 1 5))
+                    left (subs leftover 5)]
+                (if continue?
+                  (recur left so-far)
+                  [(Long/parseLong so-far 2) left]))))]
+    (let [[top-level-packet leftovers] (parse-packet bits)]
+      (when-not (every? #{\0} leftovers)
+        (throw (RuntimeException. ^String leftovers)))
+      top-level-packet)))
+
 (defn parse
   [lines]
   (->> lines
@@ -47,9 +70,7 @@
                 \6 "0110" \7 "0111" \8 "1000" \9 "1001" \A "1010" \B "1011"
                 \C "1100" \D "1101" \E "1110" \F "1111"})
        (apply str)
-       to-ast
-       parse-ast
-       first))
+       parse-bits))
 
 (defn part1
   [input]
