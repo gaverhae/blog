@@ -287,72 +287,32 @@
    :part2 [nil nil]})
 
 (deftest day16
-  (are [x y] (= y (day16/parse [x]))
-       #_"D2FE28"
-       #_[:literal 6 2021]
+  (are [x v y] (and (= y (day16/parse [x]))
+                    #_(= v (day16/part1 (day16/parse [x]))))
+       "D2FE28"
+       6
+       [:literal 6 2021]
        "38006F45291200"
+       9
        [:operator 1 6 [[:literal 6 10] [:literal 2 20]]]
-       #_"EE00D40C823060"
-       #_{:version 7
-        :type [:operator 3]
-        :length [:packets 3]
-        :payload [{:version 2, :type [:literal], :value 1}
-                  {:version 4, :type [:literal], :value 2}
-                  {:version 1, :type [:literal], :value 3}]}
-       #_"8A004A801A8002F478"
-       #_{:version 4
-        :type [:operator 2]
-        :length [:packets 1]
-        :payload [{:version 1
-                   :type [:operator 2]
-                   :length [:packets 1]
-                   :payload [{:version 5
-                              :type [:operator 2]
-                              :length [:bits 11]
-                              :payload [{:version 6
-                                         :type [:literal]
-                                         :value 15}]}]}]}
-       #_"620080001611562C8802118E34"
-       #_{:version 3
-        :type [:operator 0]
-        :payload [{:version 0
-                   :type [:operator 0]
-                   :payload [{:version 0
-                              :type [:literal]
-                              :value 10}
-                             {:version 5
-                              :type [:literal]
-                              :value 11}]}]}
-       #_"C0015000016115A2E0802F182340"
-       #_{:version 6
-        :type [:operator 0]
-        :payload [{:version 0
-                   :type [:operator 0]
-                   :payload [{:version 0
-                              :type [:literal]
-                              :value 10}
-                             {:version 6
-                              :type [:literal]
-                              :value 11}]}]}
-       #_"A0016C880162017C3686B18A3D4780"
-       #_{:version 5
-        :type [:operator 0]
-        :payload [{:version 1
-                   :type [:operator 0]
-                   :payload [{:version 3
-                              :type [:operator 0]
-                              :payload [{:version 7
-                                         :type [:literal]
-                                         :value 6}
-                                        {:version 6
-                                         :type [:literal]
-                                         :value 6}
-                                        {:version 5
-                                         :type [:literal]
-                                         :value 12}
-                                        {:version 2
-                                         :type [:literal]
-                                         :value 15}
-                                        {:version 2
-                                         :type [:literal]
-                                         :value 15}]}]}]}))
+       "EE00D40C823060"
+       14
+       [:operator 7 3 [[:literal 2 1] [:literal 4 2] [:literal 1 3]]]
+       "8A004A801A8002F478"
+       16
+       [:operator 4 2 [[:operator 1 2 [[:operator 5 2 [[:literal 6 15]]]]]]]
+       "620080001611562C8802118E34"
+       12
+       [:operator 3 0 [[:operator 0 0 [[:literal 0 10] [:literal 5 11]]]
+                       [:operator 1 0 [[:literal 0 12] [:literal 3 13]]]]]
+       "C0015000016115A2E0802F182340"
+       23
+       [:operator 6 0 [[:operator 0 0 [[:literal 0 10] [:literal 6 11]]]
+                       [:operator 4 0 [[:literal 7 12] [:literal 0 13]]]]]
+       "A0016C880162017C3686B18A3D4780"
+       31
+       [:operator 5 0 [[:operator 1 0 [[:operator 3 0 [[:literal 7 6]
+                                                       [:literal 6 6]
+                                                       [:literal 5 12]
+                                                       [:literal 2 15]
+                                                       [:literal 2 15]]]]]]]))

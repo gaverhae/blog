@@ -45,7 +45,6 @@
             (let [version (Long/parseLong (subs bits 0 3) 2)
                   type (Long/parseLong (subs bits 3 6) 2)
                   bits (subs bits 6)]
-              (prn [:parse-packet version type bits])
               (if (= type 4)
                 (let [[value bits] (parse-value bits)]
                   [[:literal version value]
@@ -59,14 +58,12 @@
               (let [continue? (= "1" (subs bits 0 1))
                     so-far (str so-far (subs bits 1 5))
                     bits (subs bits 5)]
-                (prn [:parse-value continue? so-far bits])
                 (if continue?
                   (recur bits so-far)
                   [(Long/parseLong so-far 2) bits]))))
           (parse-args [bits]
             (let [length-type ({"0" :bits, "1" :packets} (subs bits 0 1))
                   bits (subs bits 1)]
-              (prn [:parse-args length-type bits])
               (case length-type
                 :bits (let [length (Long/parseLong (subs bits 0 15) 2)
                             bits (subs bits 15)
@@ -74,7 +71,6 @@
                             bits (subs bits length)]
                         [(loop [so-far []
                                 bits packets]
-                           (prn [:bits length so-far (count bits) bits])
                            (if (empty? bits)
                              so-far
                              (let [[p bits] (parse-packet bits)]
@@ -84,7 +80,6 @@
                                bits (subs bits 11)]
                            (loop [so-far []
                                   bits bits]
-                             (prn [:packets so-far bits])
                              (if (= (count so-far) length)
                                [so-far bits]
                                (let [[p bits] (parse-packet bits)]
@@ -105,11 +100,7 @@
        parse-bits))
 
 (defn part1
-  [input]
-  (prn input)
-  (match (:type input)
-    [:literal] (:version input)
-    [:operator _] (reduce + (:version input) (map part1 (:payload input)))))
+  [input])
 
 (defn part2
   [input])
