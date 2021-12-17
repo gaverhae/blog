@@ -4,18 +4,28 @@
 
 (defn parse
   [lines]
-  (->> lines
-       (map #(string/split % #"-"))
-       (mapcat (fn [[a b]] [{a #{b}} {b #{a}}]))
-       (apply merge-with set/union {})))
-
-(defn small?
-  [^String s]
-  (= s (.toLowerCase s)))
-
-(defn ends?
-  [[pos]]
-  (= pos "end"))
+  (let [links (->> lines
+                   (map #(string/split % #"-")))
+        caves (->> links
+                   (apply concat)
+                   set
+                   (remove #{"start" "end"})
+                   sort)
+        mapping (->> caves
+                     (map-indexed (fn [idx cave]
+                                    [cave (* (if (= cave (.toLowerCase cave))
+                                               -1 1)
+                                             (+ 2 idx))]))
+                     (into {"start" 0
+                            "end" 1}))]
+    (reduce (fn [system [from to]]
+              (let [from (mapping from)
+                    to (mapping to)]
+                (-> system
+                    (update from (fnil conj #{}) to)
+                    (update to (fnil conj #{}) from))))
+            {}
+            links)))
 
 (defn traverse
   [input init forbidden update-state]
@@ -24,7 +34,7 @@
       num-paths
       (recur (reduce (fn [[ps np] [pos state]]
                        (reduce (fn [[ps np] next-step]
-                                 (cond (= "end" next-step) [ps (inc np)]
+                                 (cond (= 1 next-step) [ps (inc np)]
                                        (forbidden state next-step) [ps np]
                                        :else [(conj ps [next-step
                                                         (update-state state next-step)])
@@ -37,22 +47,22 @@
 (defn part1
   [input]
   (traverse input
-            ["start" #{"start"}]
+            [0 #{0}]
             contains?
             (fn [visited cave]
-              (if (small? cave)
+              (if (neg? cave)
                 (conj visited cave)
                 visited))))
 
 (defn part2
   [input]
   (traverse input
-            ["start" [#{"start"} false]]
+            [0 [#{0} false]]
             (fn [[visited twice?] cave]
-              (or (= "start" cave)
+              (or (= 0 cave)
                   (and (visited cave) twice?)))
             (fn [[visited twice?] cave]
-              [(if (small? cave)
+              [(if (neg? cave)
                  (conj visited cave)
                  visited)
                (or twice?
