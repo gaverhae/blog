@@ -1,8 +1,6 @@
 (ns t.day12
   (:require [clojure.string :as string]
-            [clojure.set :as set]
-            [clojure.core.match :refer [match]]
-            [t.util :refer [parse-integers transpose]]))
+            [clojure.set :as set]))
 
 (defn parse
   [lines]
