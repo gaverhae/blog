@@ -84,7 +84,7 @@
      (println (format "%-28s %7d: %5.2f"
                       (pr-str '~primes-fn)
                       n#
-                      (->> (crit/quick-benchmark (nth ~primes-fn n#) {})
+                      (->> (crit/benchmark (nth ~primes-fn n#) {})
                            :mean first)))))
 
 (defn -main
