@@ -17,38 +17,43 @@
   [[pos]]
   (= pos "end"))
 
-(defn part1
-  [input]
-  (loop [num-paths 0
-         paths [["start" #{"start"}]]]
+(defn traverse
+  [input init forbidden update-state]
+  (loop [[paths num-paths] [[init] 0]]
     (if (empty? paths)
       num-paths
-      (let [p (for [[pos visited] paths
-                    next-step (get input pos)
-                    :when (not (visited next-step))]
-                [next-step
-                 (if (small? next-step)
-                   (conj visited next-step)
-                   visited)])]
-        (recur (->> p (filter ends?) count (+ num-paths))
-               (->> p (remove ends?)))))))
+      (recur (reduce (fn [[ps np] [pos state]]
+                       (reduce (fn [[ps np] next-step]
+                                 (cond (= "end" next-step) [ps (inc np)]
+                                       (forbidden state next-step) [ps np]
+                                       :else [(conj ps [next-step
+                                                        (update-state state next-step)])
+                                              np]))
+                               [ps np]
+                               (get input pos)))
+                     [[] num-paths]
+                     paths)))))
+
+(defn part1
+  [input]
+  (traverse input
+            ["start" #{"start"}]
+            contains?
+            (fn [visited cave]
+              (if (small? cave)
+                (conj visited cave)
+                visited))))
 
 (defn part2
   [input]
-  (loop [num-paths 0
-         paths [["start" #{"start"} false]]]
-    (if (empty? paths)
-      num-paths
-      (let [p (for [[pos visited twice?] paths
-                    next-step (get input pos)
-                    :when (or (not (visited next-step))
-                              (and (not= "start" next-step)
-                                   (not twice?)))]
-                [next-step
-                 (if (small? next-step)
-                   (conj visited next-step)
-                   visited)
-                 (or twice?
-                     (boolean (visited next-step)))])]
-        (recur (->> p (filter ends?) count (+ num-paths))
-               (->> p (remove ends?)))))))
+  (traverse input
+            ["start" [#{"start"} false]]
+            (fn [[visited twice?] cave]
+              (or (= "start" cave)
+                  (and (visited cave) twice?)))
+            (fn [[visited twice?] cave]
+              [(if (small? cave)
+                 (conj visited cave)
+                 visited)
+               (or twice?
+                   (boolean (visited cave)))])))
