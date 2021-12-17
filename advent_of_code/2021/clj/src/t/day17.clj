@@ -43,3 +43,40 @@
                      (map (fn [[pos _ _]] pos))
                      (reduce max))))
          first)))
+
+(defn part2
+  [{:keys [x-min x-max y-min y-max]}]
+  (let [target-x (set (range x-min (inc x-max)))
+        target-y (set (range y-min (inc y-max)))
+        valid-dx (->> (range 0 (inc x-max))
+                      (map (fn [speed]
+                             [speed
+                              (->> [0 speed]
+                                   (iterate (fn [[pos speed]]
+                                              [(+ pos speed)
+                                               (if (pos? speed) (dec speed) 0) ]))
+                                   (map first))]))
+                      (filter (fn [[init-dx traj]]
+                                (->> traj
+                                     (take (inc x-max))
+                                     (filter target-x)
+                                     seq))))
+        valid-dy (->> (range y-min (inc (- y-min)))
+                      (map (fn [speed]
+                             [speed
+                              (->> [0 speed]
+                                   (iterate (fn [[pos speed]]
+                                              [(+ pos speed) (dec speed)]))
+                                   (map first)
+                                   (take-while (fn [pos] (>= pos y-min))))]))
+                      (filter (fn [[init-dy traj]]
+                                (->> traj
+                                     (filter target-y)
+                                     seq))))]
+    (count (for [[init-dy traj-y] valid-dy
+                 [init-dx traj-x] valid-dx
+                 :when (->> (map vector traj-x traj-y)
+                            (filter (fn [[x y]] (and (target-x x)
+                                                     (target-y y))))
+                            seq)]
+             [init-dx init-dy]))))
