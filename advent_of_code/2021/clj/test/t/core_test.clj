@@ -272,7 +272,9 @@
    :part2 [54 186189840660]}
 
   {:day 17
-   :sample {:x [20 30]
-            :y [-10 -5]}
-   :part1 nil
-   :part2 nil})
+   :sample {:x-min 20
+            :x-max 30
+            :y-min -10
+            :y-max -5}
+   :part1 [45 5671]
+   :part2 [112 nil]})
