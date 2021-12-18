@@ -103,4 +103,9 @@
        magnitude))
 
 (defn part2
-  [input])
+  [input]
+  (->> (for [n1 input
+             n2 input
+             :when (not= n1 n2)]
+         (magnitude (sum n1 n2)))
+       (reduce max)))
