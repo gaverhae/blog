@@ -2,33 +2,28 @@
  :layout :post
  :tags ["tyska"]}
 
-Rcently, I've discovered how to leverage Nix to reap a lot of its benefits with
-a _very_ minimal investment, specifically reading this one blog post.
+Recently, I've discovered how to leverage [Nix] to reap a lot of its benefits
+with a _very_ minimal investment; specifically, one that fits in one blog post.
 
-I've been aware of the [Nix] toolset for over a decade now, but until recently
-it's always seemed pretty nebulous. Most of the documentation I've come across
-explains what the benefits are and how the tooling works in order to deliver
-those benefits, but not how to _actually_ use any of it.
-
-Specifically, it always seemed like there was no easy way to get started
-reaping at least _some_ of these benefits without a pretty massive learning
-investment.
+I've been aware of the Nix toolset for over a decade now, but until recently
+it's always looked like it required a pretty big investment. Most of the
+documentation I've come across explains what the benefits are and how the
+tooling works in order to deliver those benefits, but always from the
+perspective of wanting to build a project using Nix as your build system.
+And, well, I usually already have a build system I'm pretty happy with, and
+I've never bit the bullet and actually learned the pretty arcane syntax of the
+Nix language.
 
 ### In a nutshell
-
-In [this series], I usually start with an excerpt from the official homepage.
-However, in this case, it's pretty useless for people not already familiar with
-Nix (which is my target audience here; if you know how to use Nix already, you
-won't learn anything here).
 
 From [the homepage]:
 
 > The command `nix-shell` will build the dependencies of the specified
 > derivation, but not the derivation itself. It will then start an interactive
 > shell in which all environment variables defined by the derivation path have
-> been set to their corresponding values, and the script $stdenv/setup has been
-> sourced. This is useful for reproducing the environment of a derivation for
-> development.
+> been set to their corresponding values, and the script `$stdenv/setup` has
+> been sourced. This is useful for reproducing the environment of a derivation
+> for development.
 
 There you go. Now, let me explain in plainer terms why that's _awesome_ and how
 you can leverage it immediately after you finish reading this blog post.
@@ -37,12 +32,16 @@ you can leverage it immediately after you finish reading this blog post.
 
 Most software projects have what I'd call "tool dependencies". In many
 languages, you have your more explicit "library" dependencies, usually managed
-by a language-specific package maanger (gem for Ruby, Maven for Java, cargo for
-Rust, npm for JavaScript, etc.). But there's a layer under that: the language
-runtime or compiler, the language-specific package manager, all sorts of extra
-little scripts most projects tend to grow over time. Perhaps a linter, or some
-infrastructure-related tooling. Those are the types of dependencies I'm
-concerned with in this post.
+by a language-specific package manager (gem for Ruby, Maven for Java, cargo for
+Rust, npm for JavaScript, etc.). To be clear, I am not, in this post,
+advocating replacing any of those with Nix.
+
+But there's a layer under that: the language runtime or compiler, the
+language-specific package manager itself, all sorts of extra little scripts
+most projects tend to grow over time. Perhaps a linter, or some
+infrastructure-related tooling. Maybe the project contains scripts that only
+work with some versions of Bash. Maybe you need [jq]. Those are the types of
+dependencies I'm concerned with in this post.
 
 In my experience, managing those tooling dependencies is usually left entirely
 to individual developers, based on some vague instructions in the README when
@@ -64,7 +63,7 @@ nvm). They typically don't do anything for other tools, and if you're working
 on a multi-language project you may have to contend with multiple such tools.
 
 While that isn't the problem nix-shell was built to solve, it solves it
-beautifully. Nix-shell is for you if you like any of these properties:
+beautifully. `nix-shell` is for you if you like any of these properties:
 
 - You don't want to worry about tooling for one project interfering in any way
   with tooling for other projects.
@@ -78,7 +77,7 @@ beautifully. Nix-shell is for you if you like any of these properties:
 
 ### Feature highlights
 
-The [Nix] project as a whole has _many_ parts, but this post focuses on one
+The Nix project as a whole has _many_ parts, but this post focuses on one
 very specific way of using one of the tools in the (vast) Nix toolbox.
 Therefore, there's a single highlight: the ability to get a reproducible
 (across time as well as across machines) environment for either running a
@@ -113,21 +112,18 @@ Nix packages to your `PATH` when working on specific projects.
 The other question that this should raise is how do you know what hash to
 install in the first place. The answer to that is that Nix works with a
 repository of Nix "recipes" called [nixpkgs], which is a GitHub repo that
-contains "derivations" for many, many, many programs. The way you decide on
-what to install is that you tell Nix to use a specific commit from that repo as
-your "package definition", and when things work out as intended all of the
-packages defined in a single commit there work with each other.
-
-So instead of having to manually specify a version for each tool you want
-available, you specify a nixpkgs revision once, and then just refer to each
-tool by its package name.
+contains "derivations" for many, many, many programs. The way you find out
+specific hashes is that you tell Nix to use a specific commit from that repo as
+your "packages definitions", and from then on you only need to specify the
+package name (and sometimes some options) and Nix will figure out the
+appropriate hash itself.
 
 ### How it works in practice
 
 #### Installing Nix
 
 First, you need to [have Nix installed][install]. This is a one-time action,
-and on macOS you'll need `sudo` access to do it (you can do a "single-user"
+and on macOS you'll need `sudo` access to do it. (You can do a "single-user"
 install on Linux without giving `sudo` access to the install script if you
 manually create a writeable `/nix` before running the install script).
 
@@ -237,8 +233,9 @@ specified multiple times to keep multiple env vars).
 ### `direnv`
 
 `nix-shell` as presented in the previous section would alread be pretty nice,
-but combined with [direnv] it's a real game changer. Assuming you have [direnv]
-installed, you can add an `.envrc` file to the project above with this content:
+but combined with [direnv] it's a real game changer. Assuming you have direnv
+installed (perhaps because you read my [post about it][tyska-direnv]), you can
+add an `.envrc` file to the project above with this content:
 
 ```plaintext
 use nix
@@ -274,7 +271,7 @@ file][all-packages] in the [nixpkgs] repository. The names on the left of the
 equality operators are the top-level package names that you can access through
 the `pkgs.` prefix in the `shell.nix` file sample above.
 
-### Bonus: `nix-shell` shebang
+### `nix-shell` shebang
 
 If you can assume everyone using your project is going to have Nix installed,
 but may not be using `direnv` (or you don't want to setup `direnv` on CI, for
@@ -307,3 +304,5 @@ investment.
 [nixpkgs]: https://github.com/NixOS/nixpkgs
 [direnv]: https://direnv.net
 [all-packages]: https://github.com/NixOS/nixpkgs/blob/master/pkgs/top-level/all-packages.nix
+[jq]: /posts/2021-09-26-tyska-jq
+[tyska-direnv]: /posts/2021-12-12-tyska-direnv
