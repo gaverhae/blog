@@ -297,6 +297,10 @@ about Nix; time invested learning more about it would be well spent. But I hope
 to have made the point that you can leverage it very easily, even with little
 investment.
 
+I myself can't think of any reason _not_ to add both `direnv` and `nix-shell`
+to every new project I create from now on, so that's what I'm going to do by
+default.
+
 [the homepage]: https://nixos.org/manual/nix/unstable/command-ref/nix-shell.html
 [Nix]: https://nixos.org
 [this series]: /tags/tyska
