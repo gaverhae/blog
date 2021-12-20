@@ -4,7 +4,7 @@
   [lines]
   {:alg (->> lines first (mapv {\. 0 \# 1}))
    :img (->> lines (drop 2) (mapv #(mapv {\. 0 \# 1} %)))
-   :default (->> lines first first {\. 0 \# 1})})
+   :default 0})
 
 (defn neigh
   [img x y default]
@@ -16,8 +16,8 @@
   [{:keys [alg img default]}]
   (let [start-x -1
         start-y -1
-        end-y (count img)
-        end-x (count img)]
+        end-y (+ 0 (count img))
+        end-x (+ 0 (count img))]
     {:alg alg
      :img (vec (for [y (range start-y (inc end-y))]
                  (vec (for [x (range start-x (inc end-x))]
@@ -29,6 +29,7 @@
 (defn part1
   [input]
   (->> (iterate improve input)
+       (map (fn [x] (prn x) x))
        (drop 2)
        first
        :img
