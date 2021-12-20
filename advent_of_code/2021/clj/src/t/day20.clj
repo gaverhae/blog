@@ -29,7 +29,6 @@
 (defn part1
   [input]
   (->> (iterate improve input)
-       (map (fn [x] (prn x) x))
        (drop 2)
        first
        :img
@@ -37,4 +36,10 @@
        count))
 
 (defn part2
-  [input])
+  [input]
+  (->> (iterate improve input)
+       (drop 50)
+       first
+       :img
+       (mapcat (fn [line] (keep #{1} line)))
+       count))
