@@ -6,53 +6,73 @@
   [lines]
   (->> lines
        (map (fn [s]
-              (->> (string/split s #" ")
-                   (split-with (comp not #{"|"}))
-                   ((fn [[in out]]
-                      [(->> in
-                            (map (fn [s] (apply str (sort s))))
-                            (sort-by count)
-                            set)
-                       (->> out
-                            (map (fn [s] (apply str (sort s))))
-                            (remove #{"|"}))])))))))
+              (-> s
+                  (string/split #" ")
+                  (->> (split-with (comp not #{"|"}))
+                       (map (fn [x] (remove #{"|"} x)))))))))
 
-(defn permutations
-  [s]
-  (if (empty? s)
-    (list ())
-    (let [inits (reductions conj [] s)
-          tails (take (inc (count s)) (iterate rest s))
-          rotations (rest (map concat tails inits))]
-      (mapcat (fn [[x & xs]] (map #(cons x %) (permutations xs)))
-              rotations))))
+(defn letters-appearing
+  [n _ _ inputs]
+  (->> "abcdefg"
+       (filter (fn [c]
+                 (->> inputs
+                      (filter #(contains? (set %) c))
+                      count
+                      (== n))))
+       set))
 
-(defn make-decoder
-  []
-  (let [ins #{"abcefg" "cf" "acdeg" "acdfg" "bcdf" "abdfg" "abdefg" "acf" "abcdefg" "abcdfg"}]
-    (->> (permutations "abcdefg")
-         (map (fn [p]
-                (let [encode (into {} (map vector "abcdefg" p))
-                      decode (into {} (map vector p "abcdefg"))]
-                  [(->> ins
-                        (map (fn [w] (->> w (map encode) sort (apply str))))
-                        set)
-                   (fn [words]
-                     (->> words
-                          (map (fn [w] (->> w (map decode) sort (apply str))))
-                          (map {"abcefg" "0"
-                                "cf" "1"
-                                "acdeg" "2"
-                                "acdfg" "3"
-                                "bcdf" "4"
-                                "abdfg" "5"
-                                "abdefg" "6"
-                                "acf" "7"
-                                "abcdefg" "8"
-                                "abcdfg" "9"})
-                          (apply str)
-                          (Long/parseLong)))])))
-         (into {}))))
+(defn letters-in-word-with
+  [n _ _ inputs]
+  (->> inputs
+       (filter #(= (count %) n))
+       first
+       set))
+
+(defn decode
+  [[inputs outputs]]
+  (let [e (letters-appearing 4 :times :in inputs)
+        b (letters-appearing 6 :times :in inputs)
+        d (set/intersection
+            (letters-appearing 7 :times :in inputs)
+            (letters-in-word-with 4 :letters :in inputs))
+        g (set/difference
+            (letters-appearing 7 :times :in inputs)
+            d)
+        a (set/difference
+            (set "abcdefg")
+            e b d g
+            (letters-in-word-with 2 :letters :in inputs))
+        f (set/difference
+            (->> inputs
+                 (filter #(= (count %) 6))
+                 (filter #(set/subset? d (set %)))
+                 (filter #(set/subset? e (set %)))
+                 first
+                 set)
+            a b d e g)
+        c (set/difference
+            (set "abcdefg")
+            a b d e f g)
+        decoder (->> [a b c d e f g]
+                     (map first)
+                     (apply str)
+                     (map vector "abcdefg")
+                     (map (comp vec reverse))
+                     (into {}))]
+    (->> outputs
+         (map (fn [w] (->> w (map decoder) sort (apply str))))
+         (map {"abcefg" "0"
+               "cf" "1"
+               "acdeg" "2"
+               "acdfg" "3"
+               "bcdf" "4"
+               "abdfg" "5"
+               "abdefg" "6"
+               "acf" "7"
+               "abcdefg" "8"
+               "abcdfg" "9"})
+         (apply str)
+         (Long/parseLong))))
 
 (defn part1
   [input]
@@ -66,8 +86,6 @@
 
 (defn part2
   [input]
-  (let [decoder (make-decoder)]
-    (->> input
-         (map (fn [[ins outs]]
-                ((decoder ins) outs)))
-         (reduce + 0))))
+  (->> input
+       (map decode)
+       (reduce + 0)))
