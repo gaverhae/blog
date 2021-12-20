@@ -43,14 +43,17 @@
     (if (empty? paths)
       num-paths
       (recur (reduce (fn [[ps np] [pos state]]
-                       (reduce (fn [[ps np] next-step]
-                                 (cond (= 1 next-step) [ps (inc np)]
-                                       (forbidden state next-step) [ps np]
-                                       :else [(conj ps [next-step
-                                                        (update-state state next-step)])
-                                              np]))
-                               [ps np]
-                               (aget input (abs pos))))
+                       (let [outlinks ^longs (aget input (abs pos))
+                             end ^int (alength outlinks)]
+                         (loop [idx (int 0)
+                                [ps np] [ps np]]
+                           (if (== end idx) [ps np]
+                             (recur (unchecked-inc-int idx)
+                                    (cond (== 1 (aget outlinks idx)) [ps (inc np)]
+                                          (forbidden state (aget outlinks idx)) [ps np]
+                                          :else [(conj ps [(aget outlinks idx)
+                                                           (update-state state (aget outlinks idx))])
+                                                 np]))))))
                      [[] num-paths]
                      paths)))))
 
