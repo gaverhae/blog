@@ -221,7 +221,7 @@
                         (into-array Long/TYPE [2])
                         (into-array Long/TYPE [-3])])
    :part1 [10 4104]
-   :part2 [36 119760]}
+   #_#_:part2 [36 119760]}
 
   #_{:day 13
    :sample {:dots #{[6 10] [0 14] [9 10] [0 3] [10 4] [4 11] [6 0] [6 12] [4 1]

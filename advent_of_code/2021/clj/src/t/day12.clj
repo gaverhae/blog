@@ -38,48 +38,38 @@
             as-map)))
 
 (defn traverse
-  [^"[[J" input init forbidden update-state]
-  (loop [ps [[init] 0]]
-    (let [paths (get ps 0)
-          num-paths (get ps 1)]
-      (if (empty? paths)
-        num-paths
-        (recur (loop [paths paths
-                      [ps np] [[] num-paths]]
-                 (if (empty? paths)
-                   [ps np]
-                   (recur (rest paths)
-                          (let [[pos state] (first paths)]
-                            (loop [current ^longs (aget input (abs pos))
-                                   current-end ^int (alength current)
-                                   idx (int 0)
-                                   ps ps
-                                   np np]
-                              (if (== current-end idx) [ps np]
-                                (cond (== 1 (aget current idx))
-                                      (recur current
-                                             current-end
-                                             (unchecked-inc-int idx)
-                                             ps
-                                             (inc np))
-                                      (forbidden state (aget current idx))
-                                      (recur current
-                                             current-end
-                                             (unchecked-inc-int idx)
-                                             ps
-                                             np)
-                                      :else
-                                      (recur current
-                                             current-end
-                                             (unchecked-inc-int idx)
-                                             (conj ps [(aget current idx)
-                                                       (update-state state (aget current idx))])
-                                             np)))))))))))))
+  [^"[[J" input init-state forbidden update-state]
+  (loop [q ()
+         state init-state
+         current ^longs (aget input 0)
+         end ^int (alength current)
+         idx (int 0)
+         num-paths 0]
+    (cond (and (== idx end)
+               (empty? q))
+          num-paths
+          (== idx end)
+          (let [next-item (first q)
+                q (rest q)
+                state (get next-item 1)
+                current ^longs (aget input (abs (get next-item 0)))
+                end ^int (alength current)
+                idx (int 0)]
+            (recur q state current end idx num-paths))
+          :else
+          (let [c (aget current idx)]
+            (cond (== 1 c)
+                  (recur q state current end (unchecked-inc-int idx) (inc num-paths))
+                  (forbidden state c)
+                  (recur q state current end (unchecked-inc-int idx) num-paths)
+                  :else
+                  (recur (conj q [c (update-state state c)])
+                         state current end (unchecked-inc-int idx) num-paths))))))
 
 (defn part1
   [input]
   (traverse input
-            [0 #{0}]
+            #{0}
             contains?
             (fn [visited cave]
               (if (neg? cave)
@@ -92,7 +82,7 @@
         init ^booleans (make-array Boolean/TYPE (inc size))]
     (aset init 0 true)
     (traverse input
-              [0 init]
+              init
               (fn [^booleans visited cave]
                 (or (zero? cave)
                     (and (aget visited size)
