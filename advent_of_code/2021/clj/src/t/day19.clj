@@ -8,12 +8,13 @@
          (partition-by scanner-line?)
          (remove (fn [g] (scanner-line? (first g))))
          (map #(remove #{""} %))
-         (mapv #(mapv (fn [l]
+         (map #(mapv (fn [l]
                         (let [[_ x y z] (re-matches #"(-?\d+),(-?\d+),(-?\d+)" l)]
                           [(Long/parseLong x)
                            (Long/parseLong y)
                            (Long/parseLong z)]))
-                      %)))))
+                      %))
+         (mapv sort))))
 
 (defn v-
   [[x0 y0 z0] [x1 y1 z1]]
@@ -74,20 +75,6 @@
         (recur union (rest probes))
         (recur beacons (concat (rest probes) [(first probes)]))))))
 
-(comment
-(sort (remap [[892 -524 -684] [274 -1348 -1305] [1389 -2362 -1301] [1426 -2436 84] [1348 -1064 1185]]
-             [274 -1348 -1305]))
-([0 0 0] [618 824 621] [1074 284 2490] [1115 -1014 4] [1152 -1088 1389])
-
-(sort (remap [[892 -524 -684] [960 -1770 -727] [800 -2904 -704] [872 -1657 377] [1997 -1729 545]]
-             [800 -2904 -704]))
-([0 0 0] [72 1247 1081] [92 2380 20] [160 1134 -23] [1197 1175 1249])
-
-(sort (remap [[0 0 0] [-20,-1133,1061] [1105,-1205,1229] [-92,-2380,-20] [68,-1246,-43]]
-             [-92,-2380,-20]))
-([0 0 0] [72 1247 1081] [92 2380 20] [160 1134 -23] [1197 1175 1249])
-)
-
 (defn part2
   [input]
   (loop [beacons (first (all-beacons-as-origin (first input)))
@@ -106,7 +93,6 @@
                                                     :when (set/subset? (set grounded) (set p))]
                                                 (mapv - (first (sort p)))))]
                                    (v- from-origin from-scanner)))))]
-        (prn scanners)
         (->> (for [s1 scanners
                    s2 scanners]
                (->> (v- s1 s2)
