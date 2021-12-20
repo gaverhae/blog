@@ -73,7 +73,7 @@
             [0 [#{0} false]]
             (fn [[visited twice?] cave]
               (or (= 0 cave)
-                  (and (visited cave) twice?)))
+                  (and twice?  (visited cave))))
             (fn [[visited twice?] cave]
               [(if (neg? cave)
                  (conj visited cave)
