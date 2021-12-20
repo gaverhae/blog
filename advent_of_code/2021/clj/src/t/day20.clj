@@ -22,7 +22,7 @@
      :img (vec (for [y (range start-y (inc end-y))]
                  (vec (for [x (range start-x (inc end-x))]
                         (get alg (neigh img x y default))))))
-     :default (case default
+     :default (case (int default)
                 0 (first alg)
                 1 (last alg))}))
 
