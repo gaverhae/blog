@@ -49,25 +49,31 @@
                  (if (empty? paths)
                    [ps np]
                    (recur (rest paths)
-                          (let [[pos state] (first paths)
-                                outlinks ^longs (aget input (abs pos))
-                                end ^int (alength outlinks)]
-                            (loop [idx (int 0)
+                          (let [[pos state] (first paths)]
+                            (loop [current ^longs (aget input (abs pos))
+                                   current-end ^int (alength current)
+                                   idx (int 0)
                                    ps ps
                                    np np]
-                              (if (== end idx) [ps np]
-                                (cond (== 1 (aget outlinks idx))
-                                      (recur (unchecked-inc-int idx)
+                              (if (== current-end idx) [ps np]
+                                (cond (== 1 (aget current idx))
+                                      (recur current
+                                             current-end
+                                             (unchecked-inc-int idx)
                                              ps
                                              (inc np))
-                                      (forbidden state (aget outlinks idx))
-                                      (recur (unchecked-inc-int idx)
+                                      (forbidden state (aget current idx))
+                                      (recur current
+                                             current-end
+                                             (unchecked-inc-int idx)
                                              ps
                                              np)
                                       :else
-                                      (recur (unchecked-inc-int idx)
-                                             (conj ps [(aget outlinks idx)
-                                                       (update-state state (aget outlinks idx))])
+                                      (recur current
+                                             current-end
+                                             (unchecked-inc-int idx)
+                                             (conj ps [(aget current idx)
+                                                       (update-state state (aget current idx))])
                                              np)))))))))))))
 
 (defn part1
