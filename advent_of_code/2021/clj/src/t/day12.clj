@@ -12,7 +12,7 @@
                    (remove #{"start" "end"})
                    sort)
         mapping (->> caves
-                     (map-indexed (fn [idx cave]
+                     (map-indexed (fn [idx ^String cave]
                                     [cave (* (if (= cave (.toLowerCase cave))
                                                -1 1)
                                              (+ 2 idx))]))
