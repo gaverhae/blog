@@ -53,14 +53,22 @@
                                 outlinks ^longs (aget input (abs pos))
                                 end ^int (alength outlinks)]
                             (loop [idx (int 0)
-                                   [ps np] [ps np]]
+                                   ps ps
+                                   np np]
                               (if (== end idx) [ps np]
-                                (recur (unchecked-inc-int idx)
-                                       (cond (== 1 (aget outlinks idx)) [ps (inc np)]
-                                             (forbidden state (aget outlinks idx)) [ps np]
-                                             :else [(conj ps [(aget outlinks idx)
-                                                              (update-state state (aget outlinks idx))])
-                                                    np])))))))))))))
+                                (cond (== 1 (aget outlinks idx))
+                                      (recur (unchecked-inc-int idx)
+                                             ps
+                                             (inc np))
+                                      (forbidden state (aget outlinks idx))
+                                      (recur (unchecked-inc-int idx)
+                                             ps
+                                             np)
+                                      :else
+                                      (recur (unchecked-inc-int idx)
+                                             (conj ps [(aget outlinks idx)
+                                                       (update-state state (aget outlinks idx))])
+                                             np)))))))))))))
 
 (defn part1
   [input]
