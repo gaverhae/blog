@@ -39,26 +39,28 @@
 
 (defn traverse
   [^"[[J" input init forbidden update-state]
-  (loop [[paths num-paths] [[init] 0]]
-    (if (empty? paths)
-      num-paths
-      (recur (loop [idx 0
-                    [ps np] [[] num-paths]]
-               (if (== idx (count paths))
-                 [ps np]
-                 (recur (inc idx)
-                        (let [[pos state] (get paths idx)
-                              outlinks ^longs (aget input (abs pos))
-                              end ^int (alength outlinks)]
-                          (loop [idx (int 0)
-                                 [ps np] [ps np]]
-                            (if (== end idx) [ps np]
-                              (recur (unchecked-inc-int idx)
-                                     (cond (== 1 (aget outlinks idx)) [ps (inc np)]
-                                           (forbidden state (aget outlinks idx)) [ps np]
-                                           :else [(conj ps [(aget outlinks idx)
-                                                            (update-state state (aget outlinks idx))])
-                                                  np]))))))))))))
+  (loop [ps [[init] 0]]
+    (let [paths (get ps 0)
+          num-paths (get ps 1)]
+      (if (empty? paths)
+        num-paths
+        (recur (loop [idx 0
+                      [ps np] [[] num-paths]]
+                 (if (== idx (count paths))
+                   [ps np]
+                   (recur (inc idx)
+                          (let [[pos state] (get paths idx)
+                                outlinks ^longs (aget input (abs pos))
+                                end ^int (alength outlinks)]
+                            (loop [idx (int 0)
+                                   [ps np] [ps np]]
+                              (if (== end idx) [ps np]
+                                (recur (unchecked-inc-int idx)
+                                       (cond (== 1 (aget outlinks idx)) [ps (inc np)]
+                                             (forbidden state (aget outlinks idx)) [ps np]
+                                             :else [(conj ps [(aget outlinks idx)
+                                                              (update-state state (aget outlinks idx))])
+                                                    np])))))))))))))
 
 (defn part1
   [input]
