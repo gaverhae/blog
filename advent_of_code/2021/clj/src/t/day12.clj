@@ -44,12 +44,12 @@
           num-paths (get ps 1)]
       (if (empty? paths)
         num-paths
-        (recur (loop [idx 0
+        (recur (loop [paths paths
                       [ps np] [[] num-paths]]
-                 (if (== idx (count paths))
+                 (if (empty? paths)
                    [ps np]
-                   (recur (inc idx)
-                          (let [[pos state] (get paths idx)
+                   (recur (rest paths)
+                          (let [[pos state] (first paths)
                                 outlinks ^longs (aget input (abs pos))
                                 end ^int (alength outlinks)]
                             (loop [idx (int 0)
