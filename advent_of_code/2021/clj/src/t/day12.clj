@@ -68,15 +68,19 @@
                 visited))))
 
 (defn part2
-  [input]
-  (traverse input
-            [0 [#{0} false]]
-            (fn [[visited twice?] cave]
-              (or (= 0 cave)
-                  (and twice?  (visited cave))))
-            (fn [[visited twice?] cave]
-              [(if (neg? cave)
-                 (conj visited cave)
-                 visited)
-               (or twice?
-                   (boolean (visited cave)))])))
+  [^"[[J" input]
+  (let [size (alength input)
+        init ^booleans (make-array Boolean/TYPE size)]
+    (aset init 0 true)
+    (traverse input
+              [0 [init false]]
+              (fn [[^booleans visited twice?] cave]
+                (or (zero? cave)
+                    (and twice? (aget visited (abs cave)))))
+              (fn [[^booleans visited twice?] cave]
+                [(if (neg? cave)
+                   (doto (aclone visited)
+                     (aset (abs cave) true))
+                   visited)
+                 (or twice?
+                     (aget visited (abs cave)))]))))
