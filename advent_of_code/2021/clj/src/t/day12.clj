@@ -83,17 +83,18 @@
 (defn part2
   [^"[[J" input]
   (let [size (alength input)
-        init ^booleans (make-array Boolean/TYPE size)]
+        init ^booleans (make-array Boolean/TYPE (inc size))]
     (aset init 0 true)
     (traverse input
-              [0 [init false]]
-              (fn [[^booleans visited twice?] cave]
+              [0 init]
+              (fn [^booleans visited cave]
                 (or (zero? cave)
-                    (and twice? (aget visited (abs cave)))))
-              (fn [[^booleans visited twice?] cave]
-                [(if (neg? cave)
-                   (doto (aclone visited)
-                     (aset (abs cave) true))
-                   visited)
-                 (or twice?
-                     (aget visited (abs cave)))]))))
+                    (and (aget visited size)
+                         (aget visited (abs cave)))))
+              (fn [^booleans visited cave]
+                (if (neg? cave)
+                  (doto (aclone visited)
+                    (aset size (or (aget visited size)
+                                   (aget visited (abs cave))))
+                    (aset (abs cave) true))
+                  visited)))))
