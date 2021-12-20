@@ -36,6 +36,17 @@
      (when (> t# 100)
        (println (format "%d %s" t# (nth form# 2))))))
 
+(defn ===
+  [^Object a ^Object b]
+  (if (and (.. a getClass isArray)
+           (.. b getClass isArray))
+    (and (= (.. a getClass getComponentType)
+            (.. b getClass getComponentType))
+         (== (java.lang.reflect.Array/getLength a)
+             (java.lang.reflect.Array/getLength b))
+         (every? (fn [[a b]] (=== a b)) (map vector (seq a) (seq b))))
+    (= a b)))
+
 (defmacro make-tests
   [& expected]
   `(do
@@ -49,7 +60,7 @@
                          data `(data ~(:day spec))
                          check (fn [expected actual]
                                  (when expected
-                                   `(is (= ~expected ~actual))))
+                                   `(is (=== ~expected ~actual))))
                          samp-sym (gensym "sample")
                          data-sym (gensym "data")]
                      `(deftest ~(symbol d)
@@ -68,23 +79,23 @@
 
 (make-tests
 
-  #_{:day 1
+  {:day 1
    :sample [199 200 208 210 200 207 240 269 260 263]
    :part1 [7 1292]
    :part2 [5 1262]}
 
-  #_{:day 2
+  {:day 2
    :sample [[:forward 5] [:down 5] [:forward 8] [:up 3] [:down 8] [:forward 2]]
    :part1 [150 1660158]
    :part2 [900 1604592846]}
 
-  #_{:day 3
+  {:day 3
    :sample ["00100" "11110" "10110" "10111" "10101" "01111"
             "00111" "11100" "10000" "11001" "00010" "01010"]
    :part1 [198 4103154]
    :part2 [230 4245351]}
 
-  #_{:day 4
+  {:day 4
    :sample {:numbers [7 4 9 5 11 17 23 2 0 14 21 24 10 16 13 6 15 25 12 22 18 20 8 19 3 26 1]
             :boards (->> [[[22 13 17 11 0]
                            [8 2 23 4 24]
@@ -108,7 +119,7 @@
    :part1 [4512 82440]
    :part2 [1924 20774]}
 
-  #_{:day 5
+  {:day 5
    :sample [[0 9 5 9]
             [8 0 0 8]
             [9 4 3 4]
@@ -122,17 +133,17 @@
    :part1 [5 4993]
    :part2 [12 21101]}
 
-  #_{:day 6
+  {:day 6
    :sample {3 2, 4 1, 1 1, 2 1}
    :part1 [5934 351092]
    :part2 [26984457539 1595330616005]}
 
-  #_{:day 7
+  {:day 7
    :sample [16,1,2,0,4,2,7,1,2,14]
    :part1 [37 337833]
    :part2 [168 96678050]}
 
-  {:day 8
+  #_{:day 8
    :sample [[["be" "cfbegad" "cbdgef" "fgaecd" "cgeb" "fdcge" "agebfd" "fecdb" "fabcd" "edb"]
              ["fdgacbe" "cefdb" "cefbgd" "gcbe"]]
             [["edbfga" "begcd" "cbg" "gc" "gcadebf" "fbgde" "acbgfd" "abcde" "gfcbed" "gfec"]
@@ -165,7 +176,7 @@
    :part1 [15 591]
    :part2 [1134 1113424]}
 
-  #_{:day 10
+  {:day 10
    :sample [[:incomplete 288957]
             [:incomplete 5566]
             [:incorrect 1197]
@@ -179,7 +190,7 @@
    :part1 [26397 392043]
    :part2 [288957 1605968119]}
 
-  #_{:day 11
+  {:day 11
    :sample (->> [[5 4 8 3 1 4 3 2 2 3]
                  [2 7 4 5 8 5 4 7 1 1]
                  [5 2 6 4 5 5 6 1 7 3]
@@ -201,13 +212,14 @@
    :part1 [1656 1673]
    :part2 [195 279]}
 
-  #_{:day 12
-   :sample {0 #{2 -3}
-            1 #{2 -3}
-            2 #{0 1 -3 -4}
-            -3 #{0 1 2 -5}
-            -4 #{2}
-            -5 #{-3}}
+  {:day 12
+   :sample (into-array (Class/forName "[J")
+                       [(into-array Long/TYPE [2 -3])
+                        (into-array Long/TYPE [2 -3])
+                        (into-array Long/TYPE [0 1 -3 -4])
+                        (into-array Long/TYPE [0 1 2 -5])
+                        (into-array Long/TYPE [2])
+                        (into-array Long/TYPE [-3])])
    :part1 [10 4104]
    :part2 [36 119760]}
 
@@ -427,7 +439,7 @@
    #_#_:part1 [79 381]
    :part2 [3621 12201]}
 
-  {:day 20
+  #_{:day 20
    :sample {:alg [0 0 1 0 1 0 0 1 1 1 1 1 0 1 0 1 0 1 0 1 1 1 0 1 1 0 0 0 0 0 1 1
                   1 0 1 1 0 1 0 0 1 1 1 0 1 1 1 1 0 0 1 1 1 1 1 0 0 1 0 0 0 0 1 0
                   0 1 0 0 1 1 0 0 1 1 1 0 0 1 1 1 1 1 1 0 1 1 1 0 0 0 1 1 1 1 0 0

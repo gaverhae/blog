@@ -2,6 +2,10 @@
   (:require [clojure.string :as string]
             [clojure.set :as set]))
 
+(defn abs
+  [^long l]
+  (if (neg? l) (- l) l))
+
 (defn parse
   [lines]
   (let [links (->> lines
@@ -17,18 +21,24 @@
                                                -1 1)
                                              (+ 2 idx))]))
                      (into {"start" 0
-                            "end" 1}))]
-    (reduce (fn [system [from to]]
-              (let [from (mapping from)
-                    to (mapping to)]
-                (-> system
-                    (update from (fnil conj #{}) to)
-                    (update to (fnil conj #{}) from))))
-            {}
-            links)))
+                            "end" 1}))
+        as-map (reduce (fn [system [from to]]
+                         (let [from (mapping from)
+                               to (mapping to)]
+                           (-> system
+                               (update from (fnil conj #{}) to)
+                               (update to (fnil conj #{}) from))))
+                       {}
+                       links)
+        num-caves (->> caves count inc inc)]
+    (reduce (fn [^"[[J" arr [^long idx v]]
+              (aset arr (abs idx) (into-array Long/TYPE (sort-by abs v)))
+              arr)
+            (make-array Long/TYPE num-caves 0)
+            as-map)))
 
 (defn traverse
-  [input init forbidden update-state]
+  [^"[[J" input init forbidden update-state]
   (loop [[paths num-paths] [[init] 0]]
     (if (empty? paths)
       num-paths
@@ -40,7 +50,7 @@
                                                         (update-state state next-step)])
                                               np]))
                                [ps np]
-                               (get input pos)))
+                               (aget input (abs pos))))
                      [[] num-paths]
                      paths)))))
 
