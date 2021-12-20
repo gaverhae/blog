@@ -91,7 +91,7 @@
                 (or (zero? cave)
                     (and (aget visited size)
                          (aget visited (abs cave)))))
-              (fn [^booleans visited cave]
+              (fn [^booleans visited ^long cave]
                 (if (neg? cave)
                   (doto (aclone visited)
                     (aset size (or (aget visited size)
