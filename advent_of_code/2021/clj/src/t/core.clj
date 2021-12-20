@@ -9,7 +9,7 @@
 
 (defn -main
   [& args]
-  (doseq [i (map inc (range 13))]
+  (doseq [i (map inc (range 20))]
     (let [ns (symbol (str "t.day" i))
           _ (require ns)
           parse (ns-resolve ns (symbol "parse"))
@@ -17,23 +17,27 @@
           part2 (ns-resolve ns (symbol "part2"))
           data (string/split-lines (slurp (str "data/day" i)))
           input (parse data)]
-      #_(print (format (str "Day %02d, part 1: %15d\n"
+      (print (format (str "Day %02d, part 1: %15d\n"
                           "        part 2: %15d\n")
                      i
                      (part1 input)
                      (part2 input)))
-      (when (= i 12)
-        (print (format (str "        parse -> %14.3f\n"
-                            "        part1 -> %14.3f\n"
-                            "        part2 -> %14.3f\n"
-                            "        all   -> %14.3f\n")
-                       (bench #(parse data))
-                       (bench #(part1 input))
-                       (bench #(part2 input))
+      (when true
+        (print (format (str "        parse -> %14.3f\n")
+                       (bench #(parse data))))
+        (flush)
+        (print (format (str "        part1 -> %14.3f\n")
+                       (bench #(part1 input))))
+        (flush)
+        (print (format (str "        part2 -> %14.3f\n")
+                       (bench #(part2 input))))
+        (flush)
+        (print (format (str "        all   -> %14.3f\n")
                        (bench #(do (parse data)
                                    (part1 input)
-                                   (part2 input))))))
-      (when (= i 12)
+                                   (part2 input)))))
+        (flush))
+      #_(when (= i 12)
         (println "Waiting for profiler.")
         (read-line)
         #_(crit/bench (parse data))
