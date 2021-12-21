@@ -20,6 +20,22 @@
   [[x0 y0 z0] [x1 y1 z1]]
   [(- x0 x1) (- y0 y1) (- z0 z1)])
 
+(defn abs
+  [^long n]
+  (if (pos? n) n (- n)))
+
+(defn distance
+  [v1 v2]
+  (->> (v- v1 v2)
+       (map abs)
+       (reduce +)))
+
+(defn distances
+  [probe]
+  (->> probe
+       (mapcat (fn [p] (map #(distance % p) probe)))
+       set))
+
 (defn remap
   [probe v0]
   (->> probe (mapv #(v- % v0))))
@@ -63,7 +79,9 @@
 (defn part1
   [input]
   (loop [beacons (first (all-beacons-as-origin (first input)))
+         bdist (distances beacons)
          probes (rest input)]
+    (prn [:count (count beacons) (count bdist) (count probes)])
     (if (empty? probes)
       (count beacons)
       (if-let [union (first (for [rotated-probe (all-orientations (first probes))
@@ -71,12 +89,16 @@
                                   beacons (all-beacons-as-origin beacons)
                                   :when (<= 12 (count (set/intersection (set probe) (set beacons))))]
                                   (set/union (set probe) (set beacons))))]
-        (recur union (rest probes))
-        (recur beacons (concat (rest probes) [(first probes)]))))))
+        (let [bdist (distances union)]
+          (recur union bdist (->> (rest probes)
+                                  (sort-by (fn [probe]
+                                             (- (count (set/intersection bdist (distances probe)))))))))
+        (recur beacons bdist (concat (rest probes) [(first probes)]))))))
 
 (defn part2
   [input]
   (loop [beacons (first (all-beacons-as-origin (first input)))
+         bdist (distances beacons)
          oprobes [(first input)]
          probes (rest input)]
     (if (empty? probes)
@@ -102,5 +124,8 @@
                                       beacons (all-beacons-as-origin beacons)
                                       :when (<= 12 (count (set/intersection (set probe) (set beacons))))]
                                   [(set/union (set probe) (set beacons)) rotated-probe]))]
-        (recur union (conj oprobes p) (rest probes))
-        (recur beacons oprobes (concat (rest probes) [(first probes)]))))))
+        (let [bdist (distances union)]
+          (recur union bdist (conj oprobes p) (->> (rest probes)
+                                                   (sort-by (fn [probe]
+                                                              (- (count (set/intersection bdist (distance probe)))))))))
+        (recur beacons bdist oprobes (concat (rest probes) [(first probes)]))))))
