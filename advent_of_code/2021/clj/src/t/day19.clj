@@ -80,6 +80,7 @@
 (defn unify-beacons
   [input end-fn]
   (loop [beacons (remap (first input))
+         bremp (all-beacons-as-origin beacons)
          bdist (distances beacons)
          oprobes [(first input)]
          probes (->> (rest input)
@@ -93,14 +94,19 @@
       (end-fn beacons oprobes)
       (if-let [[union p] (first (for [[rotated-probe remapped-probes] (:oriented (first probes))
                                       probe remapped-probes
-                                      beacons (all-beacons-as-origin beacons)
+                                      beacons bremp
                                       :when (<= 12 (count (set/intersection probe beacons)))]
                                   [(set/union probe beacons) rotated-probe]))]
         (let [bdist (distances union)]
-          (recur union bdist (conj oprobes p) (->> (rest probes)
-                                                   (sort-by (fn [probe]
-                                                              (- (count (set/intersection bdist (:distances probe)))))))))
-        (recur beacons bdist oprobes (concat (rest probes) [(first probes)]))))))
+          (recur union (all-beacons-as-origin union) bdist
+                 (conj oprobes p)
+                 (->> (rest probes)
+                      (sort-by (fn [probe]
+                                 (- (count (set/intersection
+                                             bdist
+                                             (:distances probe)))))))))
+        (recur beacons bremp bdist oprobes
+               (concat (rest probes) [(first probes)]))))))
 
 (defn part1
   [input]
