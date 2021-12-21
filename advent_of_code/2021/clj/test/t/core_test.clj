@@ -374,7 +374,7 @@
    :part1 [35 4964]
    :part2 [3351 13202]}
 
-  {:day 21
-   :sample {1 4, 2 8}
-   :part1 [nil nil]
-   :part2 [nil nil]})
+  #_{:day 21
+   :sample {0 4, 1 8}
+   :part1 [739785 518418]
+   :part2 [444356092776315 0]})
