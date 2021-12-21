@@ -7,38 +7,50 @@
   [f]
   (->> (crit/benchmark (f) {}) :mean first))
 
-(defmacro fmt
-  [f i]
+(defmacro time-ms
+  [exp]
   `(let [start# (System/nanoTime)
-         r# ~i
+         r# ~exp
          end# (System/nanoTime)]
-     (print (format ~f (if (integer? r#) r# 0) (quot (- end# start#) 1000000)))
-     (flush)))
+     (quot (- end# start#) 1000000)))
+
+(defn fmt
+  [f i]
+  (println (format f i)))
 
 (defn -main
   [& args]
-  (doseq [day (map inc (range 20))]
-    (let [ns (symbol (str "t.day" day))
-          _ (require ns)
-          parse (ns-resolve ns (symbol "parse"))
-          part1 (ns-resolve ns (symbol "part1"))
-          part2 (ns-resolve ns (symbol "part2"))
-          data (string/split-lines (slurp (str "data/day" day)))
-          input (parse data)]
-      (when true
-        (println (format "Day %02d:" day))
-        (fmt "          part 1: %15d (%dms)\n" (part1 input))
-        (fmt "          part 2: %15d (%dms)\n" (part2 input))
-        #_(fmt "          parse -> %14.3f (%dms)\n" (bench #(parse data)))
-        #_(fmt "          part1 -> %14.3f (%dms)\n" (bench #(part1 input)))
-        #_(fmt "          part2 -> %14.3f (%dms)\n" (bench #(part2 input)))
-        #_(fmt "          all   -> %14.3f (%dms)\n" (bench #(do (parse data)
-                                                                  (part1 input)
-                                                                  (part2 input)))))
-      (when false
-        (println "Waiting for profiler.")
-        (read-line)
-        (bench (parse data))
-        (bench (part1 input))
-        (bench (part2 input)))
-      (flush))))
+  (let [days (->> (range 21)
+                  (map inc)
+                  (mapv (fn [day]
+                          (let [ns (symbol (str "t.day" day))
+                                _ (require ns)
+                                parse (ns-resolve ns (symbol "parse"))
+                                part1 (ns-resolve ns (symbol "part1"))
+                                part2 (ns-resolve ns (symbol "part2"))
+                                data (string/split-lines (slurp (str "data/day" day)))
+                                input (parse data)]
+                            [day
+                             {:total #(time-ms (do (parse data) (part1 input) (part2 input) nil))
+                              :parse #(parse data)
+                              :part1 #(part1 input)
+                              :part2 #(part2 input)}])))
+                  (into {}))]
+    #_(do
+      (->> days
+           (map (fn [[day {:keys [total]}]]
+                  [(total) day]))
+           sort
+           reverse
+           (map (fn [[t d]]
+                  (println (format "Day %02d: %15dms" d t))))
+           doall))
+    #_(doseq [[day {:keys [parse part1 part2]}] days]
+      (fmt "Day %02d, parse: %.3fms" day (bench (parse)))
+      (fmt "Day %02d, part1: %.3fms" day (bench (part1)))
+      (fmt "Day %02d, part2: %.3fms" day (bench (part2))))
+    (let [to-profile (get-in days [19 :part2])]
+      (println (format "Single run: %d." (time-ms (to-profile))))
+      (println "Waiting for profiler.")
+      (read-line)
+      (bench (to-profile)))))
