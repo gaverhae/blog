@@ -31,11 +31,9 @@
      (* 10000 (+ 5000 y))
      (* 10000 10000 (+ 5000 z))))
 
-(defn decode
-  [n]
-  [(-> n (rem 10000) (- 5000))
-   (-> n (quot 10000) (rem 10000) (- 5000))
-   (-> n (quot (* 10000 10000)) (rem 10000) (- 5000))])
+(defn inter
+  [p1 p2]
+  (count (set/intersection p1 p2)))
 
 (defn all-beacons-as-origin
   [probe]
@@ -90,7 +88,7 @@
       (if-let [[union p] (first (for [[beacons benc] bremp
                                       [rotated-probe remapped-probes] (first probes)
                                       [probe penc] remapped-probes
-                                      :when (<= 12 (count (set/intersection penc benc)))]
+                                      :when (<= 12 (inter penc benc))]
                                   [(set/union probe beacons) rotated-probe]))]
         (recur union (all-beacons-as-origin union)
                (conj oprobes p)
