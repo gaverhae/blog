@@ -76,32 +76,35 @@
                 (->> probe
                      (map rot)))))))
 
-(defn part1
-  [input]
-  (loop [beacons (first (all-beacons-as-origin (first input)))
-         bdist (distances beacons)
-         probes (rest input)]
-    (prn [:count (count beacons) (count bdist) (count probes)])
-    (if (empty? probes)
-      (count beacons)
-      (if-let [union (first (for [rotated-probe (all-orientations (first probes))
-                                  probe (all-beacons-as-origin rotated-probe)
-                                  beacons (all-beacons-as-origin beacons)
-                                  :when (<= 12 (count (set/intersection (set probe) (set beacons))))]
-                                  (set/union (set probe) (set beacons))))]
-        (let [bdist (distances union)]
-          (recur union bdist (->> (rest probes)
-                                  (sort-by (fn [probe]
-                                             (- (count (set/intersection bdist (distances probe)))))))))
-        (recur beacons bdist (concat (rest probes) [(first probes)]))))))
-
-(defn part2
-  [input]
+(defn unify-beacons
+  [input end-fn]
   (loop [beacons (first (all-beacons-as-origin (first input)))
          bdist (distances beacons)
          oprobes [(first input)]
          probes (rest input)]
+    (prn [:count (count beacons) (count bdist) (count probes)])
     (if (empty? probes)
+      (end-fn beacons oprobes)
+      (if-let [[union p] (first (for [rotated-probe (all-orientations (first probes))
+                                      probe (all-beacons-as-origin rotated-probe)
+                                      beacons (all-beacons-as-origin beacons)
+                                      :when (<= 12 (count (set/intersection (set probe) (set beacons))))]
+                                  [(set/union (set probe) (set beacons)) rotated-probe]))]
+        (let [bdist (distances union)]
+          (recur union bdist (conj oprobes p) (->> (rest probes)
+                                                   (sort-by (fn [probe]
+                                                              (- (count (set/intersection bdist (distances probe)))))))))
+        (recur beacons bdist oprobes (concat (rest probes) [(first probes)]))))))
+
+(defn part1
+  [input]
+  (unify-beacons input (fn [beacons _] (count beacons))))
+
+(defn part2
+  [input]
+  (unify-beacons
+    input
+    (fn [beacons oprobes]
       (let [beacons (sort (remap beacons (first (sort beacons))))
             origin (first beacons)
             scanners (->> oprobes
@@ -118,14 +121,4 @@
                (->> (v- s1 s2)
                     (map (fn [^long x] (Math/abs x)))
                     (reduce +)))
-             (reduce max)))
-      (if-let [[union p] (first (for [rotated-probe (all-orientations (first probes))
-                                      probe (all-beacons-as-origin rotated-probe)
-                                      beacons (all-beacons-as-origin beacons)
-                                      :when (<= 12 (count (set/intersection (set probe) (set beacons))))]
-                                  [(set/union (set probe) (set beacons)) rotated-probe]))]
-        (let [bdist (distances union)]
-          (recur union bdist (conj oprobes p) (->> (rest probes)
-                                                   (sort-by (fn [probe]
-                                                              (- (count (set/intersection bdist (distance probe)))))))))
-        (recur beacons bdist oprobes (concat (rest probes) [(first probes)]))))))
+             (reduce max))))))
