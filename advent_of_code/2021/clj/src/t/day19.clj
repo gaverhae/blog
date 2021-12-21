@@ -92,9 +92,9 @@
     (prn [:count (count beacons) (count bdist) (count probes)])
     (if (empty? probes)
       (end-fn beacons oprobes)
-      (if-let [[union p] (first (for [[rotated-probe remapped-probes] (:oriented (first probes))
+      (if-let [[union p] (first (for [beacons bremp
+                                      [rotated-probe remapped-probes] (:oriented (first probes))
                                       probe remapped-probes
-                                      beacons bremp
                                       :when (<= 12 (count (set/intersection probe beacons)))]
                                   [(set/union probe beacons) rotated-probe]))]
         (let [bdist (distances union)]
