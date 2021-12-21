@@ -32,15 +32,25 @@
      (* 10000 10000 (+ 5000 z))))
 
 (defn inter
-  [p1 p2]
-  (count (set/intersection p1 p2)))
+  [^longs p1 ^longs p2]
+  (let [l1 (alength p1)
+        l2 (alength p2)]
+    (loop [idx1 (int 0)
+           idx2 (int 0)
+           c 0]
+      (if (or (== idx1 l1) (== idx2 l2))
+        c
+        (let [e1 (aget p1 idx1)
+              e2 (aget p2 idx2)]
+          (cond (< e1 e2) (recur (unchecked-inc-int idx1) idx2 c)
+                (== e1 e2) (recur (unchecked-inc-int idx1) (unchecked-inc-int idx2) (inc c))
+                (> e1 e2) (recur idx1 (unchecked-inc-int idx2) c)))))))
 
 (defn all-beacons-as-origin
   [probe]
   (->> probe
        (map (fn [v] (set (remap probe v))))
-       (map (fn [beacons] [beacons (set (map encode beacons))]))))
-
+       (map (fn [beacons] [beacons (into-array Long/TYPE (sort (map encode beacons)))]))))
 
 (defn all-orientations
   [probe]
