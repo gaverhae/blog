@@ -93,9 +93,7 @@
   (unify-beacons
     input
     (fn [beacons oprobes]
-      (let [beacons (sort (remap beacons (first (sort beacons))))
-            origin (first beacons)
-            scanners (->> oprobes
+      (let [scanners (->> oprobes
                           (map (fn [probe]
                                  (let [from-scanner (first (sort probe))
                                        grounded (remap probe from-scanner)
