@@ -33,8 +33,8 @@
 
 (defn inter
   [^longs p1 ^longs p2]
-  (let [l1 (alength p1)
-        l2 (alength p2)]
+  (let [l1 ^int (alength p1)
+        l2 ^int (alength p2)]
     (loop [idx1 (int 0)
            idx2 (int 0)
            c 0]
