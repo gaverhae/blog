@@ -375,6 +375,6 @@
    :part2 [3351 13202]}
 
   {:day 21
-   :sample []
+   :sample {1 4, 2 8}
    :part1 [nil nil]
    :part2 [nil nil]})
