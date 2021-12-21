@@ -64,7 +64,6 @@
   [input]
   (loop [beacons (first (all-beacons-as-origin (first input)))
          probes (rest input)]
-    (prn [:count (count beacons) (count (first probes)) (count probes)])
     (if (empty? probes)
       (count beacons)
       (if-let [union (first (for [rotated-probe (all-orientations (first probes))
@@ -80,7 +79,6 @@
   (loop [beacons (first (all-beacons-as-origin (first input)))
          oprobes [(first input)]
          probes (rest input)]
-    (prn [:count (count beacons) (count (first probes)) (count probes)])
     (if (empty? probes)
       (let [beacons (sort (remap beacons (first (sort beacons))))
             origin (first beacons)
