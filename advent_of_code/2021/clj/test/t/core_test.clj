@@ -21,7 +21,8 @@
             [t.day17 :as day17]
             [t.day18 :as day18]
             [t.day19 :as day19]
-            [t.day20 :as day20]))
+            [t.day20 :as day20]
+            [t.day21 :as day21]))
 
 (let [read (fn [s i] (string/split-lines (slurp (str "data/" s i))))]
   (defn sample [i] (read "sample" i))
@@ -371,4 +372,9 @@
                   [0 0 1 1 1]]
             :default 0}
    :part1 [35 4964]
-   :part2 [3351 13202]})
+   :part2 [3351 13202]}
+
+  {:day 21
+   :sample []
+   :part1 [nil nil]
+   :part2 [nil nil]})
