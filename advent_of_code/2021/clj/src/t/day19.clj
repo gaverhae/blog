@@ -25,10 +25,24 @@
   ([probe v0]
    (->> probe (mapv #(v- % v0)))))
 
+(defn encode
+  [[x y z]]
+  (+ (+ 5000 x)
+     (* 10000 (+ 5000 y))
+     (* 10000 10000 (+ 5000 z))))
+
+(defn decode
+  [n]
+  [(-> n (rem 10000) (- 5000))
+   (-> n (quot 10000) (rem 10000) (- 5000))
+   (-> n (quot (* 10000 10000)) (rem 10000) (- 5000))])
+
 (defn all-beacons-as-origin
   [probe]
   (->> probe
-       (map (fn [v] (set (remap probe v))))))
+       (map (fn [v] (set (remap probe v))))
+       (map (fn [beacons] [beacons (set (map encode beacons))]))))
+
 
 (defn all-orientations
   [probe]
@@ -73,10 +87,10 @@
                                         [p (all-beacons-as-origin p)]))))))]
     (if (empty? probes)
       (end-fn beacons oprobes)
-      (if-let [[union p] (first (for [beacons bremp
+      (if-let [[union p] (first (for [[beacons benc] bremp
                                       [rotated-probe remapped-probes] (first probes)
-                                      probe remapped-probes
-                                      :when (<= 12 (count (set/intersection probe beacons)))]
+                                      [probe penc] remapped-probes
+                                      :when (<= 12 (count (set/intersection penc benc)))]
                                   [(set/union probe beacons) rotated-probe]))]
         (recur union (all-beacons-as-origin union)
                (conj oprobes p)
@@ -98,7 +112,7 @@
                                  (let [from-scanner (first (sort probe))
                                        grounded (remap probe from-scanner)
                                        from-origin
-                                       (first (for [p (all-beacons-as-origin beacons)
+                                       (first (for [[p _] (all-beacons-as-origin beacons)
                                                     :when (set/subset? (set grounded) (set p))]
                                                 (mapv - (first (sort p)))))]
                                    (v- from-origin from-scanner)))))]
