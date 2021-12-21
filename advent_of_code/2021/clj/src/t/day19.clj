@@ -49,7 +49,7 @@
 (defn all-beacons-as-origin
   [probe]
   (->> probe
-       (map (fn [v] (set (remap probe v))))
+       (map (fn [v] (remap probe v)))
        (map (fn [beacons] [beacons (into-array Long/TYPE (sort (map encode beacons)))]))))
 
 (defn all-orientations
@@ -99,7 +99,7 @@
                                       [rotated-probe remapped-probes] (first probes)
                                       [probe penc] remapped-probes
                                       :when (<= 12 (inter penc benc))]
-                                  [(set/union probe beacons) rotated-probe]))]
+                                  [(set/union (set probe) (set beacons)) rotated-probe]))]
         (recur union (all-beacons-as-origin union)
                (conj oprobes p)
                (rest probes))
