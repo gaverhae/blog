@@ -46,16 +46,18 @@
     (->> (for [[xfrom xto] x-range
                :let [rev (filter (overlap-x [xfrom (dec xto)]) rev)]
                :when (seq rev)
+               :let [size (- xto xfrom)]
                [yfrom yto] y-range
                :let [rev (filter (overlap-y [yfrom (dec yto)]) rev)]
                :when (seq rev)
+               :let [size (* size (- yto yfrom))]
                [zfrom zto] z-range
                :let [rev (filter (overlap-z [zfrom (dec zto)]) rev)]
                :when (seq rev)]
            (if (= :on
                   (->> rev
                        first first))
-             (* (- xto xfrom) (- yto yfrom) (- zto zfrom))
+             (* size (- zto zfrom))
              0))
          (reduce +))))
 
