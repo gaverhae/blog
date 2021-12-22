@@ -24,7 +24,10 @@
 
 (defn compute
   [input]
-  (let [rev (reverse input)
+  (let [rev (->> (reverse input)
+                 (map (fn [[on? x xx y yy z zz]]
+                        (into-array Long/TYPE [({:on 1 :off 0} on?)
+                                               x xx y yy z zz]))))
         x-range (->> input
                      (mapcat (fn [[_ xfrom xto]] [xfrom (inc xto)]))
                      sort
@@ -37,28 +40,27 @@
                      (mapcat (fn [[_ _ _ _ _ zfrom zto]] [zfrom (inc zto)]))
                      sort
                      (partition 2 1))
-        overlap-x (fn [[from to]]
-                    (fn [[_ a b]] (not (or (< to a) (< b from)))))
-        overlap-y (fn [[from to]]
-                    (fn [[_ _ _ a b]] (not (or (< to a) (< b from)))))
-        overlap-z (fn [[from to]]
-                    (fn [[_ _ _ _ _ a b]] (not (or (< to a) (< b from)))))]
+        overlap (fn [idx1 idx2]
+                  (fn [^long from ^long to]
+                    (fn [^longs arr]
+                      (not (or (< to (aget arr idx1))
+                               (< (aget arr idx2) from))))))
+        overlap-x (overlap 1 2)
+        overlap-y (overlap 3 4)
+        overlap-z (overlap 5 6)]
     (->> (for [[xfrom xto] x-range
-               :let [rev (filter (overlap-x [xfrom (dec xto)]) rev)]
+               :let [rev (filter (overlap-x xfrom (dec xto)) rev)]
                :when (seq rev)
                :let [size (- xto xfrom)]
                [yfrom yto] y-range
-               :let [rev (filter (overlap-y [yfrom (dec yto)]) rev)]
+               :let [rev (filter (overlap-y yfrom (dec yto)) rev)]
                :when (seq rev)
                :let [size (* size (- yto yfrom))]
                [zfrom zto] z-range
-               :let [rev (filter (overlap-z [zfrom (dec zto)]) rev)]
-               :when (seq rev)]
-           (if (= :on
-                  (->> rev
-                       first first))
-             (* size (- zto zfrom))
-             0))
+               :let [rev (filter (overlap-z zfrom (dec zto)) rev)]
+               :when (and (seq rev)
+                          (== 1 (aget ^longs (first rev) 0)))]
+             (* size (- zto zfrom)))
          (reduce +))))
 
 (defn part1
