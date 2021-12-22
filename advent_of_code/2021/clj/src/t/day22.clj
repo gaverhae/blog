@@ -24,26 +24,40 @@
 
 (defn compute
   [input]
-  (->> (for [[xfrom xto] (->> input
-                              (mapcat (fn [[_ xfrom xto]] [xfrom (inc xto)]))
-                              sort
-                              (partition 2 1))
-             [yfrom yto] (->> input
-                              (mapcat (fn [[_ _ _ yfrom yto]] [yfrom (inc yto)]))
-                              sort
-                              (partition 2 1))
-             [zfrom zto] (->> input
-                              (mapcat (fn [[_ _ _ _ _ zfrom zto]] [zfrom (inc zto)]))
-                              sort
-                              (partition 2 1))]
-         (if (= :on
-                (->> input
-                     reverse
-                     (filter (fn [[_ & c]] (overlap c [xfrom (dec xto) yfrom (dec yto) zfrom (dec zto)])))
-                     first first))
-           (* (- xto xfrom) (- yto yfrom) (- zto zfrom))
-           0))
-       (reduce +)))
+  (let [rev (reverse input)
+        x-range (->> input
+                     (mapcat (fn [[_ xfrom xto]] [xfrom (inc xto)]))
+                     sort
+                     (partition 2 1))
+        y-range (->> input
+                     (mapcat (fn [[_ _ _ yfrom yto]] [yfrom (inc yto)]))
+                     sort
+                     (partition 2 1))
+        z-range (->> input
+                     (mapcat (fn [[_ _ _ _ _ zfrom zto]] [zfrom (inc zto)]))
+                     sort
+                     (partition 2 1))
+        overlap-x (fn [[from to]]
+                    (fn [[_ a b]] (not (or (< to a) (< b from)))))
+        overlap-y (fn [[from to]]
+                    (fn [[_ _ _ a b]] (not (or (< to a) (< b from)))))
+        overlap-z (fn [[from to]]
+                    (fn [[_ _ _ _ _ a b]] (not (or (< to a) (< b from)))))]
+    (->> (for [[xfrom xto] x-range
+               :let [rev (filter (overlap-x [xfrom (dec xto)]) rev)]
+               :when (seq rev)
+               [yfrom yto] y-range
+               :let [rev (filter (overlap-y [yfrom (dec yto)]) rev)]
+               :when (seq rev)
+               [zfrom zto] z-range
+               :let [rev (filter (overlap-z [zfrom (dec zto)]) rev)]
+               :when (seq rev)]
+           (if (= :on
+                  (->> rev
+                       first first))
+             (* (- xto xfrom) (- yto yfrom) (- zto zfrom))
+             0))
+         (reduce +))))
 
 (defn part1
   [input]
@@ -60,40 +74,6 @@
                #{})
        count))
 
-(defn corners-inside
-  [[x-from1 x-to1 y-from1 y-to1 z-from1 z-to1]
-   [x-from2 x-to2 y-from2 y-to2 z-from2 z-to2]]
-  (for [x [x-from1 x-to1]
-        y [y-from1 y-to1]
-        z [z-from1 z-to1]
-        :when (and (<= x-from2 x x-to2)
-                   (<= y-from2 y y-to2)
-                   (<= z-from2 z z-to2))]
-    [x y z]))
-
-;(defn subtract
-;  [[x-from x-to y-from y-to z-from z-to :as from] sub]
-;  (let [sub-in-from (corners-inside sub from)
-;        from-in-sub (corners-inside from sub)]
-;  (cond (and (zero? (count from-in-sub))
-;             (zero? (count sub-in-from)))
-;        [from]
-;        (== 1 (count from-in-sub))
-;        (let [[split-x split-y split-z] (first sub-in-from)
-;              [lost-x lost-y lost-z] (first from-in-sub)]
-;          (for [[x-from x-to] [[x-from split-x] [split-x x-to]]
-;                [y-from t-to] [[y-from split-y] [split-y y-to]]
-;                [z-from z-to] [[z-from split-z] [split-z z-to]]]
-;
-;
-
-
 (defn part2
   [input]
-  (compute input)
-  #_(->> input
-       (reduce (fn [acc [on? x-from x-to y-from y-to z-from z-to & r]]
-                 (case on?
-                   :on
-                   :off))
-               [])))
+  (compute input))
