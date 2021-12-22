@@ -5,6 +5,7 @@
                  [criterium "0.4.6"]]
   :global-vars {*warn-on-reflection* true}
   :jvm-opts ["-Xverify:none"]
+  :test-selectors {:default (constantly true)}
   :main ^:skip-aot t.core
   :plugins [[com.jakemccrary/lein-test-refresh "0.24.1"]]
   :target-path "target/%s"
