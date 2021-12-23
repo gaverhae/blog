@@ -212,7 +212,7 @@
                       (concat to-process)
                       (remove (fn [[state cost]]
                                 (and (visited state)
-                                     (< (visited state) cost))))
+                                     (<= (visited state) cost))))
                       (sort-by #(get % 1) #_(fn [[state cost-to-reach]]
                                  (- cost-to-reach
                                     (value state)))))
