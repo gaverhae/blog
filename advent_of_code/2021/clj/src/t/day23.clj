@@ -77,17 +77,10 @@
                                       (->> (adjacent p)
                                            (remove visited)
                                            (remove amphipods)
-                                           (remove (fn [adj]
-                                                     (and (not= (first adj) start-x)
-                                                          (#{1 2} (second adj))
-                                                          (or (and (== cost 1)
-                                                                   (#{4 6 8} (first adj)))
-                                                              (and (== cost 10)
-                                                                   (#{2 6 8} (first adj)))
-                                                              (and (== cost 100)
-                                                                   (#{2 4 8} (first adj)))
-                                                              (and (== cost 1000)
-                                                                   (#{2 4 6} (first adj)))))))
+                                           (remove (fn [[adj-x adj-y]]
+                                                     (and (not= adj-x start-x)
+                                                          (>= adj-y 1)
+                                                          (not= cost (end-state adj-x)))))
                                            (remove (fn [adj]
                                                      (and (== 1 (second adj))
                                                           (amphipods [(first adj) 2])
