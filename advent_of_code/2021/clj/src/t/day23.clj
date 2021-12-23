@@ -1,5 +1,5 @@
 (ns t.day23
-  (:require [t.util :refer [transpose]]))
+  (:require [taoensso.tufte :as tufte :refer (defnp p profiled profile)]))
 
 (defn parse
   [lines]
@@ -55,61 +55,67 @@
 
 (defn possible-moves
   [amphipods adjacent]
-  (->> amphipods
-       (map (fn [[[start-x start-y :as start-pos] cost]]
-              [start-pos
-               cost
-               (if (and (end-state start-x)
-                        (== (end-state start-x) cost)
-                        (every? (fn [c] (= c cost))
-                                (->> (range start-y 5)
-                                     (map (fn [y] [start-x y]))
-                                     (filter adjacent)
-                                     (map (fn [pos] (amphipods pos))))))
-                 []
-                 (loop [poss [[start-pos 0]]
-                        visited #{start-pos}
-                        reachable []]
-                   (if (empty? poss)
-                     reachable
-                     (let [[[end-x end-y :as end-pos] cost-to-reach] (first poss)]
-                       (recur (concat (rest poss)
-                                      (->> (adjacent end-pos)
-                                           (remove visited)
-                                           (remove amphipods)
-                                           (remove (fn entered-wrong-room
-                                                     [[adj-x adj-y]]
-                                                     (and (not= adj-x start-x)
-                                                          (>= adj-y 1)
-                                                          (not= cost (end-state adj-x)))))
-                                           (remove (fn wrong-amphi-in-room
-                                                     [[adj-x adj-y]]
-                                                     (and (not= adj-x start-x)
-                                                          (== 1 adj-y)
-                                                          (or (and (amphipods [adj-x 2])
-                                                                   (not= (amphipods [adj-x 2]) cost))
-                                                              (and (amphipods [adj-x 3])
-                                                                   (not= (amphipods [adj-x 3]) cost))
-                                                              (and (amphipods [adj-x 4])
-                                                                   (not= (amphipods [adj-x 4]) cost))))))
-                                           (map (fn [adj] [adj (+ cost cost-to-reach)]))))
-                              (conj visited end-pos)
-                              (if (or
-                                    ;; we've already reached this one
-                                    (visited end-pos)
-                                    ;; can't start in hallway, end in hallway
-                                    (and (zero? start-y)
-                                         (zero? end-y))
-                                    ;; can't stop in room with space beneath
-                                    (and (>= 1 end-y)
-                                         (adjacent [end-x (inc end-y)])
-                                         (nil? (-> amphipods
-                                                   (dissoc start-pos)
-                                                   (get [end-x (inc end-y)]))))
-                                    ;; can't stop in front of room
-                                    (#{[2 0] [4 0] [6 0] [8 0]} end-pos))
-                                reachable
-                                (conj reachable [end-pos cost-to-reach])))))))]))))
+  (p :possible-moves
+     (->> amphipods
+          (map (fn [[[start-x start-y :as start-pos] cost]]
+                 [start-pos
+                  cost
+                  (if (p :already-good
+                         (and (end-state start-x)
+                              (== (end-state start-x) cost)
+                              (every? (fn [c] (= c cost))
+                                      (->> (range start-y 5)
+                                           (map (fn [y] [start-x y]))
+                                           (filter adjacent)
+                                           (map (fn [pos] (amphipods pos)))))))
+                    []
+                    (loop [poss [[start-pos 0]]
+                           visited #{start-pos}
+                           reachable []]
+                      (if (empty? poss)
+                        reachable
+                        (let [[[end-x end-y :as end-pos] cost-to-reach] (first poss)]
+                          (recur (concat (rest poss)
+                                         (->> (adjacent end-pos)
+                                              (remove visited)
+                                              (remove amphipods)
+                                              (remove (fn entered-wrong-room
+                                                        [[adj-x adj-y]]
+                                                        (p :entered-wrong-room
+                                                           (and (not= adj-x start-x)
+                                                                (>= adj-y 1)
+                                                                (not= cost (end-state adj-x))))))
+                                              (remove (fn wrong-amphi-in-room
+                                                        [[adj-x adj-y]]
+                                                        (p :wrong-amphi-in-room
+                                                           (and (not= adj-x start-x)
+                                                                (== 1 adj-y)
+                                                                (or (and (amphipods [adj-x 2])
+                                                                         (not= (amphipods [adj-x 2]) cost))
+                                                                    (and (amphipods [adj-x 3])
+                                                                         (not= (amphipods [adj-x 3]) cost))
+                                                                    (and (amphipods [adj-x 4])
+                                                                         (not= (amphipods [adj-x 4]) cost)))))))
+                                              (map (fn [adj] [adj (+ cost cost-to-reach)]))))
+                                 (conj visited end-pos)
+                                 (if (p :check-end-pos
+                                        (or
+                                          ;; we've already reached this one
+                                          (visited end-pos)
+                                          ;; can't start in hallway, end in hallway
+                                          (and (zero? start-y)
+                                               (zero? end-y))
+                                          ;; can't stop in room with space beneath
+                                          (and (>= 1 end-y)
+                                               (adjacent [end-x (inc end-y)])
+                                               (nil? (-> amphipods
+                                                         (dissoc start-pos)
+                                                         (get [end-x (inc end-y)]))))
+                                          ;; can't stop in front of room
+                                          (#{[2 0] [4 0] [6 0] [8 0]} end-pos)))
+                                   reachable
+                                   (conj reachable [end-pos cost-to-reach])))))))]))
+          doall)))
 
 (defn print-state
   [state]
@@ -141,43 +147,52 @@
 
 (defn solve
   [input adjacency]
-  (loop [to-process [[(heuristic input) input 0]]
-         visited {}
-         i 0]
-    (if (empty? to-process)
-      :error
-      (let [[[h state cost-to-reach] & to-process] to-process]
-        (when (zero? (mod i 1000))
-          (print-state state)
-          (println [cost-to-reach h (count visited) i])
-          #_(Thread/sleep 1000))
-        (if (->> state
-                 (every? (fn [[[x y] c]]
-                           (and (pos? y)
-                                (== c (end-state x))))))
-          cost-to-reach
-          (recur (->> (possible-moves state adjacency)
-                      (mapcat (fn [[start-pos atype end-poss]]
-                                (->> end-poss
-                                     (map (fn [[end-pos c]]
-                                            (let [cost (+ cost-to-reach c)
-                                                  state (-> state
-                                                            (dissoc start-pos)
-                                                            (assoc end-pos atype))]
-                                              [(+ cost (heuristic state))
-                                               state
-                                               cost]))))))
-                      (concat to-process)
-                      (remove (fn [[h state cost]]
-                                (and (visited state)
-                                     (<= (visited state) cost))))
-                      (sort-by first))
-                 (assoc visited state cost-to-reach)
-                 (inc i)))))))
+  (p :solve
+     (loop [to-process [[(heuristic input) input 0]]
+            visited {}
+            i 0]
+       (if (empty? to-process)
+         :error
+         (let [[[h state cost-to-reach] & to-process] to-process]
+           (when (zero? (mod i 1000))
+             (print-state state)
+             (println [cost-to-reach h (count visited) i])
+             #_(Thread/sleep 1000))
+           (if (p :end-state?
+                  (->> state
+                       (every? (fn [[[x y] c]]
+                                 (and (pos? y)
+                                      (== c (end-state x)))))))
+             cost-to-reach
+             (recur (p :next-states
+                       (->> (possible-moves state adjacency)
+                            doall
+                            (mapcat (fn [[start-pos atype end-poss]]
+                                      (p :compute-h
+                                         (->> end-poss
+                                              (map (fn [[end-pos c]]
+                                                     (let [cost (+ cost-to-reach c)
+                                                           state (-> state
+                                                                     (dissoc start-pos)
+                                                                     (assoc end-pos atype))]
+                                                       [(+ cost (heuristic state))
+                                                        state
+                                                        cost])))))))
+                            doall
+                            (concat to-process)
+                            doall
+                            (remove (fn [[h state cost]]
+                                      (p :filter-visited
+                                         (when-let [v (visited state)]
+                                           (<= v cost)))))
+                            doall
+                            ((fn [x] (p :sort-by (sort-by first x))))))
+                    (assoc visited state cost-to-reach)
+                    (inc i))))))))
 
 (defn part1
   [input]
-  (solve input part1-adjacent))
+  (p :part1 (solve input part1-adjacent)))
 
 (defn part2
   [input]
@@ -187,3 +202,19 @@
                        [[6 2] 10] [[6 3] 1] [[8 2] 1] [[8 3] 100]])
               (into {}))
          part2-adjacent))
+
+
+(comment
+(def sample
+{[2 1] 10 [2 2] 1
+            [4 1] 100 [4 2] 1000
+            [6 1] 10 [6 2] 100
+            [8 1] 1000 [8 2] 1})
+
+(-> (profiled {} (part1 sample))
+    second
+    deref)
+)
+
+
+

@@ -2,7 +2,8 @@
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/core.match "1.0.0"]
                  [instaparse "1.4.10"]
-                 [criterium "0.4.6"]]
+                 [criterium "0.4.6"]
+                 [com.taoensso/tufte "2.2.0"]]
   :global-vars {*warn-on-reflection* true}
   :jvm-opts ["-Xverify:none"]
   :test-selectors {:default (constantly true)}
