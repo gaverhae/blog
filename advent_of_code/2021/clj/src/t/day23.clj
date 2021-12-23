@@ -56,16 +56,17 @@
 (defn possible-moves
   [amphipods adjacent]
   (->> amphipods
-       (map (fn [[pos cost]]
-              [pos cost
-               (if (or (and (== 2 (second pos))
-                            (== (end-state (first pos)) cost))
-                       (and (== 1 (second pos))
-                            (== (end-state (first pos)) cost)
-                            (== (end-state (first pos)) (amphipods [(first pos) 2]))))
+       (map (fn [[[start-x start-y :as start-pos] cost]]
+              [start-pos
+               cost
+               (if (or (and (== 2 start-y)
+                            (== (end-state start-x) cost))
+                       (and (== 1 start-y)
+                            (== (end-state start-x) cost)
+                            (== (end-state start-x) (amphipods [start-x 2]))))
                  []
-                 (loop [poss [[pos 0]]
-                        visited #{pos}
+                 (loop [poss [[start-pos 0]]
+                        visited #{start-pos}
                         reachable []]
                    (if (empty? poss)
                      reachable
@@ -75,7 +76,7 @@
                                            (remove visited)
                                            (remove amphipods)
                                            (remove (fn [adj]
-                                                     (and (not= (first adj) (first pos))
+                                                     (and (not= (first adj) start-x)
                                                           (#{1 2} (second adj))
                                                           (or (and (== cost 1)
                                                                    (#{4 6 8} (first adj)))
@@ -95,12 +96,12 @@
                                     ;; we've already reached this one
                                     (visited p)
                                     ;; can't start in hallway, end in hallway
-                                    (and (zero? (second pos))
+                                    (and (zero? start-y)
                                          (zero? (second p)))
                                     ;; can't stop on 1 if 2 is empty
                                     (and (== 1 (second p))
                                          (nil? (-> amphipods
-                                                   (dissoc pos)
+                                                   (dissoc start-pos)
                                                    (get [(first p) 2]))))
                                     ;; can't stop in front of room
                                     (#{[2 0] [4 0] [6 0] [8 0]} p))
