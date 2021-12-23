@@ -59,11 +59,13 @@
        (map (fn [[[start-x start-y :as start-pos] cost]]
               [start-pos
                cost
-               (if (or (and (== 2 start-y)
-                            (== (end-state start-x) cost))
-                       (and (== 1 start-y)
-                            (== (end-state start-x) cost)
-                            (== (end-state start-x) (amphipods [start-x 2]))))
+               (if (and (end-state start-x)
+                        (== (end-state start-x) cost)
+                        (every? (fn [c] (= c cost))
+                                (->> (range start-y 5)
+                                     (map (fn [y] [start-x y]))
+                                     (filter adjacent)
+                                     (map (fn [pos] (amphipods pos))))))
                  []
                  (loop [poss [[start-pos 0]]
                         visited #{start-pos}
