@@ -72,9 +72,9 @@
                         reachable []]
                    (if (empty? poss)
                      reachable
-                     (let [[p cost-to-reach] (first poss)]
+                     (let [[[end-x end-y :as end-pos] cost-to-reach] (first poss)]
                        (recur (concat (rest poss)
-                                      (->> (adjacent p)
+                                      (->> (adjacent end-pos)
                                            (remove visited)
                                            (remove amphipods)
                                            (remove (fn [[adj-x adj-y]]
@@ -90,22 +90,23 @@
                                                               (and (amphipods [adj-x 4])
                                                                    (not= (amphipods [adj-x 4]) cost))))))
                                            (map (fn [adj] [adj (+ cost cost-to-reach)]))))
-                              (conj visited p)
+                              (conj visited end-pos)
                               (if (or
                                     ;; we've already reached this one
-                                    (visited p)
+                                    (visited end-pos)
                                     ;; can't start in hallway, end in hallway
                                     (and (zero? start-y)
-                                         (zero? (second p)))
-                                    ;; can't stop on 1 if 2 is empty
-                                    (and (== 1 (second p))
+                                         (zero? end-y))
+                                    ;; can't stop in room with space beneath
+                                    (and (>= 1 end-y)
+                                         (adjacent [end-x (inc end-y)])
                                          (nil? (-> amphipods
                                                    (dissoc start-pos)
-                                                   (get [(first p) 2]))))
+                                                   (get [end-x (inc end-y)]))))
                                     ;; can't stop in front of room
-                                    (#{[2 0] [4 0] [6 0] [8 0]} p))
+                                    (#{[2 0] [4 0] [6 0] [8 0]} end-pos))
                                 reachable
-                                (conj reachable [p cost-to-reach])))))))]))))
+                                (conj reachable [end-pos cost-to-reach])))))))]))))
 
 (defn print-state
   [state]
