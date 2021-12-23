@@ -81,10 +81,14 @@
                                                      (and (not= adj-x start-x)
                                                           (>= adj-y 1)
                                                           (not= cost (end-state adj-x)))))
-                                           (remove (fn [adj]
-                                                     (and (== 1 (second adj))
-                                                          (amphipods [(first adj) 2])
-                                                          (not= (amphipods [(first adj) 2]) cost))))
+                                           (remove (fn [[adj-x adj-y]]
+                                                     (and (== 1 adj-y)
+                                                          (or (and (amphipods [adj-x 2])
+                                                                   (not= (amphipods [adj-x 2]) cost))
+                                                              (and (amphipods [adj-x 3])
+                                                                   (not= (amphipods [adj-x 3]) cost))
+                                                              (and (amphipods [adj-x 4])
+                                                                   (not= (amphipods [adj-x 4]) cost))))))
                                            (map (fn [adj] [adj (+ cost cost-to-reach)]))))
                               (conj visited p)
                               (if (or
