@@ -73,22 +73,45 @@
                    (if (empty? poss)
                      reachable
                      (let [[[end-x end-y :as end-pos] cost-to-reach] (first poss)]
+                   #_(when (= start-pos [8 2])
+                     (prn [:state poss visited reachable])
+                     (prn [:bools  ;; we've already reached this one
+                                    (visited end-pos)
+                                    ;; can't start in hallway, end in hallway
+                                    (and (zero? start-y)
+                                         (zero? end-y))
+                                    ;; can't stop in room with space beneath
+                                    (and (>= 1 end-y)
+                                         (adjacent [end-x (inc end-y)])
+                                         (nil? (-> amphipods
+                                                   (dissoc start-pos)
+                                                   (get [end-x (inc end-y)]))))
+                                    ;; can't stop in front of room
+                                    (#{[2 0] [4 0] [6 0] [8 0]} end-pos)])
+                     (prn [:adj (adjacent end-pos)])
+                     )
                        (recur (concat (rest poss)
                                       (->> (adjacent end-pos)
+                                           #_((fn [x] (when (= [8 2] start-pos) (prn [:a x])) x))
                                            (remove visited)
+                                           #_((fn [x] (when (= [8 2] start-pos) (prn [:b x])) x))
                                            (remove amphipods)
+                                           #_((fn [x] (when (= [8 2] start-pos) (prn [:c x])) x))
                                            (remove (fn [[adj-x adj-y]]
                                                      (and (not= adj-x start-x)
                                                           (>= adj-y 1)
                                                           (not= cost (end-state adj-x)))))
+                                           #_((fn [x] (when (= [8 2] start-pos) (prn [:d x])) x))
                                            (remove (fn [[adj-x adj-y]]
-                                                     (and (== 1 adj-y)
+                                                     (and (not= adj-x start-x)
+                                                          (== 1 adj-y)
                                                           (or (and (amphipods [adj-x 2])
                                                                    (not= (amphipods [adj-x 2]) cost))
                                                               (and (amphipods [adj-x 3])
                                                                    (not= (amphipods [adj-x 3]) cost))
                                                               (and (amphipods [adj-x 4])
                                                                    (not= (amphipods [adj-x 4]) cost))))))
+                                           #_((fn [x] (when (= [8 2] start-pos) (prn [:e x])) x))
                                            (map (fn [adj] [adj (+ cost cost-to-reach)]))))
                               (conj visited end-pos)
                               (if (or
@@ -107,6 +130,54 @@
                                     (#{[2 0] [4 0] [6 0] [8 0]} end-pos))
                                 reachable
                                 (conj reachable [end-pos cost-to-reach])))))))]))))
+
+(comment
+
+  (possible-moves
+    {[10 0] 1000
+     [2 1] 10 [4 1] 100 [6 1] 10
+     [2 2] 1000 [4 2] 100 [6 2] 10 [8 2] 1
+     [2 3] 1000 [4 3] 10 [6 3] 1 [8 3] 100
+     [2 4] 1 [4 4] 1000 [6 4] 100 [8 4] 1}
+    part2-adjacent)
+([[2 1] 10 [[[1 0] 20] [[3 0] 20] [[0 0] 30] [[5 0] 40] [[7 0] 60] [[9 0] 80]]]
+ [[2 2] 1000 []]
+ [[2 3] 1000 []]
+ [[2 4] 1 []]
+ [[4 1] 100 [[[3 0] 200] [[5 0] 200] [[1 0] 400] [[7 0] 400] [[0 0] 500] [[9 0] 600]]]
+ [[4 2] 100 []]
+ [[4 3] 10 []]
+ [[4 4] 1000 []]
+ [[6 1] 10 [[[5 0] 20] [[7 0] 20] [[3 0] 40] [[9 0] 40] [[1 0] 60] [[0 0] 70]]]
+ [[6 2] 10 []]
+ [[6 3] 1 []]
+ [[6 4] 100 []]
+ [[8 2] 1 [[[7 0] 3] [[9 0] 3] [[5 0] 5] [[3 0] 7] [[1 0] 9] [[0 0] 10]]]
+ [[8 3] 100 []]
+ [[8 4] 1 []]
+ [[10 0] 1000 []])
+
+
+
+([[2 1] 10 ([[0 0] 30] [[1 0] 20] [[3 0] 20] [[5 0] 40] [[7 0] 60] [[9 0] 80])]
+ [[2 2] 1000 []]
+ [[2 3] 1000 []]
+ [[2 4] 1 []]
+ [[4 1] 100 ([[0 0] 500] [[1 0] 400] [[3 0] 200] [[5 0] 200] [[7 0] 400] [[9 0] 600])]
+ [[4 2] 100 []]
+ [[4 3] 10 []]
+ [[4 4] 1000 []]
+ [[6 1] 10 ([[0 0] 70] [[1 0] 60] [[3 0] 40] [[5 0] 20] [[7 0] 20] [[9 0] 40])]
+ [[6 2] 10 []]
+ [[6 3] 1 []]
+ [[6 4] 100 []]
+ [[8 2] 1 []]
+ [[8 3] 100 []]
+ [[8 4] 1 []]
+ [[10 0] 1000 []])
+
+
+  )
 
 (defn print-state
   [state]
