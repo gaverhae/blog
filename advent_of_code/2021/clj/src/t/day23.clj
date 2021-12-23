@@ -160,64 +160,48 @@
     (println (format "  #%s#%s#%s#%s#  " (p [2 2]) (p [4 2]) (p [6 2]) (p [8 2])))
     (println         "  #########  ")))
 
-(defn value
+(defn abs
+  [n]
+  (if (neg? n) (- n) n))
+
+(defn heuristic
   [state]
-  (+ (if (= (state [8 2]) 1000)
-       1000 0)
-     (if (and (= (state [8 2]) 1000)
-              (= (state [8 1]) 1000))
-       1000 0)
-    (if (= (state [6 2]) 100)
-      1000 0)
-     (if (and (= (state [6 2]) 100)
-              (= (state [6 1]) 100))
-       1000 0)
-    (if (= (state [4 2]) 10)
-      1000 0)
-     (if (and (= (state [4 2]) 10)
-              (= (state [4 1]) 10))
-       1000 0)
-    (if (= (state [2 2]) 1)
-      1000 0)
-     (if (and (= (state [2 2]) 1)
-              (= (state [2 1]) 1))
-       1000 0)))
+  (->> state
+       (map (fn [[[x _] c]]
+              (* c (abs (- x ({1 2, 10 4, 100 6, 1000 8} c))))))
+       (reduce +)))
 
 (defn part1
   [input]
-  (loop [to-process [[input 0]]
+  (loop [to-process [[(heuristic input) input 0]]
          visited {}
-         costs []
          i 0]
     (if (empty? to-process)
-      (do (prn (take 5 costs)) (reduce min costs))
-      (let [[[state cost-to-reach] & to-process] to-process]
+      :error
+      (let [[[h state cost-to-reach] & to-process] to-process]
         (when (zero? (mod i 1000))
           (print-state state)
-          (println [cost-to-reach (value state) costs (count visited) i])
+          (println [cost-to-reach h (count visited) i])
           #_(Thread/sleep 1000))
         (if (= state end-state)
-          (recur to-process
-                 (assoc visited state cost-to-reach)
-                 (conj costs cost-to-reach)
-                 (inc i))
+          cost-to-reach
           (recur (->> (possible-moves state)
                       (mapcat (fn [[start-pos atype end-poss]]
                                 (->> end-poss
                                      (map (fn [[end-pos c]]
-                                            [(-> state
-                                                 (dissoc start-pos)
-                                                 (assoc end-pos atype))
-                                             (+ cost-to-reach c)])))))
+                                            (let [cost (+ cost-to-reach c)
+                                                  state (-> state
+                                                            (dissoc start-pos)
+                                                            (assoc end-pos atype))]
+                                              [(+ cost (heuristic state))
+                                               state
+                                               cost]))))))
                       (concat to-process)
-                      (remove (fn [[state cost]]
+                      (remove (fn [[h state cost]]
                                 (and (visited state)
                                      (<= (visited state) cost))))
-                      (sort-by #(get % 1) #_(fn [[state cost-to-reach]]
-                                 (- cost-to-reach
-                                    (value state)))))
+                      (sort-by first))
                  (assoc visited state cost-to-reach)
-                 costs
                  (inc i)))))))
 
 (defn part2
