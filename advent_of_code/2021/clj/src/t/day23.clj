@@ -148,47 +148,50 @@
 (defn solve
   [input adjacency]
   (p :solve
-     (loop [to-process [[(heuristic input) input 0]]
+     (loop [to-process {(heuristic input) (list [input 0])}
             visited {}
             i 0]
        (if (empty? to-process)
          :error
-         (let [[[h state cost-to-reach] & to-process] to-process]
+         (let [min-h (->> to-process keys (reduce min))
+               [[state cost-to-reach] & r] (to-process min-h)
+               to-process (if (empty? r)
+                            (dissoc to-process min-h)
+                            (assoc to-process min-h r))]
            (when (zero? (mod i 1000))
+             (prn state)
              (print-state state)
-             (println [cost-to-reach h (count visited) i])
+             (println [cost-to-reach min-h (count visited) i])
              #_(Thread/sleep 1000))
-           (if (p :end-state?
-                  (->> state
-                       (every? (fn [[[x y] c]]
-                                 (and (pos? y)
-                                      (== c (end-state x)))))))
-             cost-to-reach
-             (recur (p :next-states
-                       (->> (possible-moves state adjacency)
-                            doall
-                            (mapcat (fn [[start-pos atype end-poss]]
-                                      (p :compute-h
-                                         (->> end-poss
-                                              (map (fn [[end-pos c]]
-                                                     (let [cost (+ cost-to-reach c)
-                                                           state (-> state
-                                                                     (dissoc start-pos)
-                                                                     (assoc end-pos atype))]
-                                                       [(+ cost (heuristic state))
-                                                        state
-                                                        cost])))))))
-                            doall
-                            (concat to-process)
-                            doall
-                            (remove (fn [[h state cost]]
-                                      (p :filter-visited
-                                         (when-let [v (visited state)]
-                                           (<= v cost)))))
-                            doall
-                            ((fn [x] (p :sort-by (sort-by first x))))))
-                    (assoc visited state cost-to-reach)
-                    (inc i))))))))
+           (cond (p :filter-visited
+                    (when-let [v (visited state)]
+                      (<= v cost-to-reach)))
+                 (recur to-process visited (inc i))
+                 (p :end-state?
+                    (->> state
+                         (every? (fn [[[x y] c]]
+                                   (and (pos? y)
+                                        (== c (end-state x)))))))
+                 cost-to-reach
+                 :else
+                 (recur (p :next-states
+                           (->> (possible-moves state adjacency)
+                                (mapcat (fn [[start-pos atype end-poss]]
+                                          (p :compute-h
+                                             (->> end-poss
+                                                  (map (fn [[end-pos c]]
+                                                         (let [cost (+ cost-to-reach c)
+                                                               state (-> state
+                                                                         (dissoc start-pos)
+                                                                         (assoc end-pos atype))]
+                                                           [(+ cost (heuristic state))
+                                                            state
+                                                            cost])))))))
+                                (reduce (fn [tp [h state cost]]
+                                          (update tp h (fnil conj ()) [state cost]))
+                                        to-process)))
+                        (assoc visited state cost-to-reach)
+                        (inc i))))))))
 
 (defn part1
   [input]
