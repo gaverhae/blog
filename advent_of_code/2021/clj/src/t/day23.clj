@@ -15,7 +15,7 @@
        (remove nil?)
        (into {})))
 
-(def adjacent
+(def part1-adjacent
   {[0 0] [[1 0]]
    [1 0] [[0 0] [2 0]]
    [2 0] [[1 0] [3 0] [2 1]]
@@ -41,9 +41,23 @@
    [4 1] 10 [4 2] 10
    [6 1] 100 [6 2] 100
    [8 1] 1000 [8 2] 1000})
+(def part2-adjacent
+  (merge part1-adjacent
+         {[2 2] [[2 1] [2 3]]
+          [2 3] [[2 2] [2 4]]
+          [2 4] [[2 3]]
+          [4 2] [[4 1] [4 3]]
+          [4 3] [[4 2] [4 4]]
+          [4 4] [[4 3]]
+          [6 2] [[6 1] [6 3]]
+          [6 3] [[6 2] [6 4]]
+          [6 4] [[6 3]]
+          [8 2] [[8 1] [8 3]]
+          [8 3] [[8 2] [8 4]]
+          [8 4] [[8 3]]}))
 
 (defn possible-moves
-  [amphipods]
+  [amphipods adjacent]
   (->> amphipods
        (map (fn [[pos cost]]
               [pos cost
@@ -120,8 +134,8 @@
               (* c (abs (- x ({1 2, 10 4, 100 6, 1000 8} c))))))
        (reduce +)))
 
-(defn part1
-  [input]
+(defn solve
+  [input adjacency]
   (loop [to-process [[(heuristic input) input 0]]
          visited {}
          i 0]
@@ -134,7 +148,7 @@
           #_(Thread/sleep 1000))
         (if (= state end-state)
           cost-to-reach
-          (recur (->> (possible-moves state)
+          (recur (->> (possible-moves state adjacency)
                       (mapcat (fn [[start-pos atype end-poss]]
                                 (->> end-poss
                                      (map (fn [[end-pos c]]
@@ -153,5 +167,15 @@
                  (assoc visited state cost-to-reach)
                  (inc i)))))))
 
+(defn part1
+  [input]
+  (solve input part1-adjacent))
+
 (defn part2
-  [input])
+  [input]
+  (solve (->> input
+              (map (fn [[[x y] t]] [[x ({1 1 2 4} y)] t]))
+              (concat [[[2 2] 1000] [[2 3] 1000] [[4 2] 100] [[4 3] 10]
+                       [[6 2] 10] [[6 3] 1] [[8 2] 1] [[8 3] 100]])
+              (into {}))
+         part2-adjacent))
