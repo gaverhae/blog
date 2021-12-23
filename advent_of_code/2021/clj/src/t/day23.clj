@@ -59,35 +59,10 @@
                    (if (empty? poss)
                      reachable
                      (let [[p cost-to-reach] (first poss)]
-                   #_(prn [pos p visited
-                                    ;; we've already reached this one
-                                    (visited p)
-                                    ;; can't start in hallway, end in hallway
-                                    (and (zero? (second pos))
-                                         (zero? (second p)))
-                                    ;; can't stop on 1 if 2 is empty
-                                    (and (== 1 (second p))
-                                         (nil? (-> amphipods
-                                                   (dissoc pos)
-                                                   (get [(first p) 2]))))
-                                    ;; can't stop in front of room
-                                    (#{[2 0] [4 0] [6 0] [8 0]} p) ])
-                       #_(prn [[(zero? (second pos))
-                              (or (zero? (second p))
-                                  (and (== 1 (second p))
-                                       (nil? (amphipods [(first p) 2]))))
-                              (or (#{[2 0] [4 0] [6 0] [8 0]} p)
-                                  (and (== 1 (second p))
-                                       (nil? (-> amphipods
-                                                 (dissoc pos)
-                                                 (get [(first p) 2])))))]])
                        (recur (concat (rest poss)
                                       (->> (adjacent p)
-                                           #_((fn [x] (prn [:a x]) x))
                                            (remove visited)
-                                           #_((fn [x] (prn [:b x]) x))
                                            (remove amphipods)
-                                           #_((fn [x] (prn [:c x]) x))
                                            (remove (fn [adj]
                                                      (and (not= (first adj) (first pos))
                                                           (#{1 2} (second adj))
@@ -99,7 +74,6 @@
                                                                    (#{2 4 8} (first adj)))
                                                               (and (== cost 1000)
                                                                    (#{2 4 6} (first adj)))))))
-                                           #_((fn [x] (prn [:d x]) x))
                                            (remove (fn [adj]
                                                      (and (== 1 (second adj))
                                                           (amphipods [(first adj) 2])
