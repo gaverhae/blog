@@ -120,7 +120,8 @@
       (print (p [n 0])))
     (println "#")
     (println (format "###%s#%s#%s#%s###" (p [2 1]) (p [4 1]) (p [6 1]) (p [8 1])))
-    (println (format "  #%s#%s#%s#%s#  " (p [2 2]) (p [4 2]) (p [6 2]) (p [8 2])))
+    (doseq [y (range 2 (->> state (map (fn [[[x y] t]] y)) (reduce max) inc))]
+      (println (format "  #%s#%s#%s#%s#  " (p [2 y]) (p [4 y]) (p [6 y]) (p [8 y]))))
     (println         "  #########  ")))
 
 (defn abs
