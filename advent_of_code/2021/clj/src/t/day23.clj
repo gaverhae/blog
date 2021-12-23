@@ -158,7 +158,7 @@
                to-process (if (empty? r)
                             (dissoc to-process min-h)
                             (assoc to-process min-h r))]
-           (when (zero? (mod i 1000))
+           #_(when (zero? (mod i 10000))
              (prn state)
              (print-state state)
              (println [cost-to-reach min-h (count visited) i])
@@ -179,14 +179,14 @@
                                 (mapcat (fn [[start-pos atype end-poss]]
                                           (p :compute-h
                                              (->> end-poss
-                                                  (map (fn [[end-pos c]]
-                                                         (let [cost (+ cost-to-reach c)
-                                                               state (-> state
-                                                                         (dissoc start-pos)
-                                                                         (assoc end-pos atype))]
-                                                           [(+ cost (heuristic state))
-                                                            state
-                                                            cost])))))))
+                                                  (mapv (fn [[end-pos c]]
+                                                          (let [cost (+ cost-to-reach c)
+                                                                state (-> state
+                                                                          (dissoc start-pos)
+                                                                          (assoc end-pos atype))]
+                                                            [(+ cost (heuristic state))
+                                                             state
+                                                             cost])))))))
                                 (reduce (fn [tp [h state cost]]
                                           (update tp h (fnil conj ()) [state cost]))
                                         to-process)))
