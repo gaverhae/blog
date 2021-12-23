@@ -36,11 +36,6 @@
    [8 1] [[8 0] [8 2]]
    [8 2] [[8 1]]})
 
-(def end-state
-  {[2 1] 1 [2 2] 1
-   [4 1] 10 [4 2] 10
-   [6 1] 100 [6 2] 100
-   [8 1] 1000 [8 2] 1000})
 (def part2-adjacent
   (merge part1-adjacent
          {[2 2] [[2 1] [2 3]]
@@ -56,16 +51,18 @@
           [8 3] [[8 2] [8 4]]
           [8 4] [[8 3]]}))
 
+(def end-state {2 1 4 10 6 100 8 1000})
+
 (defn possible-moves
   [amphipods adjacent]
   (->> amphipods
        (map (fn [[pos cost]]
               [pos cost
                (if (or (and (== 2 (second pos))
-                            (== (end-state pos) cost))
+                            (== (end-state (first pos)) cost))
                        (and (== 1 (second pos))
-                            (== (end-state pos) cost)
-                            (== (end-state pos) (amphipods [(first pos) 2]))))
+                            (== (end-state (first pos)) cost)
+                            (== (end-state (first pos)) (amphipods [(first pos) 2]))))
                  []
                  (loop [poss [[pos 0]]
                         visited #{pos}
@@ -147,7 +144,10 @@
           (print-state state)
           (println [cost-to-reach h (count visited) i])
           #_(Thread/sleep 1000))
-        (if (= state end-state)
+        (if (->> state
+                 (every? (fn [[[x y] c]]
+                           (and (pos? y)
+                                (== c (end-state x))))))
           cost-to-reach
           (recur (->> (possible-moves state adjacency)
                       (mapcat (fn [[start-pos atype end-poss]]
