@@ -129,8 +129,11 @@
 (defn heuristic
   [state]
   (->> state
-       (map (fn [[[x _] c]]
-              (* c (abs (- x ({1 2, 10 4, 100 6, 1000 8} c))))))
+       (map (fn [[[x y] c]]
+              (let [dx (abs (- x ({1 2, 10 4, 100 6, 1000 8} c)))]
+                (if (zero? dx)
+                  0
+                  (* c (+ dx y 1))))))
        (reduce +)))
 
 (defn solve
@@ -176,7 +179,7 @@
 (defn part2
   [input]
   (solve (->> input
-              (map (fn [[[x y] t]] [[x ({1 1 2 4} y)] t]))
+              (map (fn [[[x y] t]] [[x ({1 1, 2 4} y)] t]))
               (concat [[[2 2] 1000] [[2 3] 1000] [[4 2] 100] [[4 3] 10]
                        [[6 2] 10] [[6 3] 1] [[8 2] 1] [[8 3] 100]])
               (into {}))
