@@ -52,21 +52,24 @@
              eval))
 
 (defn fitness
-  [i] (+ (/ (- 99999999999999 (Long/parseLong (apply str i)))
-            99999999999999.0)
-         (-> (monad i) (get 3))))
+  [i] (+ (-> (monad i) (get 3))
+         (/ (Long/parseLong (apply str i))
+            99999999999999.0)))
 
-(def best-so-far
-  [9 8 4 9 1 9 5 9 9 9 7 9 9 4])
-
- (let [mutate (fn [i] (update i (rand-int 14)
-                              (fn [old]
-                                (let [n (if (> (rand) 0.5)
-                                          (inc old)
-                                          (dec old))]
-                                  (cond (== 0 n) 9
-                                        (== 10 n) 1
-                                        :else n)))))
+ (let [mutate (fn [i]
+                (-> (iterate (fn [i]
+                               (if (> 0.5 (rand))
+                                 (update i (rand-int 14)
+                                         (fn [old]
+                                           (let [n (if (> (rand) 0.5)
+                                                     (inc old)
+                                                     (dec old))]
+                                             (cond (== 0 n) 9
+                                                   (== 10 n) 1
+                                                   :else n))))
+                                 (assoc i (rand-int 14) (inc (rand-int 9)))))
+                             i)
+                     (nth 2)))
        crossover (fn [i1 i2]
                    (mapv (fn [x1 x2] (if (> 0.5 (rand)) x1 x2)) i1 i2))
        make-sol (fn [] (vec (repeatedly 14 #(inc (rand-int 9)))))
@@ -85,24 +88,35 @@
                        sort)))
      ([init-pop]
       (loop [population (sort init-pop)
-             step 0]
-        (if (== step 100)
-          population
-          (recur (let [survivors (concat (take 10 population) (take 3 (reverse population)))
-                       make-child #(let [[_ parent1] (carousel population)
-                                         [_ parent2] (carousel population)
-                                         child (mutate (crossover parent1 parent2))]
-                                     [(fitness child) child])]
-                   (loop [nxt survivors
-                          seen (set survivors)]
-                     (if (== 100 (count nxt))
-                       (sort nxt)
-                       (let [child (make-child)]
-                         (recur (if (or (seen child)
-                                        (== -1 (compare (get child 1) best-so-far)))
-                                  nxt (conj nxt child))
-                                (conj seen child))))))
-                 (inc step)))))))
+             best-so-far [1 [9 8 4 9 1 9 5 9 9 9 7 9 9 4]]
+             n 0]
+        (when (zero? (rem n 100))
+          (prn [:best best-so-far]))
+        (when (zero? (rem n 1000))
+          (prn population))
+        (let [next-gen (let [survivors (concat (take 10 population) (take 3 (reverse population)))
+                             make-child #(let [[_ parent1] (carousel population)
+                                               [_ parent2] (carousel population)
+                                               child (mutate (crossover parent1 parent2))]
+                                           [(fitness child) child])]
+                         (loop [nxt survivors
+                                seen (set survivors)]
+                           (if (== 200 (count nxt))
+                             (sort nxt)
+                             (let [new-one (if (> (rand) 0.1)
+                                             (make-child)
+                                             (let [m (make-sol)]
+                                               [(fitness m) m]))]
+                               (recur (if (or (seen new-one)
+                                              (== 1 (compare (get new-one 1) (get best-so-far 1))))
+                                        nxt (conj nxt new-one))
+                                      (conj seen new-one))))))
+              new-best? (->> [best-so-far (first next-gen)]
+                             sort
+                             first)]
+          (recur next-gen
+                 new-best?
+                 (inc n)))))))
 
 (defn to
   [i]
