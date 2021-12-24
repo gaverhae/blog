@@ -120,12 +120,13 @@
      Long/parseLong)
 (/ (reduce - 0 [7 3 4 9 1 7 3 9 9 9 6 8 4 2]) 126.0)
 
-(def i [1 1 9 9 9 6 2 6 4 4 2 4 9 4])
-
- (let [fitness (fn [i] (+ (/ (- 99999999999999 (Long/parseLong (apply str i)))
+ (defn fitness
+   [i] (+ (/ (- 99999999999999 (Long/parseLong (apply str i)))
                              99999999999999.0)
                           (-> (monad i) (get 3))))
-       mutate (fn [i] (assoc i (rand-int 14) (inc (rand-int 9))))
+
+
+ (let [mutate (fn [i] (assoc i (rand-int 14) (inc (rand-int 9))))
        crossover (fn [i1 i2]
                    (mapv (fn [x1 x2] (if (> 0.5 (rand)) x1 x2)) i1 i2))
        make-sol (fn [] (vec (repeatedly 14 #(inc (rand-int 9)))))
@@ -145,22 +146,116 @@
      ([init-pop]
       (loop [population (sort init-pop)
              step 0]
-        (if (== step 1000)
+        (if (== step 10)
           population
           (recur (let [survivors (concat (take 10 population) (take 3 (reverse population)))
-                       children (repeatedly 87 #(let [[_ parent1] (carousel population)
-                                                      [_ parent2] (carousel population)
-                                                      child (mutate (crossover parent1 parent2))]
-                                                  [(fitness child) child]))]
-                   (sort (concat survivors children)))
+                       make-child #(let [[_ parent1] (carousel population)
+                                         [_ parent2] (carousel population)
+                                         child (mutate (crossover parent1 parent2))]
+                                     [(fitness child) child])]
+                   (loop [nxt survivors
+                          seen (set survivors)]
+                     (if (== 100 (count nxt))
+                       (sort nxt)
+                       (let [child (make-child)]
+                         (recur (if (seen child)
+                                  nxt (conj nxt child))
+                                (conj seen child))))))
                  (inc step)))))))
+
 
 (genetic)
 
+(defn to
+  [i]
+  (vec (map #(Long/parseLong (str %)) (format "%014d" i))))
+
+(defn from
+  [v]
+  (Long/parseLong (apply str v)))
+
+(for [inp [
+           [9 8 4 9 1 9 5 9 9 9 7 9 9 4]
+           ]]
+  [inp (monad inp)])
+
+(for [i (range 1 100000000)
+      :let [r (rem (from [9 8 4 9 1 9 5 9 9 9 7 9 9 4]) i)]
+      :when (zero? r)]
+  [(from [9 8 4 9 1 9 5 9 9 9 7 9 9 4]) i (quot (from [9 8 4 9 1 9 5 9 9 9 7 9 9 4]) i)])
+([98491959997994 1 98491959997994] [98491959997994 2 49245979998997])
+
+(def primes (cons 2 (->> (iterate #(+ 2 %) 3)
+                         (remove (fn [n]
+                                   (->> primes
+                                        (take-while #(<= (* % %) n))
+                                        (some #(zero? (rem n %)))))))))
+(defn prime?
+  [n]
+  (let [limit (Math/sqrt n)]
+    (loop [primes primes]
+      (let [p (first primes)]
+        (cond (> p limit)
+              true
+              (zero? (rem n p))
+              false
+              :else
+              (recur (rest primes)))))))
+
+(defn div
+  [n]
+  (let [limit (Math/sqrt n)]
+    (loop [primes primes]
+      (let [p (first primes)]
+        (cond (> p limit)
+              nil
+              (zero? (rem n p))
+              p
+              :else
+              (recur (rest primes)))))))
+
+(->> (make-inputs (repeat 14 [:inp]))
+     (map from)
+     (map #(quot % 2))
+     (filter prime?)
+     first)
+
+(monad (to 98491959997994))
+[4 0 0 0]
+
+(div 98491959997994)
+2
+(div (/ 98491959997994 2))
+nil
+
+(prime? (/ 98491959997994 2))
+true
+
+(monad (to 98491959997994))
+[4 0 0 0]
+(monad [9 8 4 9 1 9 5 9 9 9 5 7 9 4])
+[4 0 0 0]
+
+(from [9 8 4 9 1 9 5 9 9 9 5 7 9 4])
+
+(- 98491959995794
+   98491959997994)
+
+(div (/ 98491959995794 2 59 269 503 953))
+
+(/ 98491959995794 2 59 269 503 953)
+6473
+
+(->> primes
+     (map to)
+     (filter (fn [v] (every? (fn [x] (<= 1 x 9)) v)))
+     (take 10))
 
 
 
-                   )
+
+
+                )
 
 (defn part1
   [input]

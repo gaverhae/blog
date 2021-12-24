@@ -20,7 +20,7 @@
 
 (defn -main
   [& args]
-  (let [days (->> (range 23)
+  (let [days (->> (range 24)
                   (map inc)
                   (mapv (fn [day]
                           (let [ns (symbol (str "t.day" day))
@@ -49,7 +49,7 @@
       (fmt "Day %02d, parse: %.3fms" day (bench (parse)))
       (fmt "Day %02d, part1: %.3fms" day (bench (part1)))
       (fmt "Day %02d, part2: %.3fms" day (bench (part2))))
-    (let [to-profile (get-in days [23 :part2])]
+    (let [to-profile (get-in days [24 :part1])]
       (println (format "Single run: %d." (to-profile)))
       #_(println "Waiting for profiler.")
       #_(read-line)
