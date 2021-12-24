@@ -463,5 +463,5 @@
             [:mod :x 2]
             [:div :w 2]
             [:mod :w 2]]
-   :part1 [nil nil]
+   :part1 [8 nil]
    :part2 [nil nil]})
