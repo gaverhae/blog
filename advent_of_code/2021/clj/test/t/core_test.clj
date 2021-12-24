@@ -451,7 +451,7 @@
    :part1 [12521 11320]
    :part2 [44169 49532]}
 
-  {:day 24
+  #_{:day 24
    :sample [[:inp :w]
             [:add :z :w]
             [:mod :z 2]
