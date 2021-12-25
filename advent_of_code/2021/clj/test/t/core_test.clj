@@ -466,7 +466,17 @@
             [:mod :w 2]]
    :part1 [8 0]
    :part2 [nil nil]}
+
   {:day 25
-   :sample []
-   :part1 [0 nil]
+   :sample {[0 0] :down, [0 4] :right, [0 5] :right, [0 7] :down, [0 8] :down, [0 9] :right,
+            [1 1] :down, [1 2] :down, [1 3] :right, [1 4] :right, [1 6] :down, [1 7] :down,
+            [2 0] :right, [2 1] :right, [2 3] :right, [2 4] :down, [2 5] :right, [2 9] :down,
+            [3 0] :right, [3 1] :right, [3 2] :down, [3 3] :right, [3 4] :right, [3 6] :right, [3 8] :down,
+            [4 0] :down, [4 1] :right, [4 2] :down, [4 4] :down, [4 5] :down, [4 7] :down,
+            [5 0] :right, [5 2] :right, [5 3] :right, [5 6] :down,
+            [6 1] :down, [6 2] :down, [6 5] :right, [6 7] :right, [6 8] :down,
+            [7 0] :down, [7 2] :down, [7 5] :right, [7 6] :right, [7 7] :down, [7 9] :down,
+            [8 4] :down, [8 7] :down, [8 9] :right}
+
+   :part1 [58 nil]
    :part2 [nil nil]})
