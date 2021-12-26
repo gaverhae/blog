@@ -266,7 +266,7 @@
    :part1 [1588 3306]
    :part2 [2188189693529 3760312702877]}
 
-  #_{:day 15
+  {:day 15
    :sample {:width 10,
             :height 10,
             :costs {[0 0] 1 [0 1] 1 [0 2] 2 [0 3] 3 [0 4] 7 [0 5] 1 [0 6] 1 [0 7] 3 [0 8] 1 [0 9] 2
@@ -449,8 +449,8 @@
 
   #_{:day 23
    :sample (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 0 10 100 10 1000 1 1000 100 1 1060580])
-   :part1 [12521 11320]
-   :part2 [44169 49532]}
+   :part1 [12521 #_11320]
+   #_#_:part2 [44169 49532]}
 
   #_{:day 24
    :sample [[:inp :w]
@@ -467,7 +467,7 @@
    :part1 [8 0]
    :part2 [nil nil]}
 
-  {:day 25
+  #_{:day 25
    :sample {:floor {[0 0] :down, [0 4] :right, [0 5] :right, [0 7] :down, [0 8] :down, [0 9] :right,
                     [1 1] :down, [1 2] :down, [1 3] :right, [1 4] :right, [1 6] :down, [1 7] :down,
                     [2 0] :right, [2 1] :right, [2 3] :right, [2 4] :down, [2 5] :right, [2 9] :down,
