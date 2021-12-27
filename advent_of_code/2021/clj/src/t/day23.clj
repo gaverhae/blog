@@ -227,7 +227,7 @@
             to-process (if (empty? r)
                          (dissoc to-process min-h)
                          (assoc to-process min-h r))]
-        (when (zero? (mod i 10000))
+        #_(when (zero? (mod i 10000))
           #_(print-state state)
           (prn [:cost cost-to-reach :h min-h :i i]))
         (cond (p :filter-visited

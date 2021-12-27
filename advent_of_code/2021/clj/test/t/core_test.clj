@@ -452,7 +452,7 @@
    :part1 [12521 #_11320]
    #_#_:part2 [44169 49532]}
 
-  {:day 24
+  #_{:day 24
    :sample [[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
             [:div :z [:lit 1]] [:add :x [:lit 10]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
             [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]

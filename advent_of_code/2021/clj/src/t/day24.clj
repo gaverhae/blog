@@ -61,13 +61,9 @@
 
 (defn solve
   [instr size target reverse?]
-  (let [c (atom 0)
-        h (fn rec [fixed-input]
+  (let [h (fn rec [fixed-input]
             (let [input (take size (concat fixed-input (repeat [1 9])))
                   [m M] (compute-range instr input)]
-              (swap! c inc)
-              (when (zero? (rem @c 10000))
-                (prn [input m M]))
               (cond (and (= (count fixed-input) size)
                          (== m M target))
                     (->> fixed-input (map first) (apply str) Long/parseLong)

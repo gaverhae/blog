@@ -27,7 +27,7 @@
     (loop [[state cost :as current] [initial 0]
            to-visit {}
            visited {}]
-      (do (swap! i inc)
+      #_(do (swap! i inc)
           (when (zero? (rem @i 10000))
             (prn [:to-visit (count to-visit) :visited (count visited) :total (->> visited (map val) (reduce +))])))
       (let [to-visit (if (<= (visited state INF) cost)
@@ -54,7 +54,7 @@
     (loop [[state cost :as current] [initial 0]
            to-visit () ;; changed to a list
            visited {}]
-      (do (swap! i inc)
+      #_(do (swap! i inc)
           (when (zero? (rem @i 1000000))
             (prn [:to-visit (count to-visit) :visited (count visited) :total (->> visited (map val) (reduce +))])))
       (let [to-visit (if (<= (visited state INF) cost)
@@ -81,7 +81,7 @@
     (loop [[state cost :as current] [initial 0]
            to-visit clojure.lang.PersistentQueue/EMPTY ;; changed
            visited {}]
-      (do (swap! i inc)
+      #_(do (swap! i inc)
           (when (zero? (rem @i 10000))
             (prn [:to-visit (count to-visit) :visited (count visited) :total (->> visited (map val) (reduce +))])))
       (let [to-visit (if (<= (visited state INF) cost)

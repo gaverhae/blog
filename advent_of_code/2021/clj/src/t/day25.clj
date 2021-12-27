@@ -71,4 +71,5 @@
         (recur new-floor (inc niter))))))
 
 (defn part2
-  [input])
+  [input]
+  0)
