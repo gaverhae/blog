@@ -39,6 +39,24 @@
                {:w [:lit 0], :x [:lit 0], :y [:lit 0], :z [:lit 0], :input-count 0})
        :z))
 
+(defn compute-range
+  [op]
+  (match op
+    [:add e1 e2] (let [r1 (compute-range e1)
+                       r2 (compute-range e2)]
+                   [(+ (apply min r1)
+                       (apply min r2))
+                    (+ (apply max r1)
+                       (apply max r2))])
+    [:mul e1 e2] (let [r1 (compute-range e1)
+                       r2 (compute-range e2)]
+                   [(+ (apply min r1)
+                       (apply min r2))
+                    (+ (apply max r1)
+                       (apply max r2))])
+    [:lit n] [n]
+    [:inp _] [1 9]))
+
 (defn simplify
   [expr]
   (->> expr
@@ -57,10 +75,11 @@
              [:div exp [:lit 1]] exp
              [:div [:lit 0] _] [:lit 0]
              [:div [:lit n1] [:lit n2]] [:lit (quot n1 n2)]
-             ;; div / mul?
              [:mod [:lit 0] exp] [:lit 0]
-             ;; mod / mul?
              [:mod [:lit n1] [:lit n2]] [:lit (rem n1 n2)]
+             [:mod exp [:lit n]] (if (< (first (compute-range exp)) n)
+                                   exp
+                                   op)
              [:eql [:inp _] [:lit (n :guard #(or (> % 9) (< % 1)))]] [:lit 0]
              [:eql [:lit (n :guard #(or (> % 9) (< % 1)))] [:inp _]] [:lit 0]
              [:eql [:lit n1] [:lit n2]] [:lit (if (== n1 n2) 1 0)]
