@@ -453,36 +453,62 @@
    #_#_:part2 [44169 49532]}
 
   {:day 24
-   :sample [[:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
-            [:add :x 10] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
-            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
-            [:add :y 2] [:mul :y :x] [:add :z :y]
-            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
-            [:add :x 15] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
-            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
-            [:add :y 16] [:mul :y :x] [:add :z :y]
-            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
-            [:add :x 14] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
-            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
-            [:add :y 9] [:mul :y :x] [:add :z :y]
-            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
-            [:add :x 15] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
-            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
-            [:add :y 0] [:mul :y :x] [:add :z :y]
-            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 26]
-            [:add :x -8] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
-            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
-            [:add :y 1] [:mul :y :x] [:add :z :y]
-            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
-            [:add :x 10] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
-            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
-            [:add :y 12] [:mul :y :x] [:add :z :y]
-            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 26]
-            [:add :x -16] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
-            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
-            [:add :y 6] [:mul :y :x] [:add :z :y]]
-   :part1 [nil #_98491959997994]
-   :part2 [nil #_61191516111321]}
+   :sample [[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
+            [:div :z [:lit 1]] [:add :x [:lit 10]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
+            [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
+            [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 2]]
+            [:mul :y [:reg :x]] [:add :z [:reg :y]]
+            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
+            ;[:div :z [:lit 1]] [:add :x [:lit 15]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
+            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
+            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 16]]
+            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
+            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
+            ;[:div :z [:lit 1]] [:add :x [:lit 14]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
+            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
+            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 9]]
+            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
+            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
+            ;[:div :z [:lit 1]] [:add :x [:lit 15]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
+            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
+            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 0]]
+            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
+            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
+            ;[:div :z [:lit 26]] [:add :x [:lit -8]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
+            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
+            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 1]]
+            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
+            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
+            ;[:div :z [:lit 1]] [:add :x [:lit 10]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
+            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
+            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 12]]
+            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
+            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
+            ;[:div :z [:lit 26]] [:add :x [:lit -16]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
+            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
+            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 6]]
+            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
+            ]
+   :part1 [{:w [:inp 0],
+            :x [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]],
+            :y [:mul
+                [:add [:add [:lit 0] [:inp 0]] [:lit 2]]
+                [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]]],
+            :z [:add
+                [:mul
+                 [:lit 0]
+                 [:add
+                  [:mul
+                   [:add [:lit 0] [:lit 25]]
+                   [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]]]
+                  [:lit 1]]]
+                [:mul
+                 [:add [:add [:lit 0] [:inp 0]] [:lit 2]]
+                 [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]]]],
+            :input-count 1}
+
+           #_98491959997994]
+   #_#_:part2 [0 #_61191516111321]}
 
   #_{:day 25
    :sample {:floor {[0 0] :down, [0 4] :right, [0 5] :right, [0 7] :down, [0 8] :down, [0 9] :right,
