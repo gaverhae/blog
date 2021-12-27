@@ -1,5 +1,6 @@
 (ns t.day24
-  (:require [clojure.core.match :refer [match]]))
+  (:require [clojure.core.match :refer [match]]
+            [clojure.walk :as walk]))
 
 (defn parse
   [lines]
@@ -39,11 +40,36 @@
        :z))
 
 (defn simplify
-  [expr])
+  [expr]
+  (->> expr
+       (walk/postwalk
+         (fn [op]
+           (match op
+             [:add [:lit 0] [:lit 0]] [:lit 0]
+             [:add [:lit n1] [:lit n2]] [:lit (+ n1 n2)]
+             [:add [:lit 0] exp] exp
+             [:add exp [:lit 0]] exp
+             [:mul [:lit 0] _] [:lit 0]
+             [:mul _ [:lit 0]] [:lit 0]
+             [:mul [:lit 1] exp] exp
+             [:mul exp [:lit 1]] exp
+             [:mul [:lit n1] [:lit n2]] [:lit (* n1 n2)]
+             [:div exp [:lit 1]] exp
+             [:div [:lit 0] _] [:lit 0]
+             [:div [:lit n1] [:lit n2]] [:lit (quot n1 n2)]
+             ;; div / mul?
+             [:mod [:lit 0] exp] [:lit 0]
+             ;; mod / mul?
+             [:mod [:lit n1] [:lit n2]] [:lit (rem n1 n2)]
+             [:eql [:inp _] [:lit (n :guard #(or (> % 9) (< % 1)))]] [:lit 0]
+             [:eql [:lit (n :guard #(or (> % 9) (< % 1)))] [:inp _]] [:lit 0]
+             [:eql [:lit n1] [:lit n2]] [:lit (if (== n1 n2) 1 0)]
+             :else op)))))
 
 (defn part1
   [input]
-  (->> (to-expr input)))
+  (->> (to-expr input)
+       simplify))
 
 (defn part2
   [input]
