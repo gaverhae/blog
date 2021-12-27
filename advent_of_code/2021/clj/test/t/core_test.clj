@@ -498,40 +498,12 @@
              [:add
               [:mul
                [:lit 25]
-               [:eql
-                [:eql
-                 [:add
-                  [:mod
-                   [:add
-                    [:mul
-                     [:add
-                      [:mul
-                       [:add [:mul [:add [:inp 0] [:lit 2]] [:lit 26]] [:add [:inp 1] [:lit 16]]]
-                       [:lit 26]]
-                      [:add [:inp 2] [:lit 9]]]
-                     [:lit 26]]
-                    [:inp 3]]
-                   [:lit 26]]
-                  [:lit -8]]
-                 [:inp 4]]
-                [:lit 0]]]
+               [:eql [:eql [:add [:inp 3] [:lit -8]] [:inp 4]] [:lit 0]]]
               [:lit 1]]]
             [:mul
              [:add [:inp 4] [:lit 1]]
              [:eql
-              [:eql
-               [:add
-                [:mod
-                 [:add
-                  [:mul
-                   [:add
-                    [:mul [:add [:mul [:add [:inp 0] [:lit 2]] [:lit 26]] [:add [:inp 1] [:lit 16]]] [:lit 26]]
-                    [:add [:inp 2] [:lit 9]]]
-                   [:lit 26]]
-                  [:inp 3]]
-                 [:lit 26]]
-                [:lit -8]]
-               [:inp 4]]
+              [:eql [:add [:inp 3] [:lit -8]] [:inp 4]]
               [:lit 0]]]]
            #_98491959997994]
    #_#_:part2 [0 #_61191516111321]}

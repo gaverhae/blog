@@ -91,6 +91,11 @@
                op)
              [:mod [:lit 0] exp] [:lit 0]
              [:mod [:lit n1] [:lit n2]] [:lit (rem n1 n2)]
+             (:or [:mod [:add [:mul _ [:lit n1]] exp] [:lit n2]]
+                  [:mod [:add exp [:mul _ [:lit n1]]] [:lit n2]]
+                  [:mod [:add [:mul [:lit n1] _] exp] [:lit n2]])
+             (if (== n1 n2) exp op)
+             [:mod [:add exp [:mul [:lit n1] _]] [:lit n2]] (if (== n1 n2) exp op)
              [:mod exp [:lit n]] (let [[min max] (compute-range exp)]
                                    (if (<= 0 min max (dec n))
                                      exp
