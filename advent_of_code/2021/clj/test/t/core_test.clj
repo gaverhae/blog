@@ -468,8 +468,8 @@
             [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
             [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 9]]
             [:mul :y [:reg :x]] [:add :z [:reg :y]]]
-   :part1 [0
-           #_98491959997994]
+   :part1 [111
+           98491959997994]
    #_#_:part2 [0 #_61191516111321]}
 
   #_{:day 25
