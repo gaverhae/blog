@@ -266,7 +266,7 @@
    :part1 [1588 3306]
    :part2 [2188189693529 3760312702877]}
 
-  {:day 15
+  #_{:day 15
    :sample {:width 10,
             :height 10,
             :costs {[0 0] 1 [0 1] 1 [0 2] 2 [0 3] 3 [0 4] 7 [0 5] 1 [0 6] 1 [0 7] 3 [0 8] 1 [0 9] 2
@@ -452,20 +452,37 @@
    :part1 [12521 #_11320]
    #_#_:part2 [44169 49532]}
 
-  #_{:day 24
-   :sample [[:inp :w]
-            [:add :z :w]
-            [:mod :z 2]
-            [:div :w 2]
-            [:add :y :w]
-            [:mod :y 2]
-            [:div :w 2]
-            [:add :x :w]
-            [:mod :x 2]
-            [:div :w 2]
-            [:mod :w 2]]
-   :part1 [8 0]
-   :part2 [nil nil]}
+  {:day 24
+   :sample [[:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
+            [:add :x 10] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
+            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
+            [:add :y 2] [:mul :y :x] [:add :z :y]
+            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
+            [:add :x 15] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
+            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
+            [:add :y 16] [:mul :y :x] [:add :z :y]
+            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
+            [:add :x 14] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
+            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
+            [:add :y 9] [:mul :y :x] [:add :z :y]
+            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
+            [:add :x 15] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
+            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
+            [:add :y 0] [:mul :y :x] [:add :z :y]
+            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 26]
+            [:add :x -8] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
+            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
+            [:add :y 1] [:mul :y :x] [:add :z :y]
+            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 1]
+            [:add :x 10] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
+            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
+            [:add :y 12] [:mul :y :x] [:add :z :y]
+            [:inp :w] [:mul :x 0] [:add :x :z] [:mod :x 26] [:div :z 26]
+            [:add :x -16] [:eql :x :w] [:eql :x 0] [:mul :y 0] [:add :y 25]
+            [:mul :y :x] [:add :y 1] [:mul :z :y] [:mul :y 0] [:add :y :w]
+            [:add :y 6] [:mul :y :x] [:add :z :y]]
+   :part1 [nil #_98491959997994]
+   :part2 [nil #_61191516111321]}
 
   #_{:day 25
    :sample {:floor {[0 0] :down, [0 4] :right, [0 5] :right, [0 7] :down, [0 8] :down, [0 9] :right,
