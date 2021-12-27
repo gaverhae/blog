@@ -60,7 +60,7 @@
                                                                   :else [0 1])))))))))))
 
 (defn solve
-  [instr size target]
+  [instr size target reverse?]
   (let [c (atom 0)
         h (fn rec [fixed-input]
             (let [input (take size (concat fixed-input (repeat [1 9])))
@@ -75,15 +75,11 @@
                         (not (<= m target M)))
                     nil
                     :else
-                    (or (rec (conj fixed-input [1 1]))
-                        (rec (conj fixed-input [2 2]))
-                        (rec (conj fixed-input [3 3]))
-                        (rec (conj fixed-input [4 4]))
-                        (rec (conj fixed-input [5 5]))
-                        (rec (conj fixed-input [6 6]))
-                        (rec (conj fixed-input [7 7]))
-                        (rec (conj fixed-input [8 8]))
-                        (rec (conj fixed-input [9 9]))))))]
+                    (->> (range 9)
+                         (map inc)
+                         ((fn [s] (if reverse? (reverse s) s)))
+                         (map (fn [n] (conj fixed-input [n n])))
+                         (some rec)))))]
     (h [])))
 
 (defn part1
@@ -91,7 +87,11 @@
   (let [input-size (->> input (map first) (filter #{:inp}) count)
         all-inputs (repeat input-size [1 9])
         target (first (compute-range input all-inputs))]
-    (solve input input-size target)))
+    (solve input input-size target true)))
 
 (defn part2
-  [input])
+  [input]
+  (let [input-size (->> input (map first) (filter #{:inp}) count)
+        all-inputs (repeat input-size [1 9])
+        target (first (compute-range input all-inputs))]
+    (solve input input-size target false)))
