@@ -81,6 +81,9 @@
              [:div exp [:lit 1]] exp
              [:div [:lit 0] _] [:lit 0]
              [:div [:lit n1] [:lit n2]] [:lit (quot n1 n2)]
+             [:div [:add [:mul exp [:lit m1]] _] [:lit m2]] (if (== m1 m2)
+                                                              exp
+                                                              op)
              [:mod [:lit 0] exp] [:lit 0]
              [:mod [:lit n1] [:lit n2]] [:lit (rem n1 n2)]
              [:mod exp [:lit n]] (if (< (first (compute-range exp)) n)

@@ -492,15 +492,9 @@
    :part1 [
            [:add
             [:mul
-             [:div
-              [:add
-               [:mul
-                [:add
-                 [:mul [:add [:mul [:add [:inp 0] [:lit 2]] [:lit 26]] [:add [:inp 1] [:lit 16]]] [:lit 26]]
-                 [:add [:inp 2] [:lit 9]]]
-                [:lit 26]]
-               [:inp 3]]
-              [:lit 26]]
+             [:add
+              [:mul [:add [:mul [:add [:inp 0] [:lit 2]] [:lit 26]] [:add [:inp 1] [:lit 16]]] [:lit 26]]
+              [:add [:inp 2] [:lit 9]]]
              [:add
               [:mul
                [:lit 25]
