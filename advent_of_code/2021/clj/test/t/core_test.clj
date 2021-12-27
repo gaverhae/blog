@@ -497,7 +497,7 @@
                [:lit 25]
                [:eql
                 [:eql
-                 [:add [:add [:inp 0] [:lit 2]] [:lit 15]]
+                 [:add [:inp 0] [:lit 17]]
                  [:inp 1]]
                 [:lit 0]]]
               [:lit 1]]]
@@ -505,7 +505,7 @@
              [:add [:inp 1] [:lit 16]]
              [:eql
               [:eql
-               [:add [:add [:inp 0] [:lit 2]] [:lit 15]]
+               [:add [:inp 0] [:lit 17]]
                [:inp 1]]
               [:lit 0]]]]
 

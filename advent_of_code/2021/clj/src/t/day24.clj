@@ -65,6 +65,10 @@
            (match op
              [:add [:lit 0] [:lit 0]] [:lit 0]
              [:add [:lit n1] [:lit n2]] [:lit (+ n1 n2)]
+             [:add [:add [:lit n1] exp] [:lit n2]] [:add exp [:lit (+ n1 n2)]]
+             [:add [:add exp [:lit n1]] [:lit n2]] [:add exp [:lit (+ n1 n2)]]
+             [:add [:lit n1] [:add [:lit n2] exp]] [:add exp [:lit (+ n1 n2)]]
+             [:add [:lit n1] [:add exp [:lit n2]]] [:add exp [:lit (+ n1 n2)]]
              [:add [:lit 0] exp] exp
              [:add exp [:lit 0]] exp
              [:mul [:lit 0] _] [:lit 0]
