@@ -54,7 +54,8 @@
                        (apply min r2))
                     (+ (apply max r1)
                        (apply max r2))])
-    [:lit n] [n]
+    [:lit n] [n n]
+    [:mod _ exp2] [0 (second (compute-range exp2))]
     [:inp _] [1 9]))
 
 (defn simplify
