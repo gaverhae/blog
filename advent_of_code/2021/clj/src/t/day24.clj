@@ -87,6 +87,12 @@
              [:eql [:inp _] [:lit (n :guard #(or (> % 9) (< % 1)))]] [:lit 0]
              [:eql [:lit (n :guard #(or (> % 9) (< % 1)))] [:inp _]] [:lit 0]
              [:eql [:lit n1] [:lit n2]] [:lit (if (== n1 n2) 1 0)]
+             [:eql exp1 exp2] (let [[min1 max1] (compute-range exp1)
+                                    [min2 max2] (compute-range exp2)]
+                                (if (or (< max1 min2)
+                                        (< max2 min1))
+                                  [:lit 0]
+                                  op))
              :else op)))))
 
 (defn part1

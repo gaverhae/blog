@@ -490,24 +490,8 @@
             ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
             ]
    :part1 [[:add
-            [:mul
-             [:add [:inp 0] [:lit 2]]
-             [:add
-              [:mul
-               [:lit 25]
-               [:eql
-                [:eql
-                 [:add [:inp 0] [:lit 17]]
-                 [:inp 1]]
-                [:lit 0]]]
-              [:lit 1]]]
-            [:mul
-             [:add [:inp 1] [:lit 16]]
-             [:eql
-              [:eql
-               [:add [:inp 0] [:lit 17]]
-               [:inp 1]]
-              [:lit 0]]]]
+            [:mul [:add [:inp 0] [:lit 2]] [:lit 26]]
+            [:add [:inp 1] [:lit 16]]]
 
            #_98491959997994]
    #_#_:part2 [0 #_61191516111321]}
