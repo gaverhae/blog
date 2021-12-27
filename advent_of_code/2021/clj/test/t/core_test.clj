@@ -467,44 +467,8 @@
             [:div :z [:lit 1]] [:add :x [:lit 14]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
             [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
             [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 9]]
-            [:mul :y [:reg :x]] [:add :z [:reg :y]]
-            [:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
-            [:div :z [:lit 1]] [:add :x [:lit 15]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
-            [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
-            [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 0]]
-            [:mul :y [:reg :x]] [:add :z [:reg :y]]
-            [:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
-            [:div :z [:lit 26]] [:add :x [:lit -8]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
-            [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
-            [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 1]]
-            [:mul :y [:reg :x]] [:add :z [:reg :y]]
-            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
-            ;[:div :z [:lit 1]] [:add :x [:lit 10]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
-            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
-            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 12]]
-            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
-            ;[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
-            ;[:div :z [:lit 26]] [:add :x [:lit -16]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
-            ;[:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
-            ;[:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 6]]
-            ;[:mul :y [:reg :x]] [:add :z [:reg :y]]
-            ]
-   :part1 [
-           [:add
-            [:mul
-             [:add
-              [:mul [:add [:mul [:add [:inp 0] [:lit 2]] [:lit 26]] [:add [:inp 1] [:lit 16]]] [:lit 26]]
-              [:add [:inp 2] [:lit 9]]]
-             [:add
-              [:mul
-               [:lit 25]
-               [:eql [:eql [:add [:inp 3] [:lit -8]] [:inp 4]] [:lit 0]]]
-              [:lit 1]]]
-            [:mul
-             [:add [:inp 4] [:lit 1]]
-             [:eql
-              [:eql [:add [:inp 3] [:lit -8]] [:inp 4]]
-              [:lit 0]]]]
+            [:mul :y [:reg :x]] [:add :z [:reg :y]]]
+   :part1 [0
            #_98491959997994]
    #_#_:part2 [0 #_61191516111321]}
 
