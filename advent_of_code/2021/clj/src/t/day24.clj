@@ -91,9 +91,10 @@
                op)
              [:mod [:lit 0] exp] [:lit 0]
              [:mod [:lit n1] [:lit n2]] [:lit (rem n1 n2)]
-             [:mod exp [:lit n]] (if (< (first (compute-range exp)) n)
-                                   exp
-                                   op)
+             [:mod exp [:lit n]] (let [[min max] (compute-range exp)]
+                                   (if (<= 0 min max (dec n))
+                                     exp
+                                     op))
              [:eql [:inp _] [:lit (n :guard #(or (> % 9) (< % 1)))]] [:lit 0]
              [:eql [:lit (n :guard #(or (> % 9) (< % 1)))] [:inp _]] [:lit 0]
              [:eql [:lit n1] [:lit n2]] [:lit (if (== n1 n2) 1 0)]
