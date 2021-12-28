@@ -195,7 +195,7 @@
                                   (conj reachable
                                         [cost-to-reach
                                          (move-amphi amphipods
-                                                     (mapping start-pos)
+                                                     pos
                                                      (mapping end-pos))])))))))))))
 
 (comment
