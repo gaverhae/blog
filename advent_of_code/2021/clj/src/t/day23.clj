@@ -2,8 +2,7 @@
   (:require [taoensso.tufte :as tufte :refer (defnp p profiled profile)]))
 
 (def mapping
-  {[0 0] 0 [1 0] 1 [2 0] 2 [3 0] 3 [4 0] 4 [5 0] 5 [6 0] 6
-   [7 0] 7 [8 0] 8 [9 0] 9 [10 0] 10
+  {[0 0] 0 [1 0] 1 [2 0] 2 [3 0] 3 [4 0] 4 [5 0] 5 [6 0] 6 [7 0] 7 [8 0] 8 [9 0] 9 [10 0] 10
    [2 1] 11 [4 1] 12 [6 1] 13 [8 1] 14
    [2 2] 15 [4 2] 16 [6 2] 17 [8 2] 18
    [2 3] 19 [4 3] 20 [6 3] 21 [8 3] 22
@@ -217,13 +216,12 @@
 
 (defnp solve
   [^longs input ^"[[J" adjacency]
-  (loop [to-process {(heuristic input) (list [input 0])}
+  (loop [to-process (sorted-map (heuristic input) (list [input 0]))
          visited {}
          i 0]
     (if (empty? to-process)
       :error
-      (let [min-h (->> to-process keys (reduce min))
-            [[^longs state cost-to-reach] & r] (to-process min-h)
+      (let [[min-h [[^longs state cost-to-reach] & r]] (first to-process)
             to-process (if (empty? r)
                          (dissoc to-process min-h)
                          (assoc to-process min-h r))]

@@ -49,7 +49,7 @@
       (fmt "Day %02d, parse: %.3fms" day (bench (parse)))
       (fmt "Day %02d, part1: %.3fms" day (bench (part1)))
       (fmt "Day %02d, part2: %.3fms" day (bench (part2))))
-    #_(let [to-profile (get-in days [24 :part1])]
+    #_(let [to-profile (get-in days [23 :part2])]
       (println (format "Single run: %d." (time-ms (to-profile))))
       #_(println "Waiting for profiler.")
       #_(read-line)
