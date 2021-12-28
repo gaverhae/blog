@@ -102,6 +102,13 @@
 (def decode
   (->> mapping (map (fn [[k v]] [v k])) (into {})))
 
+(defnp move-amphi
+  [^longs state ^long from-idx ^long to-idx]
+  (let [ret ^longs (aclone state)]
+    (sign (doto ^longs (aclone state)
+            (aset from-idx 0)
+            (aset to-idx (aget state from-idx))))))
+
 (defnp possible-moves
   [^longs amphipods ^"[[J" adjacent]
   (loop [i 0
@@ -180,42 +187,13 @@
                                                 ;; can't stop in front of room
                                                 (#{[2 0] [4 0] [6 0] [8 0]} end-pos)))
                                          reachable
-                                         (conj reachable [end-pos cost-to-reach])))))))])))))))
+                                         (conj reachable [end-pos cost-to-reach
+                                                          (move-amphi amphipods (mapping start-pos) (mapping end-pos))])))))))])))))))
 
 (comment
 
-  (possible-moves
-    (sign (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 1000 1 10 100 0 1 10 100 1000 1 10 100 1000 1 10 100 1000 0]))
-    adj-arr-2)
-([[8 4] 1000 []]
- [[6 4] 100 []]
- [[4 4] 10 []]
- [[2 4] 1 []]
- [[8 3] 1000 []]
- [[6 3] 100 []]
- [[4 3] 10 []]
- [[2 3] 1 []]
- [[8 2] 1000 []]
- [[6 2] 100 []]
- [[4 2] 10 []]
- [[2 2] 1 []]
- [[6 1] 100 []]
- [[4 1] 10 []]
- [[2 1] 1 []]
- [[10 0] 1000 [[[8 1] 3000]]])
-
-
-  (possible-moves
-    (sign (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 1000 1 10 100 0 1 10 100 1000 1 10 100 1000 1 10 100 1000 0]))
-    adj-arr-2)
-
-(->> (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 0 1 10 100 1000 1 10 100 1000 1 10 100 1000 1 10 100 1000 0])
-     butlast
-     (map-indexed (fn [idx t] [(decode idx) t]))
-     (remove (fn [[pos t]] (zero? t)))
-     (every? (fn [[[x y] c]]
-               (and (pos? y)
-                    (== c (end-state x))))))
+  (def sample
+    (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 0 10 100 10 1000 1 1000 100 1 1060580]))
 
   )
 
@@ -235,13 +213,6 @@
                   0
                   (* c (+ dx y 1))))))
        (reduce +)))
-
-(defnp move-amphi
-  [^longs state ^long from-idx ^long to-idx]
-  (let [ret ^longs (aclone state)]
-    (sign (doto ^longs (aclone state)
-            (aset from-idx 0)
-            (aset to-idx (aget state from-idx))))))
 
 (defn print-state
   [^longs state]
@@ -292,21 +263,21 @@
                                      (== c (end-state x)))))))
               cost-to-reach
               :else
-              (recur (p :next-states
-                        (->> (possible-moves state adjacency)
+              (recur (let [pm (possible-moves state adjacency)]
+                       (p :next-states
+                          (->> pm
                              (mapcat (fn [[start-pos atype end-poss]]
                                        (p :compute-h
                                           (->> end-poss
                                                (mapv (fn [arg]
-                                                       (let [[end-pos c] arg]
-                                                       (let [cost (+ cost-to-reach c)
-                                                             state (move-amphi state (mapping start-pos) (mapping end-pos))]
-                                                         [(+ cost (heuristic state))
-                                                          state
-                                                          cost]))))))))
+                                                       (let [[end-pos c new-state] arg]
+                                                         (let [cost (+ cost-to-reach c)]
+                                                           [(+ cost (heuristic new-state))
+                                                            new-state
+                                                            cost]))))))))
                              (reduce (fn [tp [h state cost]]
                                        (update tp h (fnil conj ()) [state cost]))
-                                     to-process)))
+                                     to-process))))
                      (assoc visited (last state) cost-to-reach)
                      (inc i)))))))
 
