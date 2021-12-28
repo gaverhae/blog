@@ -121,8 +121,7 @@
                (if (zero? cost)
                  ret
                  (conj ret
-                       [start-pos
-                        cost
+                       [cost
                         (if (p :already-good
                                (and (end-state start-x)
                                     (== (end-state start-x) cost)
@@ -187,8 +186,11 @@
                                                 ;; can't stop in front of room
                                                 (#{[2 0] [4 0] [6 0] [8 0]} end-pos)))
                                          reachable
-                                         (conj reachable [cost-to-reach
-                                                          (move-amphi amphipods (mapping start-pos) (mapping end-pos))])))))))])))))))
+                                         (conj reachable
+                                               [cost-to-reach
+                                                (move-amphi amphipods
+                                                            (mapping start-pos)
+                                                            (mapping end-pos))])))))))])))))))
 
 (comment
 
@@ -266,7 +268,7 @@
               (recur (let [pm (possible-moves state adjacency)]
                        (p :next-states
                           (->> pm
-                             (mapcat (fn [[start-pos atype end-poss]]
+                             (mapcat (fn [[atype end-poss]]
                                        (p :compute-h
                                           (->> end-poss
                                                (mapv (fn [arg]
