@@ -265,16 +265,16 @@
               :else
               (recur (let [pm (possible-moves state adjacency)]
                        (p :next-states
-                          (->> pm
-                               (mapv (fn [arg]
-                                       (let [[c new-state] arg
-                                             cost (+ cost-to-reach c)]
-                                         [(+ cost (heuristic new-state))
-                                          new-state
-                                          cost])))
-                               (reduce (fn [tp [h state cost]]
-                                         (update tp h (fnil conj ()) [state cost]))
-                                       to-process))))
+                          (reduce (fn [tp move]
+                                    (let [cost-of-move (get move 0)
+                                          state-after-move (get move 1)
+                                          total-cost (+ cost-to-reach cost-of-move)]
+                                      (update tp
+                                              (+ (heuristic state-after-move) total-cost)
+                                              (fnil conj ())
+                                              [state-after-move total-cost])))
+                                    to-process
+                                    pm)))
                      (assoc visited (last state) cost-to-reach)
                      (inc i)))))))
 
