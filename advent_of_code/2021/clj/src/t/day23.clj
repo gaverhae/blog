@@ -144,8 +144,7 @@
                           reachable ret]
                      (if (empty? poss)
                        reachable
-                       (let [[e-pos cost-to-reach] (first poss)
-                             [end-x end-y] (decode e-pos)]
+                       (let [[e-pos cost-to-reach] (first poss)]
                          (recur (concat (rest poss)
                                         (->> (aget adjacent ^long e-pos)
                                              (remove visited)
@@ -183,13 +182,14 @@
                                          (visited e-pos)
                                          ;; can't start in hallway, end in hallway
                                          (and (zero? start-y)
-                                              (zero? end-y))
+                                              (< e-pos 11))
                                          ;; can't stop in room with space beneath
-                                         (and (>= end-y 1)
-                                              (mapping [end-x (inc end-y)])
-                                              (seq (aget adjacent ^long (mapping [end-x (inc end-y)])))
-                                              (or (= start-pos [end-x (inc end-y)])
-                                                  (zero? (aget amphipods (mapping [end-x (inc end-y)])))))
+                                         (let [beneath (+ e-pos 4)]
+                                           (and (>= e-pos 11)
+                                                (< beneath (dec (alength amphipods)))
+                                                (seq (aget adjacent ^long beneath))
+                                                (or (== pos beneath)
+                                                    (zero? (aget amphipods beneath)))))
                                          ;; can't stop in front of room
                                          (or (== 2 e-pos) (== 4 e-pos) (== 6 e-pos) (== 8 e-pos))))
                                   reachable
