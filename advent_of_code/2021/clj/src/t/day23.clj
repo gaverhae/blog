@@ -99,8 +99,16 @@
 
 (def end-state {2 1, 4 10, 6 100, 8 1000})
 
-(def decode
-  (->> mapping (map (fn [[k v]] [v k])) (into {})))
+(let [d (->> mapping
+             (map (fn [[k v]] [v k]))
+             sort
+             (map (fn [[k v]] v))
+             into-array)
+      l (alength ^"[Ljava.lang.Object;" d)]
+  (defn decode
+    [^long n]
+    (when (< n l)
+      (aget ^"[Ljava.lang.Object;" d n))))
 
 (defnp move-amphi
   [^longs state ^long from-idx ^long to-idx]
@@ -113,24 +121,24 @@
   [^longs amphipods ^"[[J" adjacent]
   (loop [i 0
          ret ()]
-    (if (== i (dec (alength amphipods)))
-      ret
-      (recur (inc i)
-             (let [cost (aget amphipods i)
-                   [start-x start-y :as start-pos] (decode i)]
-               (if (zero? cost)
-                 ret
-                 (if (p :already-good
-                        (and (end-state start-x)
-                             (== (end-state start-x) cost)
-                             (every? (fn [c] (= c cost))
-                                     (->> (range start-y 5)
-                                          (map (fn [y] [start-x y]))
-                                          (filter (fn [pos]
-                                                    (let [idx ^long (mapping pos)]
-                                                      (seq (aget adjacent idx)))))
-                                          (map (fn [pos] (aget amphipods ^long (mapping pos))))))))
-                   ret
+    (let [cost (aget amphipods i)
+          [start-x start-y :as start-pos] (decode i)]
+      (cond (== i (dec (alength amphipods)))
+            ret
+            (or (zero? cost)
+                (p :already-good
+                   (and (end-state start-x)
+                        (== (end-state start-x) cost)
+                        (every? (fn [c] (= c cost))
+                                (->> (range start-y 5)
+                                     (map (fn [y] [start-x y]))
+                                     (filter (fn [pos]
+                                               (let [idx ^long (mapping pos)]
+                                                 (seq (aget adjacent idx)))))
+                                     (map (fn [pos] (aget amphipods ^long (mapping pos)))))))))
+            (recur (inc i) ret)
+            :else
+            (recur (inc i)
                    (loop [poss [[start-pos 0]]
                           visited #{start-pos}
                           reachable ret]
@@ -188,7 +196,7 @@
                                         [cost-to-reach
                                          (move-amphi amphipods
                                                      (mapping start-pos)
-                                                     (mapping end-pos))])))))))))))))
+                                                     (mapping end-pos))])))))))))))
 
 (comment
 
