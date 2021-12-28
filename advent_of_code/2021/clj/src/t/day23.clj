@@ -119,11 +119,11 @@
 
 (defnp possible-moves
   [^longs amphipods ^"[[J" adjacent]
-  (loop [i 0
+  (loop [pos 0
          ret ()]
-    (let [cost (aget amphipods i)
-          [start-x start-y :as start-pos] (decode i)]
-      (cond (== i (dec (alength amphipods)))
+    (let [cost (aget amphipods pos)
+          [start-x start-y :as start-pos] (decode pos)]
+      (cond (== pos (dec (alength amphipods)))
             ret
             (or (zero? cost)
                 (p :already-good
@@ -136,9 +136,9 @@
                                                (let [idx ^long (mapping pos)]
                                                  (seq (aget adjacent idx)))))
                                      (map (fn [pos] (aget amphipods ^long (mapping pos)))))))))
-            (recur (inc i) ret)
+            (recur (inc pos) ret)
             :else
-            (recur (inc i)
+            (recur (inc pos)
                    (loop [poss [[start-pos 0]]
                           visited #{start-pos}
                           reachable ret]
