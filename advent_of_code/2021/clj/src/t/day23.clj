@@ -120,76 +120,75 @@
                    [start-x start-y :as start-pos] (decode i)]
                (if (zero? cost)
                  ret
-                 (concat ret
-                       (if (p :already-good
-                              (and (end-state start-x)
-                                   (== (end-state start-x) cost)
-                                   (every? (fn [c] (= c cost))
-                                           (->> (range start-y 5)
-                                                (map (fn [y] [start-x y]))
-                                                (filter (fn [pos]
-                                                          (let [idx ^long (mapping pos)]
-                                                            (seq (aget adjacent idx)))))
-                                                (map (fn [pos] (aget amphipods ^long (mapping pos))))))))
-                         []
-                         (loop [poss [[start-pos 0]]
-                                visited #{start-pos}
-                                reachable []]
-                           (if (empty? poss)
-                             reachable
-                             (let [[[end-x end-y :as end-pos] cost-to-reach] (first poss)]
-                               (recur (concat (rest poss)
-                                              (->> (aget adjacent ^long (mapping end-pos))
-                                                   (mapv decode)
-                                                   (remove visited)
-                                                   (remove (fn [[x y]]
-                                                             (let [k (mapping [x y])]
-                                                               (pos? (aget amphipods ^long k)))))
-                                                   (remove (fn entered-wrong-room
-                                                             [[adj-x adj-y]]
-                                                             (p :entered-wrong-room
-                                                                (and (not= adj-x start-x)
-                                                                     (>= adj-y 1)
-                                                                     (not= cost (end-state adj-x))))))
-                                                   (remove (fn wrong-amphi-in-room
-                                                             [[adj-x adj-y]]
-                                                             (p :wrong-amphi-in-room
-                                                                (let [k2 (mapping [adj-x 2])
-                                                                      k3 (mapping [adj-x 3])
-                                                                      k4 (mapping [adj-x 4])]
-                                                                  (and (not= adj-x start-x)
-                                                                       (== 1 adj-y)
-                                                                       (or (and (pos? (aget amphipods k2))
-                                                                                (not= (aget amphipods k2) cost))
-                                                                           (and (< k3 (dec (alength amphipods)))
-                                                                                (pos? (aget amphipods k3))
-                                                                                (not= (aget amphipods k3) cost))
-                                                                           (and (< k4 (dec (alength amphipods)))
-                                                                                (pos? (aget amphipods k4))
-                                                                                (not= (aget amphipods k4) cost))))))))
-                                                   (mapv (fn [adj] [adj (+ cost cost-to-reach)]))))
-                                      (conj visited end-pos)
-                                      (if (p :check-end-pos
-                                             (or
-                                               ;; we've already reached this one
-                                               (visited end-pos)
-                                               ;; can't start in hallway, end in hallway
-                                               (and (zero? start-y)
-                                                    (zero? end-y))
-                                               ;; can't stop in room with space beneath
-                                               (and (>= 1 end-y)
-                                                    (mapping [end-x (inc end-y)])
-                                                    (seq (aget adjacent ^long (mapping [end-x (inc end-y)])))
-                                                    (or (= start-pos [end-x (inc end-y)])
-                                                        (zero? (aget amphipods (mapping [end-x (inc end-y)])))))
-                                               ;; can't stop in front of room
-                                               (#{[2 0] [4 0] [6 0] [8 0]} end-pos)))
-                                        reachable
-                                        (conj reachable
-                                              [cost-to-reach
-                                               (move-amphi amphipods
-                                                           (mapping start-pos)
-                                                           (mapping end-pos))]))))))))))))))
+                 (if (p :already-good
+                        (and (end-state start-x)
+                             (== (end-state start-x) cost)
+                             (every? (fn [c] (= c cost))
+                                     (->> (range start-y 5)
+                                          (map (fn [y] [start-x y]))
+                                          (filter (fn [pos]
+                                                    (let [idx ^long (mapping pos)]
+                                                      (seq (aget adjacent idx)))))
+                                          (map (fn [pos] (aget amphipods ^long (mapping pos))))))))
+                   ret
+                   (loop [poss [[start-pos 0]]
+                          visited #{start-pos}
+                          reachable ret]
+                     (if (empty? poss)
+                       reachable
+                       (let [[[end-x end-y :as end-pos] cost-to-reach] (first poss)]
+                         (recur (concat (rest poss)
+                                        (->> (aget adjacent ^long (mapping end-pos))
+                                             (mapv decode)
+                                             (remove visited)
+                                             (remove (fn [[x y]]
+                                                       (let [k (mapping [x y])]
+                                                         (pos? (aget amphipods ^long k)))))
+                                             (remove (fn entered-wrong-room
+                                                       [[adj-x adj-y]]
+                                                       (p :entered-wrong-room
+                                                          (and (not= adj-x start-x)
+                                                               (>= adj-y 1)
+                                                               (not= cost (end-state adj-x))))))
+                                             (remove (fn wrong-amphi-in-room
+                                                       [[adj-x adj-y]]
+                                                       (p :wrong-amphi-in-room
+                                                          (let [k2 (mapping [adj-x 2])
+                                                                k3 (mapping [adj-x 3])
+                                                                k4 (mapping [adj-x 4])]
+                                                            (and (not= adj-x start-x)
+                                                                 (== 1 adj-y)
+                                                                 (or (and (pos? (aget amphipods k2))
+                                                                          (not= (aget amphipods k2) cost))
+                                                                     (and (< k3 (dec (alength amphipods)))
+                                                                          (pos? (aget amphipods k3))
+                                                                          (not= (aget amphipods k3) cost))
+                                                                     (and (< k4 (dec (alength amphipods)))
+                                                                          (pos? (aget amphipods k4))
+                                                                          (not= (aget amphipods k4) cost))))))))
+                                             (mapv (fn [adj] [adj (+ cost cost-to-reach)]))))
+                                (conj visited end-pos)
+                                (if (p :check-end-pos
+                                       (or
+                                         ;; we've already reached this one
+                                         (visited end-pos)
+                                         ;; can't start in hallway, end in hallway
+                                         (and (zero? start-y)
+                                              (zero? end-y))
+                                         ;; can't stop in room with space beneath
+                                         (and (>= 1 end-y)
+                                              (mapping [end-x (inc end-y)])
+                                              (seq (aget adjacent ^long (mapping [end-x (inc end-y)])))
+                                              (or (= start-pos [end-x (inc end-y)])
+                                                  (zero? (aget amphipods (mapping [end-x (inc end-y)])))))
+                                         ;; can't stop in front of room
+                                         (#{[2 0] [4 0] [6 0] [8 0]} end-pos)))
+                                  reachable
+                                  (conj reachable
+                                        [cost-to-reach
+                                         (move-amphi amphipods
+                                                     (mapping start-pos)
+                                                     (mapping end-pos))])))))))))))))
 
 (comment
 
@@ -273,9 +272,9 @@
                                          [(+ cost (heuristic new-state))
                                           new-state
                                           cost])))
-                             (reduce (fn [tp [h state cost]]
-                                       (update tp h (fnil conj ()) [state cost]))
-                                     to-process))))
+                               (reduce (fn [tp [h state cost]]
+                                         (update tp h (fnil conj ()) [state cost]))
+                                       to-process))))
                      (assoc visited (last state) cost-to-reach)
                      (inc i)))))))
 
