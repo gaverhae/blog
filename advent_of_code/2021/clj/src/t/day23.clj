@@ -120,7 +120,7 @@
                    [start-x start-y :as start-pos] (decode i)]
                (if (zero? cost)
                  ret
-                 (conj ret
+                 (concat ret
                        (if (p :already-good
                               (and (end-state start-x)
                                    (== (end-state start-x) cost)
@@ -267,15 +267,12 @@
               (recur (let [pm (possible-moves state adjacency)]
                        (p :next-states
                           (->> pm
-                             (mapcat (fn [end-poss]
-                                       (p :compute-h
-                                          (->> end-poss
-                                               (mapv (fn [arg]
-                                                       (let [[c new-state] arg
-                                                             cost (+ cost-to-reach c)]
-                                                         [(+ cost (heuristic new-state))
-                                                          new-state
-                                                          cost])))))))
+                               (mapv (fn [arg]
+                                       (let [[c new-state] arg
+                                             cost (+ cost-to-reach c)]
+                                         [(+ cost (heuristic new-state))
+                                          new-state
+                                          cost])))
                              (reduce (fn [tp [h state cost]]
                                        (update tp h (fnil conj ()) [state cost]))
                                      to-process))))
