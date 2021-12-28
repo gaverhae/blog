@@ -449,8 +449,8 @@
 
   {:day 23
    :sample (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 0 10 100 10 1000 1 1000 100 1 1060580])
-   :part1 [12521 11320]
-   #_#_:part2 [44169 49532]}
+   #_#_:part1 [12521 11320]
+   :part2 [44169 #_49532]}
 
   #_{:day 24
    :sample [[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]

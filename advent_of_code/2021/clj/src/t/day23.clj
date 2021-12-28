@@ -10,11 +10,17 @@
 
 (defnp sign
   [^longs arr]
-  (let [l (alength arr)
-        ^long s (areduce arr idx ret (long 0) (+ (case (aget arr idx)
-                                             0 0, 1 1, 10 2, 100 3, 1000 4, 0)
-                                           (* 5 ret)))]
-    (aset arr (dec l) s)
+  (let [l ^int (alength arr)
+        stop ^int (unchecked-dec-int l)
+        ^long new-sign (loop [i (int 0)
+                              s 0]
+                         (if (== i stop)
+                           s
+                           (recur (inc i)
+                                  (+ (* 5 s)
+                                     (case (aget arr i)
+                                       0 0, 1 1, 10 2, 100 3, 1000 4)))))]
+    (aset arr (dec l) new-sign)
     arr))
 
 (defn parse
@@ -176,6 +182,43 @@
                                          reachable
                                          (conj reachable [end-pos cost-to-reach])))))))])))))))
 
+(comment
+
+  (possible-moves
+    (sign (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 1000 1 10 100 0 1 10 100 1000 1 10 100 1000 1 10 100 1000 0]))
+    adj-arr-2)
+([[8 4] 1000 []]
+ [[6 4] 100 []]
+ [[4 4] 10 []]
+ [[2 4] 1 []]
+ [[8 3] 1000 []]
+ [[6 3] 100 []]
+ [[4 3] 10 []]
+ [[2 3] 1 []]
+ [[8 2] 1000 []]
+ [[6 2] 100 []]
+ [[4 2] 10 []]
+ [[2 2] 1 []]
+ [[6 1] 100 []]
+ [[4 1] 10 []]
+ [[2 1] 1 []]
+ [[10 0] 1000 [[[8 1] 3000]]])
+
+
+  (possible-moves
+    (sign (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 1000 1 10 100 0 1 10 100 1000 1 10 100 1000 1 10 100 1000 0]))
+    adj-arr-2)
+
+(->> (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 0 1 10 100 1000 1 10 100 1000 1 10 100 1000 1 10 100 1000 0])
+     butlast
+     (map-indexed (fn [idx t] [(decode idx) t]))
+     (remove (fn [[pos t]] (zero? t)))
+     (every? (fn [[[x y] c]]
+               (and (pos? y)
+                    (== c (end-state x))))))
+
+  )
+
 (defnp abs
   [n]
   (if (neg? n) (- n) n))
@@ -204,18 +247,25 @@
   [^longs state]
   (let [p (fn [pos]
             (get {1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state ^long (mapping pos))))]
+    (prn [:seq (map-indexed vector state)])
     (println "#############")
     (print "#")
     (doseq [n (range 11)]
       (print (p [n 0])))
     (println "#")
-    (println (format "###%s#%s#%s#%s###" (p [2 1]) (p [4 1]) (p [6 1]) (p [8 1])))
-    (doseq [y (range 2 3 #_(->> state (map (fn [[[x y] t]] y)) (reduce max) inc))]
-      (println (format "  #%s#%s#%s#%s#  " (p [2 y]) (p [4 y]) (p [6 y]) (p [8 y]))))
+    (loop [i 11]
+      (when (< i (dec (alength state)))
+        (println (format "  #%s#%s#%s#%s#  "
+                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 0 i)))
+                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 1 i)))
+                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 2 i)))
+                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 3 i)))))
+        (recur (+ i 4))))
     (println         "  #########  ")))
 
 (defnp solve
   [^longs input ^"[[J" adjacency]
+  #_(print-state input)
   (loop [to-process (sorted-map (heuristic input) (list [input 0]))
          visited {}
          i 0]
@@ -225,8 +275,8 @@
             to-process (if (empty? r)
                          (dissoc to-process min-h)
                          (assoc to-process min-h r))]
-        #_(when (zero? (mod i 10000))
-          #_(print-state state)
+        #_(when (zero? (mod i 100000))
+          (print-state state)
           (prn [:cost cost-to-reach :h min-h :i i]))
         (cond (p :filter-visited
                  (when-let [v (visited (last state))]
@@ -266,7 +316,7 @@
 
 (defn part2
   [^longs input]
-  (solve (let [arr ^"[J" (make-array Long/TYPE 27)]
+  (solve (let [arr ^"[J" (make-array Long/TYPE 28)]
            (loop [i 0]
              (when (< i 15)
                (aset arr i (aget input i))
@@ -281,5 +331,5 @@
              (when (<  i 27)
                (aset arr i (aget input (- i 8)))
                (recur (inc i))))
-           arr)
+           (sign arr))
          adj-arr-2))
