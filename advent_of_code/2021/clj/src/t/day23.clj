@@ -121,8 +121,7 @@
                (if (zero? cost)
                  ret
                  (conj ret
-                       [cost
-                        (if (p :already-good
+                       [(if (p :already-good
                                (and (end-state start-x)
                                     (== (end-state start-x) cost)
                                     (every? (fn [c] (= c cost))
@@ -268,7 +267,7 @@
               (recur (let [pm (possible-moves state adjacency)]
                        (p :next-states
                           (->> pm
-                             (mapcat (fn [[atype end-poss]]
+                             (mapcat (fn [[end-poss]]
                                        (p :compute-h
                                           (->> end-poss
                                                (mapv (fn [arg]
