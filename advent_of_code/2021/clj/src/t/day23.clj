@@ -145,9 +145,9 @@
                      (if (empty? poss)
                        reachable
                        (let [[e-pos cost-to-reach] (first poss)
-                             [end-x end-y :as end-pos] (decode e-pos)]
+                             [end-x end-y] (decode e-pos)]
                          (recur (concat (rest poss)
-                                        (->> (aget adjacent ^long (mapping end-pos))
+                                        (->> (aget adjacent ^long e-pos)
                                              (remove visited)
                                              (mapv decode)
                                              (remove (fn [[x y]]
@@ -176,11 +176,11 @@
                                                                           (pos? (aget amphipods k4))
                                                                           (not= (aget amphipods k4) cost))))))))
                                              (mapv (fn [adj] [(mapping adj) (+ cost cost-to-reach)]))))
-                                (conj visited (mapping end-pos))
+                                (conj visited e-pos)
                                 (if (p :check-end-pos
                                        (or
                                          ;; we've already reached this one
-                                         (visited (mapping end-pos))
+                                         (visited e-pos)
                                          ;; can't start in hallway, end in hallway
                                          (and (zero? start-y)
                                               (zero? end-y))
@@ -191,13 +191,13 @@
                                               (or (= start-pos [end-x (inc end-y)])
                                                   (zero? (aget amphipods (mapping [end-x (inc end-y)])))))
                                          ;; can't stop in front of room
-                                         (#{[2 0] [4 0] [6 0] [8 0]} end-pos)))
+                                         (or (== 2 e-pos) (== 4 e-pos) (== 6 e-pos) (== 8 e-pos))))
                                   reachable
                                   (conj reachable
                                         [cost-to-reach
                                          (move-amphi amphipods
                                                      pos
-                                                     (mapping end-pos))])))))))))))
+                                                     e-pos)])))))))))))
 
 (comment
 
