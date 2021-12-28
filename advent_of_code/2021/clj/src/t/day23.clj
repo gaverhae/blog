@@ -185,7 +185,7 @@
                                          (and (zero? start-y)
                                               (zero? end-y))
                                          ;; can't stop in room with space beneath
-                                         (and (>= 1 end-y)
+                                         (and (>= end-y 1)
                                               (mapping [end-x (inc end-y)])
                                               (seq (aget adjacent ^long (mapping [end-x (inc end-y)])))
                                               (or (= start-pos [end-x (inc end-y)])
