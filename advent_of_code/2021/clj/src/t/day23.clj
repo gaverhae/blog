@@ -187,7 +187,7 @@
                                                 ;; can't stop in front of room
                                                 (#{[2 0] [4 0] [6 0] [8 0]} end-pos)))
                                          reachable
-                                         (conj reachable [end-pos cost-to-reach
+                                         (conj reachable [cost-to-reach
                                                           (move-amphi amphipods (mapping start-pos) (mapping end-pos))])))))))])))))))
 
 (comment
@@ -270,11 +270,11 @@
                                        (p :compute-h
                                           (->> end-poss
                                                (mapv (fn [arg]
-                                                       (let [[end-pos c new-state] arg]
-                                                         (let [cost (+ cost-to-reach c)]
-                                                           [(+ cost (heuristic new-state))
-                                                            new-state
-                                                            cost]))))))))
+                                                       (let [[c new-state] arg
+                                                             cost (+ cost-to-reach c)]
+                                                         [(+ cost (heuristic new-state))
+                                                          new-state
+                                                          cost])))))))
                              (reduce (fn [tp [h state cost]]
                                        (update tp h (fnil conj ()) [state cost]))
                                      to-process))))
