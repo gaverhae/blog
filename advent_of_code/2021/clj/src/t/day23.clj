@@ -139,16 +139,17 @@
             (recur (inc pos) ret)
             :else
             (recur (inc pos)
-                   (loop [poss [[start-pos 0]]
-                          visited #{start-pos}
+                   (loop [poss [[pos 0]]
+                          visited #{pos}
                           reachable ret]
                      (if (empty? poss)
                        reachable
-                       (let [[[end-x end-y :as end-pos] cost-to-reach] (first poss)]
+                       (let [[e-pos cost-to-reach] (first poss)
+                             [end-x end-y :as end-pos] (decode e-pos)]
                          (recur (concat (rest poss)
                                         (->> (aget adjacent ^long (mapping end-pos))
-                                             (mapv decode)
                                              (remove visited)
+                                             (mapv decode)
                                              (remove (fn [[x y]]
                                                        (let [k (mapping [x y])]
                                                          (pos? (aget amphipods ^long k)))))
@@ -174,12 +175,12 @@
                                                                      (and (< k4 (dec (alength amphipods)))
                                                                           (pos? (aget amphipods k4))
                                                                           (not= (aget amphipods k4) cost))))))))
-                                             (mapv (fn [adj] [adj (+ cost cost-to-reach)]))))
-                                (conj visited end-pos)
+                                             (mapv (fn [adj] [(mapping adj) (+ cost cost-to-reach)]))))
+                                (conj visited (mapping end-pos))
                                 (if (p :check-end-pos
                                        (or
                                          ;; we've already reached this one
-                                         (visited end-pos)
+                                         (visited (mapping end-pos))
                                          ;; can't start in hallway, end in hallway
                                          (and (zero? start-y)
                                               (zero? end-y))
