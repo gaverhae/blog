@@ -173,18 +173,18 @@
             (recur (inc pos) ret)
             :else
             (recur (inc pos)
-                   (loop [poss [[pos 0]]
+                   (loop [poss [pos]
                           visited #{pos}
                           reachable ret]
                      (if (empty? poss)
                        reachable
-                       (let [[e-pos cost-to-reach] (first poss)]
+                       (let [e-pos (first poss)]
                          (recur (concat (rest poss)
                                         (->> (aget adjacent ^long e-pos)
                                              (remove visited)
                                              (remove (fn [k]
                                                        (pos? (aget amphipods ^long k))))
-                                             (mapv decode)
+                                             (map decode)
                                              (remove (fn entered-wrong-room
                                                        [[adj-x adj-y]]
                                                        (p :entered-wrong-room
@@ -207,7 +207,7 @@
                                                                      (and (< k4 (dec (alength amphipods)))
                                                                           (pos? (aget amphipods k4))
                                                                           (not= (aget amphipods k4) cost))))))))
-                                             (mapv (fn [adj] [(mapping adj) (+ cost cost-to-reach)]))))
+                                             (map mapping)))
                                 (conj visited e-pos)
                                 (if (p :check-end-pos
                                        (or
@@ -225,10 +225,7 @@
                                          ;; can't stop in front of room
                                          (or (== 2 e-pos) (== 4 e-pos) (== 6 e-pos) (== 8 e-pos))))
                                   reachable
-                                  (let [[d new-state] (move-amphi amphipods pos e-pos)]
-                                    (when (not= d cost-to-reach)
-                                      (prn [:not= pos e-pos cost-to-reach d cost]))
-                                    (conj reachable [cost-to-reach new-state]))))))))))))
+                                  (conj reachable (move-amphi amphipods pos e-pos))))))))))))
 
 (comment
 
