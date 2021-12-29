@@ -162,7 +162,8 @@
         mt-q clojure.lang.PersistentQueue/EMPTY]
     (loop [pos 0
            ret ()
-           visited #{0}
+           visited (doto (java.util.BitSet.)
+                     (.set 0))
            poss (conj mt-q 0)]
       (let [cost (aget amphipods pos)]
         (cond (== pos limit)
@@ -170,11 +171,11 @@
               (or (zero? cost)
                   (empty? poss)
                   (final-position? pos cost amphipods))
-              (recur (inc pos) ret #{(inc pos)} [(inc pos)])
+              (recur (inc pos) ret (doto (java.util.BitSet.) (.set (inc pos))) [(inc pos)])
               :else
               (let [e-pos (peek poss)
                     poss (transduce (filter (fn [adj]
-                                              (and (not (visited adj))
+                                              (and (not (.get visited adj))
                                                    (zero? (aget amphipods ^long adj))
                                                    (or (< adj 7)
                                                        (> adj 10)
@@ -193,7 +194,7 @@
                                     conj (pop poss) (aget adjacent ^long e-pos))
                     valid? (not (or
                                   ;; we've already reached this one
-                                  (visited e-pos)
+                                  (.get visited e-pos)
                                   ;; can't start in hallway, end in hallway
                                   (and (< pos 7) (< e-pos 7))
                                   ;; can't stop in room with space beneath
@@ -202,8 +203,8 @@
                                          (< beneath limit)
                                          (seq (aget adjacent ^long beneath))
                                          (or (== pos beneath)
-                                             (zero? (aget amphipods beneath)))))))
-                    visited (conj visited e-pos)]
+                                             (zero? (aget amphipods beneath)))))))]
+                (.set visited e-pos)
                 (cond (and valid? (> e-pos 6))
                       [(move-amphi amphipods pos e-pos)]
                       valid?
