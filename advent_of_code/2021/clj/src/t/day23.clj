@@ -158,10 +158,9 @@
                          (recur (concat (rest poss)
                                         (->> (aget adjacent ^long e-pos)
                                              (remove visited)
+                                             (remove (fn [k]
+                                                       (pos? (aget amphipods ^long k))))
                                              (mapv decode)
-                                             (remove (fn [[x y]]
-                                                       (let [k (mapping [x y])]
-                                                         (pos? (aget amphipods ^long k)))))
                                              (remove (fn entered-wrong-room
                                                        [[adj-x adj-y]]
                                                        (p :entered-wrong-room
