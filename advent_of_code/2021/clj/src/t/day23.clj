@@ -141,7 +141,7 @@
   (loop [pos 0
          ret ()]
     (let [cost (aget amphipods pos)
-          [start-x start-y :as start-pos] (decode pos)]
+          [start-x] (decode pos)]
       (cond (== pos (dec (alength amphipods)))
             ret
             (or (zero? cost)
@@ -191,8 +191,7 @@
                                          ;; we've already reached this one
                                          (visited e-pos)
                                          ;; can't start in hallway, end in hallway
-                                         (and (zero? start-y)
-                                              (< e-pos 11))
+                                         (and (< pos 11) (< e-pos 11))
                                          ;; can't stop in room with space beneath
                                          (let [beneath (+ e-pos 4)]
                                            (and (>= e-pos 11)
