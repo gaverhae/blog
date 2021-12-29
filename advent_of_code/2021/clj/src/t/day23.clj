@@ -110,12 +110,36 @@
     (when (< n l)
       (aget ^"[Ljava.lang.Object;" d n))))
 
+(defnp abs
+  [n]
+  (if (neg? n) (- n) n))
+
+(def dist
+  (->> (for [from-x (range 11)
+             from-y (range 5)
+             :let [from-idx (mapping [from-x from-y])]
+             :when from-idx
+             to-x (range 11)
+             to-y (range 5)
+             :let [to-idx (mapping [to-x to-y])]
+             :when to-idx]
+         [from-idx to-idx
+          (if (zero? (* from-y to-y))
+            (+ (abs (- from-x to-x))
+               (abs (- from-y to-y)))
+            (+ from-y to-y (abs (- from-x to-x))))])
+       (reduce (fn [acc [from to d]]
+                 (assoc acc [from to] d))
+               {})))
+
 (defnp move-amphi
   [^longs state ^long from-idx ^long to-idx]
   (let [ret ^longs (aclone state)]
-    (sign (doto ^longs (aclone state)
-            (aset from-idx 0)
-            (aset to-idx (aget state from-idx))))))
+    [(* (aget state from-idx)
+        (dist [from-idx to-idx]))
+     (sign (doto ^longs (aclone state)
+             (aset from-idx 0)
+             (aset to-idx (aget state from-idx))))]))
 
 (defmacro final-position?
   [pos cost amphipods]
@@ -201,9 +225,10 @@
                                          ;; can't stop in front of room
                                          (or (== 2 e-pos) (== 4 e-pos) (== 6 e-pos) (== 8 e-pos))))
                                   reachable
-                                  (conj reachable
-                                        [cost-to-reach
-                                         (move-amphi amphipods pos e-pos)])))))))))))
+                                  (let [[d new-state] (move-amphi amphipods pos e-pos)]
+                                    (when (not= d cost-to-reach)
+                                      (prn [:not= pos e-pos cost-to-reach d cost]))
+                                    (conj reachable [cost-to-reach new-state]))))))))))))
 
 (comment
 
@@ -211,10 +236,6 @@
     (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 0 10 100 10 1000 1 1000 100 1 1060580]))
 
   )
-
-(defnp abs
-  [n]
-  (if (neg? n) (- n) n))
 
 (defnp heuristic
   [state]
