@@ -237,6 +237,20 @@
                              h
                              (+ h (* c (dist [pos x])))))))))))))
 
+(defn final-state?
+  [^longs state]
+  (let [stop (dec (alength state))]
+    (loop [idx 7]
+      (cond (>= idx stop)
+            true
+            (and (== 1 (aget state idx))
+                 (== 10 (aget state (+ idx 1)))
+                 (== 100 (aget state (+ idx 2)))
+                 (== 1000 (aget state (+ idx 3))))
+            (recur (+ idx 4))
+            :else
+            false))))
+
 (defn solve
   [^longs input ^"[[J" adjacency]
   (loop [to-process (sorted-map (heuristic input) (list [input 0]))
@@ -251,14 +265,9 @@
         (cond (when-let [v (visited (last state))]
                 (<= v cost-to-reach))
               (recur to-process visited (inc i))
-              (->> state
-                   butlast
-                   (map-indexed (fn [idx t] [(decode idx) t]))
-                   (remove (fn [[pos t]] (zero? t)))
-                   (every? (fn [[[x y] c]]
-                             (and (pos? y)
-                                  (== c (end-state x))))))
-              (do (prn [:iters i]) cost-to-reach)
+              (final-state? state)
+              #_(do (prn [:iters i]) cost-to-reach)
+              cost-to-reach
               :else
               (recur (let [pm (possible-moves state adjacency)]
                        (reduce (fn [tp move]
