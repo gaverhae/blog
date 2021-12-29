@@ -160,8 +160,7 @@
   [^longs amphipods ^"[[J" adjacent]
   (loop [pos 0
          ret ()]
-    (let [cost (aget amphipods pos)
-          [start-x] (decode pos)]
+    (let [cost (aget amphipods pos)]
       (cond (== pos (dec (alength amphipods)))
             ret
             (or (zero? cost)
