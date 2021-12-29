@@ -137,24 +137,24 @@
              (aset from-idx 0)
              (aset to-idx (aget state from-idx))))]))
 
-(defmacro final-position?
-  [pos cost amphipods]
-  `(case ~cost
-     ~@(->> [[1 7] [10 8] [100 9] [1000 10]]
-            (mapcat (fn [[target-cost target-pos]]
-                      [target-cost
-                       `(case ~pos
-                          ~target-pos (and (== ~target-cost (aget ~amphipods ~(+ 4 target-pos)))
-                                           (or (== 16 (alength ~amphipods))
-                                               (and (== ~target-cost (aget ~amphipods ~(+ 8 target-pos)))
-                                                    (== ~target-cost (aget ~amphipods ~(+ 12 target-pos))))))
-                          ~(+ 4 target-pos) (or (== 16 (alength ~amphipods))
-                                                (and (== ~target-cost (aget ~amphipods ~(+ 8 target-pos)))
-                                                     (== ~target-cost (aget ~amphipods ~(+ 12 target-pos)))))
-                          ~(+ 8 target-pos) (== ~target-cost (aget ~amphipods ~(+ 12 target-pos)))
-                          ~(+ 12 target-pos) true
-                          false)])))
-     false))
+(defn final-position?
+  [^long pos ^long cost ^longs amphipods]
+  (and (>= pos 7)
+       (let [t-pos (case cost 1 7, 10 8, 100 9, 1000 10)]
+         (if (== 16 (alength amphipods))
+           (or (== pos (+ t-pos 4))
+               (and (== pos t-pos)
+                    (== cost (aget amphipods (+ 4 t-pos)))))
+           (or (== pos (+ t-pos 12))
+               (and (== pos (+ t-pos 8))
+                    (== cost (aget amphipods (+ 12 t-pos))))
+               (and (== pos (+ t-pos 4))
+                    (== cost (aget amphipods (+ 8 t-pos)))
+                    (== cost (aget amphipods (+ 12 t-pos))))
+               (and (== pos t-pos)
+                    (== cost (aget amphipods (+ 4 t-pos)))
+                    (== cost (aget amphipods (+ 8 t-pos)))
+                    (== cost (aget amphipods (+ 12 t-pos)))))))))
 
 (defn possible-moves
   [^longs amphipods ^"[[J" adjacent]
