@@ -176,23 +176,23 @@
                        (let [e-pos (first poss)]
                          (recur (concat (rest poss)
                                         (->> (aget adjacent ^long e-pos)
-                                             (remove visited)
-                                             (filter (fn [adj] (zero? (aget amphipods ^long adj))))
                                              (filter (fn [adj]
-                                                       (or (< adj 7)
-                                                           (> adj 10)
-                                                           (let [t ({7 1, 8 10, 9 100, 10 1000} adj)]
-                                                             (or (== pos (+ adj 4))
-                                                                 (== pos (+ adj 8))
-                                                                 (== pos (+ adj 12))
-                                                                 (and (== cost t)
-                                                                      (let [c (get amphipods (+ 4 adj))]
-                                                                        (or (== t c) (zero? c)))
-                                                                      (or (== 16 (alength amphipods))
-                                                                          (let [c2 (aget amphipods (+ 8 adj))
-                                                                                c3 (aget amphipods (+ 12 adj))]
-                                                                            (and (or (== t c2) (zero? c2))
-                                                                                 (or (== t c3) (zero? c3)))))))))))))
+                                                       (and (not (visited adj))
+                                                            (zero? (aget amphipods ^long adj))
+                                                            (or (< adj 7)
+                                                                (> adj 10)
+                                                                (let [t ({7 1, 8 10, 9 100, 10 1000} adj)]
+                                                                  (or (== pos (+ adj 4))
+                                                                      (== pos (+ adj 8))
+                                                                      (== pos (+ adj 12))
+                                                                      (and (== cost t)
+                                                                           (let [c (get amphipods (+ 4 adj))]
+                                                                             (or (== t c) (zero? c)))
+                                                                           (or (== 16 (alength amphipods))
+                                                                               (let [c2 (aget amphipods (+ 8 adj))
+                                                                                     c3 (aget amphipods (+ 12 adj))]
+                                                                                 (and (or (== t c2) (zero? c2))
+                                                                                      (or (== t c3) (zero? c3))))))))))))))
                                 (conj visited e-pos)
                                 (if (p :check-end-pos
                                        (or
