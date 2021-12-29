@@ -180,13 +180,29 @@
                                              (remove visited)
                                              (remove (fn [k]
                                                        (pos? (aget amphipods ^long k))))
-                                             (map decode)
                                              (remove (fn entered-wrong-room
-                                                       [[adj-x adj-y]]
+                                                       [adj]
                                                        (p :entered-wrong-room
-                                                          (and (not= adj-x start-x)
-                                                               (>= adj-y 1)
-                                                               (not= cost (end-state adj-x))))))
+                                                          (when (>= adj 7)
+                                                            (case (int adj)
+                                                              7 (and (not (== cost 1))
+                                                                     (not (== pos 11))
+                                                                     (not (== pos 15))
+                                                                     (not (== pos 19)))
+                                                              8 (and (not (== cost 10))
+                                                                     (not (== pos 12))
+                                                                     (not (== pos 16))
+                                                                     (not (== pos 20)))
+                                                              9 (and (not (== cost 100))
+                                                                     (not (== pos 13))
+                                                                     (not (== pos 17))
+                                                                     (not (== pos 21)))
+                                                              10 (and (not (== cost 1000))
+                                                                      (not (== pos 14))
+                                                                      (not (== pos 18))
+                                                                      (not (== pos 22)))
+                                                              false)))))
+                                             (map decode)
                                              (remove (fn wrong-amphi-in-room
                                                        [[adj-x adj-y]]
                                                        (p :wrong-amphi-in-room
