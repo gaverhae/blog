@@ -167,8 +167,8 @@
         (cond (== pos limit)
               ret
               (or (zero? cost)
-                  (final-position? pos cost amphipods)
-                  (empty? poss))
+                  (empty? poss)
+                  (final-position? pos cost amphipods))
               (recur (inc pos) ret #{(inc pos)} [(inc pos)])
               :else
               (let [e-pos (first poss)
