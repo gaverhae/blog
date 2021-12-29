@@ -1,5 +1,4 @@
-(ns t.day23
-  (:require [taoensso.tufte :as tufte :refer (defnp p profiled profile)]))
+(ns t.day23)
 
 (def mapping
   (->> [[0 0] [1 0]       [3 0]       [5 0]       [7 0]       [9 0] [10 0]
@@ -10,7 +9,7 @@
        (map-indexed (fn [idx v] [v idx]))
        (into {})))
 
-(defnp sign
+(defn sign
   [^longs arr]
   (let [l ^int (alength arr)
         stop ^int (unchecked-dec-int l)
@@ -106,7 +105,7 @@
     (when (< n l)
       (aget ^"[Ljava.lang.Object;" d n))))
 
-(defnp abs
+(defn abs
   [n]
   (if (neg? n) (- n) n))
 
@@ -126,10 +125,10 @@
              (reduce (fn [acc [from to d]]
                        (assoc acc [from to] d))
                      {}))]
-  (defnp dist
+  (defn dist
     [k] (m k)))
 
-(defnp move-amphi
+(defn move-amphi
   [^longs state ^long from-idx ^long to-idx]
   (let [ret ^longs (aclone state)]
     [(* (aget state from-idx)
@@ -157,7 +156,7 @@
                           false)])))
      false))
 
-(defnp possible-moves
+(defn possible-moves
   [^longs amphipods ^"[[J" adjacent]
   (let [limit (dec (alength amphipods))]
     (loop [pos 0
@@ -216,7 +215,7 @@
 
   )
 
-(defnp heuristic
+(defn heuristic
   [^longs state]
   (let [limit (dec (alength state))]
     (loop [pos 0
@@ -255,7 +254,7 @@
         (recur (+ i 4))))
     (println         "  #########  ")))
 
-(defnp solve
+(defn solve
   [^longs input ^"[[J" adjacency]
   #_(print-state input)
   (loop [to-process (sorted-map (heuristic input) (list [input 0]))
@@ -270,38 +269,35 @@
         #_(when (zero? (mod i 100000))
           (print-state state)
           (prn [:cost cost-to-reach :h min-h :i i]))
-        (cond (p :filter-visited
-                 (when-let [v (visited (last state))]
-                   (<= v cost-to-reach)))
+        (cond (when-let [v (visited (last state))]
+                (<= v cost-to-reach))
               (recur to-process visited (inc i))
-              (p :end-state?
-                 (->> state
-                      butlast
-                      (map-indexed (fn [idx t] [(decode idx) t]))
-                      (remove (fn [[pos t]] (zero? t)))
-                      (every? (fn [[[x y] c]]
-                                (and (pos? y)
-                                     (== c (end-state x)))))))
+              (->> state
+                   butlast
+                   (map-indexed (fn [idx t] [(decode idx) t]))
+                   (remove (fn [[pos t]] (zero? t)))
+                   (every? (fn [[[x y] c]]
+                             (and (pos? y)
+                                  (== c (end-state x))))))
               (do (prn [:iters i]) cost-to-reach)
               :else
               (recur (let [pm (possible-moves state adjacency)]
-                       (p :next-states
-                          (reduce (fn [tp move]
-                                    (let [cost-of-move (get move 0)
-                                          state-after-move (get move 1)
-                                          total-cost (+ cost-to-reach cost-of-move)]
-                                      (update tp
-                                              (+ (heuristic state-after-move) total-cost)
-                                              (fnil conj ())
-                                              [state-after-move total-cost])))
-                                  to-process
-                                  pm)))
+                       (reduce (fn [tp move]
+                                 (let [cost-of-move (get move 0)
+                                       state-after-move (get move 1)
+                                       total-cost (+ cost-to-reach cost-of-move)]
+                                   (update tp
+                                           (+ (heuristic state-after-move) total-cost)
+                                           (fnil conj ())
+                                           [state-after-move total-cost])))
+                               to-process
+                               pm))
                      (assoc visited (last state) cost-to-reach)
                      (inc i)))))))
 
 (defn part1
   [input]
-  (p :part1 (solve input adj-arr-1)))
+  (solve input adj-arr-1))
 
 (defn part2
   [^longs input]
