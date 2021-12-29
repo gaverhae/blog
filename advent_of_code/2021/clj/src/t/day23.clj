@@ -110,23 +110,24 @@
   [n]
   (if (neg? n) (- n) n))
 
-(def dist
-  (->> (for [from-x (range 11)
-             from-y (range 5)
-             :let [from-idx (mapping [from-x from-y])]
-             :when from-idx
-             to-x (range 11)
-             to-y (range 5)
-             :let [to-idx (mapping [to-x to-y])]
-             :when to-idx]
-         [from-idx to-idx
-          (if (zero? (* from-y to-y))
-            (+ (abs (- from-x to-x))
-               (abs (- from-y to-y)))
-            (+ from-y to-y (abs (- from-x to-x))))])
-       (reduce (fn [acc [from to d]]
-                 (assoc acc [from to] d))
-               {})))
+(let [m (->> (for [from-x (range 11)
+                   from-y (range 5)
+                   :let [from-idx (mapping [from-x from-y])]
+                   :when from-idx
+                   to-x (range 11)
+                   to-y (range 5)
+                   :let [to-idx (mapping [to-x to-y])]
+                   :when to-idx]
+               [from-idx to-idx
+                (if (zero? (* from-y to-y))
+                  (+ (abs (- from-x to-x))
+                     (abs (- from-y to-y)))
+                  (+ from-y to-y (abs (- from-x to-x))))])
+             (reduce (fn [acc [from to d]]
+                       (assoc acc [from to] d))
+                     {}))]
+  (defnp dist
+    [k] (m k)))
 
 (defnp move-amphi
   [^longs state ^long from-idx ^long to-idx]
@@ -216,17 +217,23 @@
   )
 
 (defnp heuristic
-  [state]
-  (->> state
-       butlast
-       (map-indexed (fn [idx t] [(decode idx) t]))
-       (remove (fn [[_ t]] (zero? t)))
-       (map (fn [[[x y] c]]
-              (let [dx (abs (- x ({1 2, 10 4, 100 6, 1000 8} c)))]
-                (if (zero? dx)
-                  0
-                  (* c (+ dx y 1))))))
-       (reduce +)))
+  [^longs state]
+  (let [limit (dec (alength state))]
+    (loop [pos 0
+           h 0]
+      (if (== limit pos)
+        h
+        (recur (inc pos)
+               (long (let [c (aget state pos)]
+                       (if (zero? c)
+                         h
+                         (let [x (case c 1 7, 10 8, 100 9, 1000 10)]
+                           (if (or (== x pos)
+                                   (== (+ 4 x) pos)
+                                   (== (+ 8 x) pos)
+                                   (== (+ 12 x) pos))
+                             h
+                             (+ h (* c (dist [pos x])))))))))))))
 
 (defn print-state
   [^longs state]
@@ -287,8 +294,8 @@
                                               (+ (heuristic state-after-move) total-cost)
                                               (fnil conj ())
                                               [state-after-move total-cost])))
-                                    to-process
-                                    pm)))
+                                  to-process
+                                  pm)))
                      (assoc visited (last state) cost-to-reach)
                      (inc i)))))))
 
