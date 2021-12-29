@@ -191,22 +191,25 @@
                                                                               c3 (aget amphipods (+ 12 adj))]
                                                                           (and (or (== t c2) (zero? c2))
                                                                                (or (== t c3) (zero? c3))))))))))))))
-                    ret (if (or
-                              ;; we've already reached this one
-                              (visited e-pos)
-                              ;; can't start in hallway, end in hallway
-                              (and (< pos 7) (< e-pos 7))
-                              ;; can't stop in room with space beneath
-                              (let [beneath (+ e-pos 4)]
-                                (and (>= e-pos 7)
-                                     (< beneath limit)
-                                     (seq (aget adjacent ^long beneath))
-                                     (or (== pos beneath)
-                                         (zero? (aget amphipods beneath))))))
-                          ret
-                          (conj ret (move-amphi amphipods pos e-pos)))
+                    valid? (not (or
+                                  ;; we've already reached this one
+                                  (visited e-pos)
+                                  ;; can't start in hallway, end in hallway
+                                  (and (< pos 7) (< e-pos 7))
+                                  ;; can't stop in room with space beneath
+                                  (let [beneath (+ e-pos 4)]
+                                    (and (>= e-pos 7)
+                                         (< beneath limit)
+                                         (seq (aget adjacent ^long beneath))
+                                         (or (== pos beneath)
+                                             (zero? (aget amphipods beneath)))))))
                     visited (conj visited e-pos)]
-                (recur pos ret visited poss)))))))
+                (cond (and valid? (> e-pos 6))
+                      [(move-amphi amphipods pos e-pos)]
+                      valid?
+                      (recur pos (conj ret (move-amphi amphipods pos e-pos)) visited poss)
+                      :else
+                      (recur pos ret visited poss))))))))
 
 (comment
 
