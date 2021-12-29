@@ -253,35 +253,36 @@
 
 (defn solve
   [^longs input ^"[[J" adjacency]
-  (loop [to-process (sorted-map (heuristic input) (list [input 0]))
-         visited {}
-         i 0]
-    (if (empty? to-process)
-      :error
-      (let [[min-h [[^longs state cost-to-reach] & r]] (first to-process)
-            to-process (if (empty? r)
-                         (dissoc to-process min-h)
-                         (assoc to-process min-h r))]
-        (cond (when-let [v (visited (last state))]
-                (<= v cost-to-reach))
-              (recur to-process visited (inc i))
-              (final-state? state)
-              #_(do (prn [:iters i]) cost-to-reach)
-              cost-to-reach
-              :else
-              (recur (let [pm (possible-moves state adjacency)]
-                       (reduce (fn [tp move]
-                                 (let [cost-of-move (get move 0)
-                                       state-after-move (get move 1)
-                                       total-cost (+ cost-to-reach cost-of-move)]
-                                   (update tp
-                                           (+ (heuristic state-after-move) total-cost)
-                                           (fnil conj ())
-                                           [state-after-move total-cost])))
-                               to-process
-                               pm))
-                     (assoc visited (last state) cost-to-reach)
-                     (inc i)))))))
+  (let [s (- (alength input) 1)]
+    (loop [to-process (sorted-map (heuristic input) (list [input 0]))
+           visited {}
+           i 0]
+      (if (empty? to-process)
+        :error
+        (let [[min-h [[^longs state cost-to-reach] & r]] (first to-process)
+              to-process (if (seq r)
+                           (assoc to-process min-h r)
+                           (dissoc to-process min-h))]
+          (cond (when-let [v (visited (aget state s))]
+                  (<= v cost-to-reach))
+                (recur to-process visited (inc i))
+                (final-state? state)
+                #_(do (prn [:iters i]) cost-to-reach)
+                cost-to-reach
+                :else
+                (recur (let [pm (possible-moves state adjacency)]
+                         (reduce (fn [tp move]
+                                   (let [cost-of-move (get move 0)
+                                         state-after-move (get move 1)
+                                         total-cost (+ cost-to-reach cost-of-move)]
+                                     (update tp
+                                             (+ (heuristic state-after-move) total-cost)
+                                             (fnil conj ())
+                                             [state-after-move total-cost])))
+                                 to-process
+                                 pm))
+                       (assoc visited (last state) cost-to-reach)
+                       (inc i))))))))
 
 (defn part1
   [input]
