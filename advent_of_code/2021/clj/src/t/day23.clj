@@ -158,57 +158,55 @@
 
 (defnp possible-moves
   [^longs amphipods ^"[[J" adjacent]
-  (loop [pos 0
-         ret ()]
-    (let [cost (aget amphipods pos)]
-      (cond (== pos (dec (alength amphipods)))
-            ret
-            (or (zero? cost)
-                (p :already-good (final-position? pos cost amphipods)))
-            (recur (inc pos) ret)
-            :else
-            (recur (inc pos)
-                   (loop [poss [pos]
-                          visited #{pos}
-                          reachable ret]
-                     (if (empty? poss)
-                       reachable
-                       (let [e-pos (first poss)]
-                         (recur (concat (rest poss)
-                                        (->> (aget adjacent ^long e-pos)
-                                             (filter (fn [adj]
-                                                       (and (not (visited adj))
-                                                            (zero? (aget amphipods ^long adj))
-                                                            (or (< adj 7)
-                                                                (> adj 10)
-                                                                (let [t ({7 1, 8 10, 9 100, 10 1000} adj)]
-                                                                  (or (== pos (+ adj 4))
-                                                                      (== pos (+ adj 8))
-                                                                      (== pos (+ adj 12))
-                                                                      (and (== cost t)
-                                                                           (let [c (get amphipods (+ 4 adj))]
-                                                                             (or (== t c) (zero? c)))
-                                                                           (or (== 16 (alength amphipods))
-                                                                               (let [c2 (aget amphipods (+ 8 adj))
-                                                                                     c3 (aget amphipods (+ 12 adj))]
-                                                                                 (and (or (== t c2) (zero? c2))
-                                                                                      (or (== t c3) (zero? c3))))))))))))))
-                                (conj visited e-pos)
-                                (if (p :check-end-pos
-                                       (or
-                                         ;; we've already reached this one
-                                         (visited e-pos)
-                                         ;; can't start in hallway, end in hallway
-                                         (and (< pos 7) (< e-pos 7))
-                                         ;; can't stop in room with space beneath
-                                         (let [beneath (+ e-pos 4)]
-                                           (and (>= e-pos 7)
-                                                (< beneath (dec (alength amphipods)))
-                                                (seq (aget adjacent ^long beneath))
-                                                (or (== pos beneath)
-                                                    (zero? (aget amphipods beneath)))))))
-                                  reachable
-                                  (conj reachable (move-amphi amphipods pos e-pos))))))))))))
+  (let [limit (dec (alength amphipods))]
+    (loop [pos 0
+           ret ()
+           visited #{0}
+           poss [0]]
+      (let [cost (aget amphipods pos)]
+        (cond (== pos limit)
+              ret
+              (or (zero? cost)
+                  (final-position? pos cost amphipods)
+                  (empty? poss))
+              (recur (inc pos) ret #{(inc pos)} [(inc pos)])
+              :else
+              (let [e-pos (first poss)
+                    poss (concat (rest poss)
+                                 (->> (aget adjacent ^long e-pos)
+                                      (filter (fn [adj]
+                                                (and (not (visited adj))
+                                                     (zero? (aget amphipods ^long adj))
+                                                     (or (< adj 7)
+                                                         (> adj 10)
+                                                         (let [t ({7 1, 8 10, 9 100, 10 1000} adj)]
+                                                           (or (== pos (+ adj 4))
+                                                               (== pos (+ adj 8))
+                                                               (== pos (+ adj 12))
+                                                               (and (== cost t)
+                                                                    (let [c (get amphipods (+ 4 adj))]
+                                                                      (or (== t c) (zero? c)))
+                                                                    (or (== 15 limit)
+                                                                        (let [c2 (aget amphipods (+ 8 adj))
+                                                                              c3 (aget amphipods (+ 12 adj))]
+                                                                          (and (or (== t c2) (zero? c2))
+                                                                               (or (== t c3) (zero? c3))))))))))))))
+                    ret (if (or
+                              ;; we've already reached this one
+                              (visited e-pos)
+                              ;; can't start in hallway, end in hallway
+                              (and (< pos 7) (< e-pos 7))
+                              ;; can't stop in room with space beneath
+                              (let [beneath (+ e-pos 4)]
+                                (and (>= e-pos 7)
+                                     (< beneath limit)
+                                     (seq (aget adjacent ^long beneath))
+                                     (or (== pos beneath)
+                                         (zero? (aget amphipods beneath))))))
+                          ret
+                          (conj ret (move-amphi amphipods pos e-pos)))
+                    visited (conj visited e-pos)]
+                (recur pos ret visited poss)))))))
 
 (comment
 
@@ -277,7 +275,7 @@
                       (every? (fn [[[x y] c]]
                                 (and (pos? y)
                                      (== c (end-state x)))))))
-              cost-to-reach
+              (do (prn [:iters i]) cost-to-reach)
               :else
               (recur (let [pm (possible-moves state adjacency)]
                        (p :next-states
