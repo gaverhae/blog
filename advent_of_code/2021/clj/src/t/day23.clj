@@ -117,6 +117,25 @@
             (aset from-idx 0)
             (aset to-idx (aget state from-idx))))))
 
+(defmacro final-position?
+  [pos cost amphipods]
+  `(case ~cost
+     ~@(->> [[1 11] [10 12] [100 13] [1000 14]]
+            (mapcat (fn [[target-cost target-pos]]
+                      [target-cost
+                       `(case ~pos
+                          ~target-pos (and (== ~target-cost (aget ~amphipods ~(+ 4 target-pos)))
+                                           (or (== 20 (alength ~amphipods))
+                                               (and (== ~target-cost (aget ~amphipods ~(+ 8 target-pos)))
+                                                    (== ~target-cost (aget ~amphipods ~(+ 12 target-pos))))))
+                          ~(+ 4 target-pos) (or (== 20 (alength ~amphipods))
+                                                (and (== ~target-cost (aget ~amphipods ~(+ 8 target-pos)))
+                                                     (== ~target-cost (aget ~amphipods ~(+ 12 target-pos)))))
+                          ~(+ 8 target-pos) (== ~target-cost (aget ~amphipods ~(+ 12 target-pos)))
+                          ~(+ 12 target-pos) true
+                          false)])))
+     false))
+
 (defnp possible-moves
   [^longs amphipods ^"[[J" adjacent]
   (loop [pos 0
@@ -126,16 +145,7 @@
       (cond (== pos (dec (alength amphipods)))
             ret
             (or (zero? cost)
-                (p :already-good
-                   (and (end-state start-x)
-                        (== (end-state start-x) cost)
-                        (every? (fn [c] (= c cost))
-                                (->> (range start-y 5)
-                                     (map (fn [y] [start-x y]))
-                                     (filter (fn [pos]
-                                               (let [idx ^long (mapping pos)]
-                                                 (seq (aget adjacent idx)))))
-                                     (map (fn [pos] (aget amphipods ^long (mapping pos)))))))))
+                (p :already-good (final-position? pos cost amphipods)))
             (recur (inc pos) ret)
             :else
             (recur (inc pos)
