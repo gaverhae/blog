@@ -178,48 +178,22 @@
                          (recur (concat (rest poss)
                                         (->> (aget adjacent ^long e-pos)
                                              (remove visited)
-                                             (remove (fn [k]
-                                                       (pos? (aget amphipods ^long k))))
-                                             (remove (fn entered-wrong-room
-                                                       [adj]
-                                                       (p :entered-wrong-room
-                                                          (when (>= adj 7)
-                                                            (case (int adj)
-                                                              7 (and (not (== cost 1))
-                                                                     (not (== pos 11))
-                                                                     (not (== pos 15))
-                                                                     (not (== pos 19)))
-                                                              8 (and (not (== cost 10))
-                                                                     (not (== pos 12))
-                                                                     (not (== pos 16))
-                                                                     (not (== pos 20)))
-                                                              9 (and (not (== cost 100))
-                                                                     (not (== pos 13))
-                                                                     (not (== pos 17))
-                                                                     (not (== pos 21)))
-                                                              10 (and (not (== cost 1000))
-                                                                      (not (== pos 14))
-                                                                      (not (== pos 18))
-                                                                      (not (== pos 22)))
-                                                              false)))))
-                                             (map decode)
-                                             (remove (fn wrong-amphi-in-room
-                                                       [[adj-x adj-y]]
-                                                       (p :wrong-amphi-in-room
-                                                          (let [k2 (mapping [adj-x 2])
-                                                                k3 (mapping [adj-x 3])
-                                                                k4 (mapping [adj-x 4])]
-                                                            (and (not= adj-x start-x)
-                                                                 (== 1 adj-y)
-                                                                 (or (and (pos? (aget amphipods k2))
-                                                                          (not= (aget amphipods k2) cost))
-                                                                     (and (< k3 (dec (alength amphipods)))
-                                                                          (pos? (aget amphipods k3))
-                                                                          (not= (aget amphipods k3) cost))
-                                                                     (and (< k4 (dec (alength amphipods)))
-                                                                          (pos? (aget amphipods k4))
-                                                                          (not= (aget amphipods k4) cost))))))))
-                                             (map mapping)))
+                                             (filter (fn [adj] (zero? (aget amphipods ^long adj))))
+                                             (filter (fn [adj]
+                                                       (or (< adj 7)
+                                                           (> adj 10)
+                                                           (let [t ({7 1, 8 10, 9 100, 10 1000} adj)]
+                                                             (or (== pos (+ adj 4))
+                                                                 (== pos (+ adj 8))
+                                                                 (== pos (+ adj 12))
+                                                                 (and (== cost t)
+                                                                      (let [c (get amphipods (+ 4 adj))]
+                                                                        (or (== t c) (zero? c)))
+                                                                      (or (== 16 (alength amphipods))
+                                                                          (let [c2 (aget amphipods (+ 8 adj))
+                                                                                c3 (aget amphipods (+ 12 adj))]
+                                                                            (and (or (== t c2) (zero? c2))
+                                                                                 (or (== t c3) (zero? c3)))))))))))))
                                 (conj visited e-pos)
                                 (if (p :check-end-pos
                                        (or
