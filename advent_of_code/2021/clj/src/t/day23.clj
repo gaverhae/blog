@@ -61,7 +61,7 @@
        (reduce (fn [^"[[J" arr [k vs]]
                  (aset arr ^long k ^longs (into-array Long/TYPE vs))
                  arr)
-               (make-array Long/TYPE 23 0))))
+               (make-array Long/TYPE 15 0))))
 
 (def ^"[[J" adj-arr-2
   (->> {0 [1]
