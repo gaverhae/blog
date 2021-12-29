@@ -234,29 +234,8 @@
                              h
                              (+ h (* c (dist [pos x])))))))))))))
 
-(defn print-state
-  [^longs state]
-  (let [p (fn [pos]
-            (get {1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state ^long (mapping pos))))]
-    (prn [:seq (map-indexed vector state)])
-    (println "#############")
-    (print "#")
-    (doseq [n (range 11)]
-      (print (p [n 0])))
-    (println "#")
-    (loop [i 11]
-      (when (< i (dec (alength state)))
-        (println (format "  #%s#%s#%s#%s#  "
-                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 0 i)))
-                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 1 i)))
-                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 2 i)))
-                         ({1 "A" 10 "B" 100 "C" 1000 "D" 0 "."} (aget state (+ 3 i)))))
-        (recur (+ i 4))))
-    (println         "  #########  ")))
-
 (defn solve
   [^longs input ^"[[J" adjacency]
-  #_(print-state input)
   (loop [to-process (sorted-map (heuristic input) (list [input 0]))
          visited {}
          i 0]
@@ -266,9 +245,6 @@
             to-process (if (empty? r)
                          (dissoc to-process min-h)
                          (assoc to-process min-h r))]
-        #_(when (zero? (mod i 100000))
-          (print-state state)
-          (prn [:cost cost-to-reach :h min-h :i i]))
         (cond (when-let [v (visited (last state))]
                 (<= v cost-to-reach))
               (recur to-process visited (inc i))
