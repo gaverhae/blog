@@ -205,9 +205,7 @@
                                   reachable
                                   (conj reachable
                                         [cost-to-reach
-                                         (move-amphi amphipods
-                                                     pos
-                                                     e-pos)])))))))))))
+                                         (move-amphi amphipods pos e-pos)])))))))))))
 
 (comment
 
