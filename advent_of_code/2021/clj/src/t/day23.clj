@@ -2,11 +2,13 @@
   (:require [taoensso.tufte :as tufte :refer (defnp p profiled profile)]))
 
 (def mapping
-  {[0 0] 0 [1 0] 1 [2 0] 2 [3 0] 3 [4 0] 4 [5 0] 5 [6 0] 6 [7 0] 7 [8 0] 8 [9 0] 9 [10 0] 10
-   [2 1] 11 [4 1] 12 [6 1] 13 [8 1] 14
-   [2 2] 15 [4 2] 16 [6 2] 17 [8 2] 18
-   [2 3] 19 [4 3] 20 [6 3] 21 [8 3] 22
-   [2 4] 23 [4 4] 24 [6 4] 25 [8 4] 26})
+  (->> [[0 0] [1 0]       [3 0]       [5 0]       [7 0]       [9 0] [10 0]
+                    [2 1]       [4 1]       [6 1]       [8 1]
+                    [2 2]       [4 2]       [6 2]       [8 2]
+                    [2 3]       [4 3]       [6 3]       [8 3]
+                    [2 4]       [4 4]       [6 4]       [8 4]]
+       (map-indexed (fn [idx v] [v idx]))
+       (into {})))
 
 (defnp sign
   [^longs arr]
@@ -38,64 +40,58 @@
        (reduce (fn [^longs arr [k ^long v]]
                  (aset arr (mapping k) v)
                  arr)
-               (make-array Long/TYPE 20))
+               (make-array Long/TYPE 16))
        (sign)))
 
 (def ^"[[J" adj-arr-1
-  (->> {[0 0] [[1 0]]
-        [1 0] [[0 0] [2 0]]
-        [2 0] [[1 0] [3 0] [2 1]]
-        [3 0] [[2 0] [4 0]]
-        [4 0] [[3 0] [5 0] [4 1]]
-        [5 0] [[4 0] [6 0]]
-        [6 0] [[5 0] [7 0] [6 1]]
-        [7 0] [[6 0] [8 0]]
-        [8 0] [[7 0] [9 0] [8 1]]
-        [9 0] [[10 0] [8 0]]
-        [10 0] [[9 0]]
-        [2 1] [[2 0] [2 2]]
-        [2 2] [[2 1]]
-        [4 1] [[4 0] [4 2]]
-        [4 2] [[4 1]]
-        [6 1] [[6 0] [6 2]]
-        [6 2] [[6 1]]
-        [8 1] [[8 0] [8 2]]
-        [8 2] [[8 1]]}
-       (reduce (fn [^"[[J" arr [k kvs]]
-                 (aset arr ^long (mapping k) ^longs (into-array Long/TYPE (map mapping kvs)))
+  (->> {0 [1]
+        1 [0 2 7]
+        2 [1 7 8 3]
+        3 [2 8 9 4]
+        4 [3 9 10 5]
+        5 [4 10 6]
+        6 [5]
+        7 [1 2 11]
+        8 [2 3 12]
+        9 [3 4 13]
+        10 [4 5 14]
+        11 [7]
+        12 [8]
+        13 [9]
+        14 [10]}
+       (reduce (fn [^"[[J" arr [k vs]]
+                 (aset arr ^long k ^longs (into-array Long/TYPE vs))
                  arr)
-               (make-array Long/TYPE 27 0))))
+               (make-array Long/TYPE 23 0))))
 
 (def ^"[[J" adj-arr-2
-  (let [arr ^"[[J" (make-array Long/TYPE 27 0)]
-    (loop [i 0]
-      (when (< i (alength adj-arr-1))
-        (aset arr i (aget adj-arr-1 i))
-        (recur (inc i))))
-    (reduce (fn [^"[[J" arr [k kvs]]
-              (aset arr ^long (mapping k) ^longs (into-array Long/TYPE (map mapping kvs)))
-              arr)
-            arr
-            {[2 2] [[2 1] [2 3]]
-             [2 3] [[2 2] [2 4]]
-             [2 4] [[2 3]]
-             [4 2] [[4 1] [4 3]]
-             [4 3] [[4 2] [4 4]]
-             [4 4] [[4 3]]
-             [6 2] [[6 1] [6 3]]
-             [6 3] [[6 2] [6 4]]
-             [6 4] [[6 3]]
-             [8 2] [[8 1] [8 3]]
-             [8 3] [[8 2] [8 4]]
-             [8 4] [[8 3]]})))
-
-#_(def ^longs end-state
-  (into-array Long/TYPE
-              [0 0 0 0 0 0 0 0 0 0 0
-               1 10 100 1000
-               1 10 100 1000
-               1 10 100 1000
-               1 10 100 1000]))
+  (->> {0 [1]
+        1 [0 2 7]
+        2 [1 7 8 3]
+        3 [2 8 9 4]
+        4 [3 9 10 5]
+        5 [4 10 6]
+        6 [5]
+        7 [1 2 11]
+        8 [2 3 12]
+        9 [3 4 13]
+        10 [4 5 14]
+        11 [7 15]
+        12 [8 16]
+        13 [9 17]
+        14 [10 18]
+        15 [11 19]
+        16 [12 20]
+        17 [13 21]
+        18 [14 22]
+        19 [15]
+        20 [16]
+        21 [17]
+        22 [18]}
+       (reduce (fn [^"[[J" arr [k vs]]
+                 (aset arr ^long k ^longs (into-array Long/TYPE vs))
+                 arr)
+               (make-array Long/TYPE 23 0))))
 
 (def end-state {2 1, 4 10, 6 100, 8 1000})
 
@@ -144,15 +140,15 @@
 (defmacro final-position?
   [pos cost amphipods]
   `(case ~cost
-     ~@(->> [[1 11] [10 12] [100 13] [1000 14]]
+     ~@(->> [[1 7] [10 8] [100 9] [1000 10]]
             (mapcat (fn [[target-cost target-pos]]
                       [target-cost
                        `(case ~pos
                           ~target-pos (and (== ~target-cost (aget ~amphipods ~(+ 4 target-pos)))
-                                           (or (== 20 (alength ~amphipods))
+                                           (or (== 16 (alength ~amphipods))
                                                (and (== ~target-cost (aget ~amphipods ~(+ 8 target-pos)))
                                                     (== ~target-cost (aget ~amphipods ~(+ 12 target-pos))))))
-                          ~(+ 4 target-pos) (or (== 20 (alength ~amphipods))
+                          ~(+ 4 target-pos) (or (== 16 (alength ~amphipods))
                                                 (and (== ~target-cost (aget ~amphipods ~(+ 8 target-pos)))
                                                      (== ~target-cost (aget ~amphipods ~(+ 12 target-pos)))))
                           ~(+ 8 target-pos) (== ~target-cost (aget ~amphipods ~(+ 12 target-pos)))
@@ -214,23 +210,21 @@
                                          ;; we've already reached this one
                                          (visited e-pos)
                                          ;; can't start in hallway, end in hallway
-                                         (and (< pos 11) (< e-pos 11))
+                                         (and (< pos 7) (< e-pos 7))
                                          ;; can't stop in room with space beneath
                                          (let [beneath (+ e-pos 4)]
-                                           (and (>= e-pos 11)
+                                           (and (>= e-pos 7)
                                                 (< beneath (dec (alength amphipods)))
                                                 (seq (aget adjacent ^long beneath))
                                                 (or (== pos beneath)
-                                                    (zero? (aget amphipods beneath)))))
-                                         ;; can't stop in front of room
-                                         (or (== 2 e-pos) (== 4 e-pos) (== 6 e-pos) (== 8 e-pos))))
+                                                    (zero? (aget amphipods beneath)))))))
                                   reachable
                                   (conj reachable (move-amphi amphipods pos e-pos))))))))))))
 
 (comment
 
   (def sample
-    (into-array Long/TYPE [0 0 0 0 0 0 0 0 0 0 0 10 100 10 1000 1 1000 100 1 1060580]))
+    (into-array Long/TYPE [0 0 0 0 0 0 0 10 100 10 1000 1 1000 100 1 1060580]))
 
   )
 
@@ -317,9 +311,9 @@
 
 (defn part2
   [^longs input]
-  (solve (let [arr ^"[J" (make-array Long/TYPE 28)]
+  (solve (let [arr ^"[J" (make-array Long/TYPE 24)]
            (loop [i 0]
-             (when (< i 15)
+             (when (< i 11)
                (aset arr i (aget input i))
                (recur (inc i))))
            (reduce (fn [^"[J" arr [k ^long t]]
@@ -328,9 +322,9 @@
                    arr
                    [[[2 2] 1000] [[2 3] 1000] [[4 2] 100] [[4 3] 10]
                     [[6 2] 10] [[6 3] 1] [[8 2] 1] [[8 3] 100]])
-           (loop [i 23]
-             (when (<  i 27)
-               (aset arr i (aget input (- i 8)))
-               (recur (inc i))))
+           (aset arr 19 (aget input 11))
+           (aset arr 20 (aget input 12))
+           (aset arr 21 (aget input 13))
+           (aset arr 22 (aget input 14))
            (sign arr))
          adj-arr-2))
