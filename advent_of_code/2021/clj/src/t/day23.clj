@@ -158,11 +158,12 @@
 
 (defn possible-moves
   [^longs amphipods ^"[[J" adjacent]
-  (let [limit (dec (alength amphipods))]
+  (let [limit (dec (alength amphipods))
+        mt-q clojure.lang.PersistentQueue/EMPTY]
     (loop [pos 0
            ret ()
            visited #{0}
-           poss [0]]
+           poss (conj mt-q 0)]
       (let [cost (aget amphipods pos)]
         (cond (== pos limit)
               ret
@@ -171,26 +172,25 @@
                   (final-position? pos cost amphipods))
               (recur (inc pos) ret #{(inc pos)} [(inc pos)])
               :else
-              (let [e-pos (first poss)
-                    poss (concat (rest poss)
-                                 (->> (aget adjacent ^long e-pos)
-                                      (filter (fn [adj]
-                                                (and (not (visited adj))
-                                                     (zero? (aget amphipods ^long adj))
-                                                     (or (< adj 7)
-                                                         (> adj 10)
-                                                         (let [t ({7 1, 8 10, 9 100, 10 1000} adj)]
-                                                           (or (== pos (+ adj 4))
-                                                               (== pos (+ adj 8))
-                                                               (== pos (+ adj 12))
-                                                               (and (== cost t)
-                                                                    (let [c (get amphipods (+ 4 adj))]
-                                                                      (or (== t c) (zero? c)))
-                                                                    (or (== 15 limit)
-                                                                        (let [c2 (aget amphipods (+ 8 adj))
-                                                                              c3 (aget amphipods (+ 12 adj))]
-                                                                          (and (or (== t c2) (zero? c2))
-                                                                               (or (== t c3) (zero? c3))))))))))))))
+              (let [e-pos (peek poss)
+                    poss (transduce (filter (fn [adj]
+                                              (and (not (visited adj))
+                                                   (zero? (aget amphipods ^long adj))
+                                                   (or (< adj 7)
+                                                       (> adj 10)
+                                                       (let [t ({7 1, 8 10, 9 100, 10 1000} adj)]
+                                                         (or (== pos (+ adj 4))
+                                                             (== pos (+ adj 8))
+                                                             (== pos (+ adj 12))
+                                                             (and (== cost t)
+                                                                  (let [c (get amphipods (+ 4 adj))]
+                                                                    (or (== t c) (zero? c)))
+                                                                  (or (== 15 limit)
+                                                                      (let [c2 (aget amphipods (+ 8 adj))
+                                                                            c3 (aget amphipods (+ 12 adj))]
+                                                                        (and (or (== t c2) (zero? c2))
+                                                                             (or (== t c3) (zero? c3))))))))))))
+                                    conj (pop poss) (aget adjacent ^long e-pos))
                     valid? (not (or
                                   ;; we've already reached this one
                                   (visited e-pos)
