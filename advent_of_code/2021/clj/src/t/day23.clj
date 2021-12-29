@@ -255,7 +255,7 @@
   [^longs input ^"[[J" adjacency]
   (let [s (- (alength input) 1)]
     (loop [to-process (sorted-map (heuristic input) (list [input 0]))
-           visited {}
+           visited #{}
            i 0]
       (if (empty? to-process)
         :error
@@ -263,8 +263,7 @@
               to-process (if (seq r)
                            (assoc to-process min-h r)
                            (dissoc to-process min-h))]
-          (cond (when-let [v (visited (aget state s))]
-                  (<= v cost-to-reach))
+          (cond (visited (aget state s))
                 (recur to-process visited (inc i))
                 (final-state? state)
                 #_(do (prn [:iters i]) cost-to-reach)
@@ -281,7 +280,7 @@
                                              [state-after-move total-cost])))
                                  to-process
                                  pm))
-                       (assoc visited (last state) cost-to-reach)
+                       (conj visited (last state))
                        (inc i))))))))
 
 (defn part1
