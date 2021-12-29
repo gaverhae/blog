@@ -219,25 +219,6 @@
 
   )
 
-(defn heuristic
-  [^longs state]
-  (let [limit (dec (alength state))]
-    (loop [pos 0
-           h 0]
-      (if (== limit pos)
-        h
-        (recur (inc pos)
-               (long (let [c (aget state pos)]
-                       (if (zero? c)
-                         h
-                         (let [x (case c 1 7, 10 8, 100 9, 1000 10)]
-                           (if (or (== x pos)
-                                   (== (+ 4 x) pos)
-                                   (== (+ 8 x) pos)
-                                   (== (+ 12 x) pos))
-                             h
-                             (+ h (* c (dist [pos x])))))))))))))
-
 (defn final-state?
   [^longs state]
   (let [stop (dec (alength state))]
@@ -255,15 +236,15 @@
 (defn solve
   [^longs input ^"[[J" adjacency]
   (let [s (- (alength input) 1)]
-    (loop [to-process (sorted-map (heuristic input) (list [input 0]))
+    (loop [to-process (sorted-map 0 (list input))
            visited #{}
            i 0]
       (if (empty? to-process)
         :error
-        (let [[min-h [[^longs state cost-to-reach] & r]] (first to-process)
+        (let [[cost-to-reach [^longs state & r]] (first to-process)
               to-process (if (seq r)
-                           (assoc to-process min-h r)
-                           (dissoc to-process min-h))]
+                           (assoc to-process cost-to-reach r)
+                           (dissoc to-process cost-to-reach))]
           (cond (visited (aget state s))
                 (recur to-process visited (inc i))
                 (final-state? state)
@@ -276,9 +257,9 @@
                                          state-after-move (get move 1)
                                          total-cost (+ cost-to-reach cost-of-move)]
                                      (update tp
-                                             (+ (heuristic state-after-move) total-cost)
+                                             total-cost
                                              (fnil conj ())
-                                             [state-after-move total-cost])))
+                                             state-after-move)))
                                  to-process
                                  pm))
                        (conj visited (last state))
