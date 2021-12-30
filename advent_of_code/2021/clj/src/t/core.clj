@@ -41,7 +41,7 @@
                               :part2 #(part2 input)
                               :part2-sam #(part2 psam)}])))
                   (into {}))]
-    #_(do
+    (do
       (->> days
            (map (fn [[day {:keys [total]}]]
                   [(total) day]))
@@ -50,7 +50,7 @@
            (map (fn [[t d]]
                   (println (format "Day %02d: %15dms" d t))))
            doall))
-    (doseq [[day {:keys [parse part1 part2 parse-sam part1-sam part2-sam]}]
+    #_(doseq [[day {:keys [parse part1 part2 parse-sam part1-sam part2-sam]}]
             (select-keys days [23])]
       (fmt "Day %02d, parse (sample): %8.3fs" day (bench parse-sam))
       (fmt "Day %02d, parse (input):  %8.3fs" day (bench parse))
