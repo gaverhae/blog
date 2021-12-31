@@ -447,12 +447,12 @@
    #_#_:part1 [474140 615869]
    #_#_:part2 [2758514936282235 1323862415207825]}
 
-  {:day 23
+  #_{:day 23
    :sample (into-array Long/TYPE [0 0 0 0 0 0 0 10 100 10 1000 1 1000 100 1 212116])
    :part1 [12521 11320]
    :part2 [44169 49532]}
 
-  #_{:day 24
+  {:day 24
    :sample [[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
             [:div :z [:lit 1]] [:add :x [:lit 10]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
             [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
@@ -469,7 +469,7 @@
             [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 9]]
             [:mul :y [:reg :x]] [:add :z [:reg :y]]]
    :part1 [111 98491959997994]
-   :part2 [111 61191516111321]}
+   #_#_:part2 [111 61191516111321]}
 
   #_{:day 25
    :sample {:floor {[0 0] :down, [0 4] :right, [0 5] :right, [0 7] :down, [0 8] :down, [0 9] :right,

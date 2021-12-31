@@ -41,7 +41,7 @@
                               :part2 #(part2 input)
                               :part2-sam #(part2 psam)}])))
                   (into {}))]
-    (do
+    #_(do
       (->> days
            (map (fn [[day {:keys [total]}]]
                   [(total) day]))
@@ -51,14 +51,14 @@
                   (println (format "Day %02d: %15dms" d t))))
            doall))
     #_(doseq [[day {:keys [parse part1 part2 parse-sam part1-sam part2-sam]}]
-            (select-keys days [23])]
+            (select-keys days [24])]
       (fmt "Day %02d, parse (sample): %8.3fs" day (bench parse-sam))
       (fmt "Day %02d, parse (input):  %8.3fs" day (bench parse))
       (fmt "Day %02d, part1 (sample): %8.3fs" day (bench part1-sam))
       (fmt "Day %02d, part1 (input):  %8.3fs" day (bench part1))
       (fmt "Day %02d, part2 (sample): %8.3fs" day (bench part2-sam))
       (fmt "Day %02d, part2 (input):  %8.3fs" day (bench part2)))
-    #_(let [to-profile (get-in days [23 :part2])]
+    (let [to-profile (get-in days [24 :part2])]
       (println (format "Single run: %d." (time-ms (to-profile))))
       (println "Waiting for profiler.")
       (read-line)
