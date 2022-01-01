@@ -469,7 +469,7 @@
             [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 9]]
             [:mul :y [:reg :x]] [:add :z [:reg :y]]]
    :part1 [111 98491959997994]
-   #_#_:part2 [111 61191516111321]}
+   :part2 [111 61191516111321]}
 
   #_{:day 25
    :sample {:floor {[0 0] :down, [0 4] :right, [0 5] :right, [0 7] :down, [0 8] :down, [0 9] :right,
