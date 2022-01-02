@@ -1,5 +1,6 @@
 (ns t.day24
-  (:require [clojure.core.match :refer [match]]))
+  (:require [clojure.core.match :refer [match]]
+            [clojure.set :as set]))
 
 (defn parse
   [lines]
@@ -39,7 +40,29 @@
                        [:eql r1 [:lit n]] (update acc r1 (fn [prev] [:eql prev [:lit n]]))
                        [:eql r1 [:reg r2]] (update acc r1 (fn [prev] [:eql prev (acc r2)]))))
                    {:w [:reg :w], :x [:reg :x], :y [:reg :y], :z [:reg :z]}
-                   ops)))))
+                   ops)))
+       (map (fn [exprs]
+              (assoc exprs :read (->> exprs
+                                      (map val)
+                                      (map (fn rec [v]
+                                             (match v
+                                               (:or [:inp]
+                                                    [:lit _])
+                                               #{}
+                                               (:or [:add arg1 arg2]
+                                                    [:mul arg1 arg2]
+                                                    [:div arg1 arg2]
+                                                    [:mod arg1 arg2]
+                                                    [:eql arg1 arg2])
+                                               (set/union (rec arg1) (rec arg2))
+                                               [:reg r] #{r})))
+                                      (reduce set/union)))))
+       reverse
+       (reduce (fn [[read-from-prev exprs] step]
+                 [(:read step)
+                  (cons (select-keys step read-from-prev) exprs)])
+               [#{:z} ()])
+       second))
 
 (comment
 
@@ -61,9 +84,9 @@
      [:mul :y [:reg :x]] [:add :z [:reg :y]]])
 
   (to-exprs sample)
-({:w [:inp], :x [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]], :y [:mul [:add [:add [:lit 0] [:inp]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]], :z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]]]}
- {:w [:inp], :x [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]], :y [:mul [:add [:add [:lit 0] [:inp]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]], :z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]]]}
- {:w [:inp], :x [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]], :y [:mul [:add [:add [:lit 0] [:inp]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]], :z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]]]})
+({:z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]]]}
+ {:z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]]]}
+ {:z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]]]})
 
   )
 
