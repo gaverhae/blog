@@ -19,29 +19,27 @@
        (partition-by (fn [[op arg]] (= op :inp)))
        (partition 2)
        (map (fn [[input ops]] (concat input ops)))
-       (map-indexed
-         (fn [i ops]
-           [i (reduce (fn [acc instr]
-                        (match instr
-                          [:inp r] (-> acc
-                                       (assoc r [:inp (:input-count acc)])
-                                       (update :input-count inc))
-                          [:add _ [:lit 0]] acc
-                          [:add r1 [:lit n]] (update acc r1 (fn [prev] [:add prev [:lit n]]))
-                          [:add r1 [:reg r2]] (update acc r1 (fn [prev] [:add prev (acc r2)]))
-                          [:mul r1 [:lit 0]] (assoc acc r1 [:lit 0])
-                          [:mul r1 [:lit 1]] acc
-                          [:mul r1 [:lit n]] (update acc r1 (fn [prev] [:mul prev [:lit n]]))
-                          [:mul r1 [:reg r2]] (update acc r1 (fn [prev] [:mul prev (acc r2)]))
-                          [:div r1 [:lit 1]] acc
-                          [:div r1 [:lit n]] (update acc r1 (fn [prev] [:div prev [:lit n]]))
-                          [:div r1 [:reg r2]] (update acc r1 (fn [prev] [:div prev (acc r2)]))
-                          [:mod r1 [:lit n]] (update acc r1 (fn [prev] [:mod prev [:lit n]]))
-                          [:mod r1 [:reg r2]] (update acc r1 (fn [prev] [:mod prev (acc r2)]))
-                          [:eql r1 [:lit n]] (update acc r1 (fn [prev] [:eql prev [:lit n]]))
-                          [:eql r1 [:reg r2]] (update acc r1 (fn [prev] [:eql prev (acc r2)]))))
-                      {:w [:lit 0], :x [:lit 0], :y [:lit 0], :z [:lit 0], :input-count 0}
-                      ops)]))))
+       (map
+         (fn [ops]
+           (reduce (fn [acc instr]
+                     (match instr
+                       [:inp r] (assoc acc r [:inp])
+                       [:add _ [:lit 0]] acc
+                       [:add r1 [:lit n]] (update acc r1 (fn [prev] [:add prev [:lit n]]))
+                       [:add r1 [:reg r2]] (update acc r1 (fn [prev] [:add prev (acc r2)]))
+                       [:mul r1 [:lit 0]] (assoc acc r1 [:lit 0])
+                       [:mul r1 [:lit 1]] acc
+                       [:mul r1 [:lit n]] (update acc r1 (fn [prev] [:mul prev [:lit n]]))
+                       [:mul r1 [:reg r2]] (update acc r1 (fn [prev] [:mul prev (acc r2)]))
+                       [:div r1 [:lit 1]] acc
+                       [:div r1 [:lit n]] (update acc r1 (fn [prev] [:div prev [:lit n]]))
+                       [:div r1 [:reg r2]] (update acc r1 (fn [prev] [:div prev (acc r2)]))
+                       [:mod r1 [:lit n]] (update acc r1 (fn [prev] [:mod prev [:lit n]]))
+                       [:mod r1 [:reg r2]] (update acc r1 (fn [prev] [:mod prev (acc r2)]))
+                       [:eql r1 [:lit n]] (update acc r1 (fn [prev] [:eql prev [:lit n]]))
+                       [:eql r1 [:reg r2]] (update acc r1 (fn [prev] [:eql prev (acc r2)]))))
+                   {:w [:reg :w], :x [:reg :x], :y [:reg :y], :z [:reg :z]}
+                   ops)))))
 
 (comment
 
@@ -63,21 +61,9 @@
      [:mul :y [:reg :x]] [:add :z [:reg :y]]])
 
   (to-exprs sample)
-([0 {:w [:inp 0],
-     :x [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]],
-     :y [:mul [:add [:add [:lit 0] [:inp 0]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]]],
-     :z [:add [:mul [:lit 0] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp 0]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 10]] [:inp 0]] [:lit 0]]]],
-     :input-count 1}]
- [1 {:w [:inp 0]
-     :x [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 15]] [:inp 0]] [:lit 0]]
-     :y [:mul [:add [:add [:lit 0] [:inp 0]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 15]] [:inp 0]] [:lit 0]]]
-     :z [:add [:mul [:lit 0] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 15]] [:inp 0]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp 0]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 15]] [:inp 0]] [:lit 0]]]]
-     :input-count 1}]
- [2 {:w [:inp 0]
-     :x [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 14]] [:inp 0]] [:lit 0]]
-     :y [:mul [:add [:add [:lit 0] [:inp 0]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 14]] [:inp 0]] [:lit 0]]]
-     :z [:add [:mul [:lit 0] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 14]] [:inp 0]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp 0]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:lit 0]] [:lit 26]] [:lit 14]] [:inp 0]] [:lit 0]]]]
-     :input-count 1}])
+({:w [:inp], :x [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]], :y [:mul [:add [:add [:lit 0] [:inp]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]], :z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]]]}
+ {:w [:inp], :x [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]], :y [:mul [:add [:add [:lit 0] [:inp]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]], :z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]]]}
+ {:w [:inp], :x [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]], :y [:mul [:add [:add [:lit 0] [:inp]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]], :z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]]]})
 
   )
 
