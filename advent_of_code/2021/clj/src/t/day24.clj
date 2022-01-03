@@ -103,6 +103,36 @@
 
   )
 
+(defn compute-range-expr
+  [exp input state]
+  (match exp
+    [:reg r] (r state)
+    [:inp] input
+    [:lit n] [n n]
+    [:add e1 e2] (let [[m1 M1] (compute-range-expr e1 input state)
+                       [m2 M2] (compute-range-expr e2 input state)]
+                   [(+ m1 m2) (+ M1 M2)])
+    [:mul e1 e2] (let [[m1 M1] (compute-range-expr e1 input state)
+                       [m2 M2] (compute-range-expr e2 input state)
+                       prods (for [f1 [m1 M1]
+                                   f2 [m2 M2]]
+                               (* f1 f2))]
+                   [(apply min prods)
+                    (apply max prods)])
+    [:div e [:lit n]] (let [[m M] (compute-range-expr e input state)]
+                        (sort [(quot m n) (quot M n)]))
+    [:mod e1 [:lit n]] (let [[m M] (compute-range-expr e1 input state)]
+                             (if (or (> (- M m) n)
+                                     (> (rem m n) (rem M n)))
+                               [0 (dec n)]
+                               [(rem m n) (rem M n)]))
+    [:eql e1 e2] (let [[m1 M1] (compute-range-expr e1 input state)
+                       [m2 M2] (compute-range-expr e2 input state)]
+                   (cond (< M2 m1) [0 0]
+                         (< M1 m2) [0 0]
+                         (= m1 M1 m2 M2) [1 1]
+                         :else [0 1]))))
+
 (defn compute-range
   [instr inputs state]
   (loop [instr instr
