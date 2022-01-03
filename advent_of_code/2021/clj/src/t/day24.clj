@@ -1,6 +1,7 @@
 (ns t.day24
   (:require [clojure.core.match :refer [match]]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [clojure.walk :as walk]))
 
 (defn parse
   [lines]
@@ -41,7 +42,7 @@
                        [:eql r1 [:reg r2]] (update acc r1 (fn [prev] [:eql prev (acc r2)]))))
                    {:w [:reg :w], :x [:reg :x], :y [:reg :y], :z [:reg :z]}
                    ops)))
-       (map (fn [exprs]
+       #_(map (fn [exprs]
               (assoc exprs :read (->> exprs
                                       (map val)
                                       (map (fn rec [v]
@@ -57,36 +58,48 @@
                                                (set/union (rec arg1) (rec arg2))
                                                [:reg r] #{r})))
                                       (reduce set/union)))))
-       reverse
-       (reduce (fn [[read-from-prev exprs] step]
+       #_reverse
+       #_(reduce (fn [[read-from-prev exprs] step]
                  [(:read step)
                   (cons (select-keys step read-from-prev) exprs)])
                [#{:z} ()])
-       second))
+       #_second
+       #_(map (fn [m]
+              (->> m
+                   (map (fn [[k v]]
+                          [k
+                           (walk/postwalk
+                             (fn [op] (match op
+                                        [:add [:lit 0] exp] exp
+                                        [:add exp [:lit 0]] exp
+                                        :else op))
+                             v)]))
+                   (into {}))))))
 
 (comment
 
-  (def sample
-    [[:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
-     [:div :z [:lit 1]] [:add :x [:lit 10]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
-     [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
-     [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 2]]
-     [:mul :y [:reg :x]] [:add :z [:reg :y]]
-     [:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
-     [:div :z [:lit 1]] [:add :x [:lit 15]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
-     [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
-     [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 16]]
-     [:mul :y [:reg :x]] [:add :z [:reg :y]]
-     [:inp :w] [:mul :x [:lit 0]] [:add :x [:reg :z]] [:mod :x [:lit 26]]
-     [:div :z [:lit 1]] [:add :x [:lit 14]] [:eql :x [:reg :w]] [:eql :x [:lit 0]]
-     [:mul :y [:lit 0]] [:add :y [:lit 25]] [:mul :y [:reg :x]] [:add :y [:lit 1]]
-     [:mul :z [:reg :y]] [:mul :y [:lit 0]] [:add :y [:reg :w]] [:add :y [:lit 9]]
-     [:mul :y [:reg :x]] [:add :z [:reg :y]]])
+  (def sample (parse (clojure.string/split-lines (slurp "data/day24"))))
 
   (to-exprs sample)
-({:z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 2]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]]]}
- {:z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 16]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]]]}
- {:z [:add [:mul [:reg :z] [:add [:mul [:add [:lit 0] [:lit 25]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:add [:lit 0] [:inp]] [:lit 9]] [:eql [:eql [:add [:mod [:add [:lit 0] [:reg :z]] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]]]})
+  (->> (to-exprs sample)
+       (map (fn [m]
+              (->> m
+                   (map val)
+                   (map (fn rec [v]
+                          (match v
+                            (:or [:inp]
+                                 [:lit _]
+                                 [:reg _])
+                            1
+                            (:or [:add arg1 arg2]
+                                 [:mul arg1 arg2]
+                                 [:div arg1 arg2]
+                                 [:mod arg1 arg2]
+                                 [:eql arg1 arg2])
+                            (+ 1 (rec arg1) (rec arg2)))))
+                   (reduce + 0))))
+       (reduce + 0))
+418
 
   )
 
