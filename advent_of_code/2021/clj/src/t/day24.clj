@@ -197,8 +197,10 @@
                           (partition 2)
                           (map (fn [[[input] ops]] (cons input ops))))
         h (fn rec [state instrs input-so-far]
-            (let [input (repeat [1 9])
-                  [m M] (:z (compute-range (apply concat instrs) input state))]
+            (let [[m M] (:z (reduce (fn [state instr]
+                                      (compute-range instr [[1 9]] state))
+                                    state
+                                    instrs))]
               (cond (and (empty? instrs) (== target m M))
                     input-so-far
                     (or (empty? instrs) (not (<= m target M)))
