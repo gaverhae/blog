@@ -192,30 +192,31 @@
 
 (defn solve
   [instr size target reverse?]
-  (let [split-instrs (->> instr
-                          (partition-by (fn [[op arg]] (= op :inp)))
-                          (partition 2)
-                          (map (fn [[[input] ops]] (cons input ops))))
-        h (fn rec [state instrs input-so-far]
-            (let [[m M] (:z (reduce (fn [state instr]
-                                      (compute-range instr [[1 9]] state))
+  (let [split-exprs (to-exprs instr)
+        h (fn rec [state exprs input-so-far]
+            (let [[m M] (:z (reduce (fn [state expr]
+                                      (->> expr
+                                           (map (fn [[reg expr]]
+                                                  [reg (compute-range-expr expr [1 9] state)]))
+                                           (into {})))
                                     state
-                                    instrs))]
-              (cond (and (empty? instrs) (== target m M))
+                                    exprs))]
+              (cond (and (empty? exprs) (== target m M))
                     input-so-far
-                    (or (empty? instrs) (not (<= m target M)))
+                    (or (empty? exprs) (not (<= m target M)))
                     nil
                     :else
                     (->> (range 9)
                          (map inc)
                          ((fn [s] (if reverse? (reverse s) s)))
                          (some (fn [next-input]
-                                 (rec (compute-range (first instrs)
-                                                     [[next-input next-input]]
-                                                     state)
-                                      (rest instrs)
+                                 (rec (->> (first exprs)
+                                           (map (fn [[reg expr]]
+                                                  [reg (compute-range-expr expr [next-input next-input] state)]))
+                                           (into {}))
+                                      (rest exprs)
                                       (+ (* 10 input-so-far) next-input))))))))]
-    (h init-state split-instrs 0)))
+    (h init-state split-exprs 0)))
 
 (defn part1
   [input]
