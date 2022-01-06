@@ -76,33 +76,6 @@
                              v)]))
                    (into {}))))))
 
-(comment
-
-  (def sample (parse (clojure.string/split-lines (slurp "data/day24"))))
-
-  (to-exprs sample)
-  (->> (to-exprs sample)
-       (map (fn [m]
-              (->> m
-                   (map val)
-                   (map (fn rec [v]
-                          (match v
-                            (:or [:inp]
-                                 [:lit _]
-                                 [:reg _])
-                            1
-                            (:or [:add arg1 arg2]
-                                 [:mul arg1 arg2]
-                                 [:div arg1 arg2]
-                                 [:mod arg1 arg2]
-                                 [:eql arg1 arg2])
-                            (+ 1 (rec arg1) (rec arg2)))))
-                   (reduce + 0))))
-       (reduce + 0))
-418
-
-  )
-
 (defn compute-range-expr
   [exp input state]
   (match exp
