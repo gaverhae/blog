@@ -106,60 +106,6 @@
                          (= m1 M1 m2 M2) [1 1]
                          :else [0 1]))))
 
-(defn compute-range
-  [instr inputs state]
-  (loop [instr instr
-         inputs inputs
-         state state]
-    (if (empty? instr)
-      state
-      (let [op (first instr)]
-        (if (= (first op) :inp)
-          (recur (rest instr)
-                 (rest inputs)
-                 (assoc state (second op) (first inputs)))
-          (recur (rest instr)
-                 inputs
-                 (match op
-                   [:add r [:lit n]]
-                   (update state r (fn [[m M]] [(+ m n) (+ M n)]))
-                   [:add r1 [:reg r2]]
-                   (update state r1 (fn [[m1 M1]]
-                                      (let [[m2 M2] (get state r2)]
-                                        [(+ m1 m2) (+ M1 M2)])))
-                   [:mul r [:lit n]]
-                   (update state r (fn [[m M]]
-                                     (sort [(* m n) (* M n)])))
-                   [:mul r1 [:reg r2]]
-                   (update state r1 (fn [[m1 M1]]
-                                      (let [[m2 M2] (get state r2)
-                                            prods (for [m [m1 M1]
-                                                        n [m2 M2]]
-                                                    (* m n))]
-                                        [(apply min prods)
-                                         (apply max prods)])))
-                   [:div r [:lit n]]
-                   (update state r (fn [[m M]]
-                                     (sort [(quot m n) (quot M n)])))
-                   [:mod r [:lit n]]
-                   (update state r (fn [[m M]]
-                                     (if (or (> (- M m) n)
-                                             (> (rem m n) (rem M n)))
-                                       [0 (dec n)]
-                                       [(rem m n) (rem M n)])))
-                   [:eql r [:lit n]]
-                   (update state r (fn [[m M]]
-                                     (cond (= m n M) [1 1]
-                                           (<= m n M) [0 1]
-                                           :else [0 0])))
-                   [:eql r1 [:reg r2]]
-                   (update state r1 (fn [[m1 M1]]
-                                      (let [[m2 M2] (get state r2)]
-                                        (cond (< M2 m1) [0 0]
-                                              (< M1 m2) [0 0]
-                                              (= m1 M1 m2 M2) [1 1]
-                                              :else [0 1])))))))))))
-
 (def init-state
   {:w [0 0], :x [0 0], :y [0 0], :z [0 0]})
 
@@ -193,14 +139,10 @@
 
 (defn part1
   [input]
-  (let [input-size (->> input (map first) (filter #{:inp}) count)
-        all-inputs (repeat [1 9])
-        target (first (:z (compute-range input all-inputs init-state)))]
-    (solve input input-size target true)))
+  (let [input-size (->> input (map first) (filter #{:inp}) count)]
+    (solve input input-size 0 true)))
 
 (defn part2
   [input]
-  (let [input-size (->> input (map first) (filter #{:inp}) count)
-        all-inputs (repeat [1 9])
-        target (first (:z (compute-range input all-inputs init-state)))]
-    (solve input input-size target false)))
+  (let [input-size (->> input (map first) (filter #{:inp}) count)]
+    (solve input input-size 0 false)))
