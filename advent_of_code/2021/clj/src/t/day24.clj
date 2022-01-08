@@ -64,7 +64,7 @@
                   (cons (select-keys step read-from-prev) exprs)])
                [#{:z} ()])
        second
-       #_(map (fn [m]
+       (map (fn [m]
               (->> m
                    (map (fn [[k v]]
                           [k
