@@ -168,55 +168,54 @@
      [:return v] [v state]
      [:bind ma f] (let [[v state] (to-bindings ma state)]
                     (to-bindings (f v) state))
-     [:expr expr] (if-let [sym  (get (:rbindings state) expr)]
-                    [sym state]
-                    (let [sym (symbol (str "r-" (count (:rbindings state))))]
-                      [sym (-> state
-                               (update :bindings concat [sym expr])
-                               (update :rbindings assoc expr sym))])))))
+     [:expr expr t] (if-let [sym  (get (:rbindings state) expr)]
+                      [sym state]
+                      (let [sym (symbol (str "r-" (count (:rbindings state))))]
+                        [sym (-> state
+                                 (update :bindings concat [sym (vary-meta expr assoc :tag t)])
+                                 (update :rbindings assoc expr sym))])))))
 
 (defn compile-expr
   [expr]
   (let [h (fn rec [expr]
             (match expr
-              [:reg r] (mdo [s1 [:expr `(get ~'state ~r)]
-                             s2 [:expr `(get ~s1 0)]
-                             s3 [:expr `(get ~s1 1)]]
-                         [s2 s3])
-              [:inp] (mdo [m [:expr `(get ~'input 0)]
-                           M [:expr `(get ~'input 1)]]
+              [:reg r] (mdo [s1 [:expr `(get (get ~'state ~r) 0) long]
+                             s2 [:expr `(get (get ~'state ~r) 1) long]]
+                         [s1 s2])
+              [:inp] (mdo [m [:expr `(get ~'input 0) long]
+                           M [:expr `(get ~'input 1) long]]
                        [m M])
               [:lit n] (mdo []
                          [n n])
               [:add e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:expr `(+ ~m1 ~m2)]
-                                 s2 [:expr `(+ ~M1 ~M2)]]
+                                 s1 [:expr `(+ ~m1 ~m2) long]
+                                 s2 [:expr `(+ ~M1 ~M2) long]]
                              [s1 s2])
               [:mul e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 r1 [:expr `(* ~m1 ~m2)]
-                                 r2 [:expr `(* ~M1 ~M2)]]
+                                 r1 [:expr `(* ~m1 ~m2) long]
+                                 r2 [:expr `(* ~M1 ~M2) long]]
                              [r1 r2])
               [:div e [:lit n]] (mdo [[m M] (rec e)
-                                      s1 [:expr `(quot ~m ~n)]
-                                      s2 [:expr `(quot ~M ~n)]]
+                                      s1 [:expr `(quot ~m ~n) long]
+                                      s2 [:expr `(quot ~M ~n) long]]
                                   [s1 s2])
               [:mod e [:lit n]] (mdo [[m M] (rec e)
-                                      s1 [:expr `(> (- ~M ~m) ~n)]
-                                      s2 [:expr `(or ~s1 (rem ~m ~n))]
-                                      s3 [:expr `(or ~s1 (rem ~M ~n))]
-                                      s4 [:expr `(or ~s1 (> ~s2 ~s3))]
-                                      s5 [:expr `(if ~s4 0 ~s2)]
-                                      s6 [:expr `(if ~s4 (dec ~n) ~s3)]]
+                                      s1 [:expr `(> (- ~M ~m) ~n) boolean]
+                                      s2 [:expr `(if ~s1 0 (rem ~m ~n)) long]
+                                      s3 [:expr `(if ~s1 0 (rem ~M ~n)) long]
+                                      s4 [:expr `(or ~s1 (> ~s2 ~s3)) boolean]
+                                      s5 [:expr `(if ~s4 0 ~s2) long]
+                                      s6 [:expr `(if ~s4 (dec ~n) ~s3) long]]
                                   [s5 s6])
               [:eqn e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:expr `(= ~m1 ~M1 ~m2 ~M2)]
+                                 s1 [:expr `(== ~m1 ~M1 ~m2 ~M2) boolean]
                                  s2 [:expr `(or (< ~M2 ~m1)
-                                                (< ~M1 ~m2))]
-                                 s3 [:expr `(if ~s2 1 0)]
-                                 s4 [:expr `(if ~s1 0 1)]]
+                                                (< ~M1 ~m2)) boolean]
+                                 s3 [:expr `(if ~s2 1 0) long]
+                                 s4 [:expr `(if ~s1 0 1) long]]
                              [s3 s4])))
         [result {:keys [bindings]}] (to-bindings (h expr))]
     (eval `(fn [~'state ~'input]
@@ -261,30 +260,33 @@
         r-2 (get r-0 1)
         r-3 (quot r-1 26)
         r-4 (quot r-2 26)
-        r-5 (or (> (- r-2 r-1) 26) (> (rem r-1 26) (rem r-2 26)))
-        r-6 (if r-5 0 (rem r-1 26))
-        r-7 (if r-5 (dec 26) (rem r-2 26))
-        r-8 (+ r-6 -7)
-        r-9 (+ r-7 -7)
-        r-10 (get input 0)
-        r-11 (get input 1)
-        r-12 (= r-8 r-9 r-10 r-11)
-        r-13 (or (< r-11 r-8) (< r-9 r-10))
-        r-14 (if r-13 1 0)
-        r-15 (if r-12 0 1)
-        r-16 (* 25 r-14)
-        r-17 (* 25 r-15)
-        r-18 (+ r-16 1)
-        r-19 (+ r-17 1)
-        r-20 (* r-3 r-18)
-        r-21 (* r-4 r-19)
-        r-22 (+ r-10 3)
-        r-23 (+ r-11 3)
-        r-24 (* r-22 r-14)
-        r-25 (* r-23 r-15)
-        r-26 (+ r-20 r-24)
-        r-27 (+ r-21 r-25)]
-    [r-26 r-27]))
+        r-5 (> (- r-2 r-1) 26)
+        r-6 (or r-5 (rem r-1 26))
+        r-7 (or r-5 (rem r-2 26))
+        r-8 (or r-5 (> r-6 r-7))
+        r-9 (if r-8 0 r-6)
+        r-10 (if r-8 (dec 26) r-7)
+        r-11 (+ r-9 -7)
+        r-12 (+ r-10 -7)
+        r-13 (get input 0)
+        r-14 (get input 1)
+        r-15 (= r-11 r-12 r-13 r-14)
+        r-16 (or (< r-14 r-11) (< r-12 r-13))
+        r-17 (if r-16 1 0)
+        r-18 (if r-15 0 1)
+        r-19 (* 25 r-17)
+        r-20 (* 25 r-18)
+        r-21 (+ r-19 1)
+        r-22 (+ r-20 1)
+        r-23 (* r-3 r-21)
+        r-24 (* r-4 r-22)
+        r-25 (+ r-13 3)
+        r-26 (+ r-14 3)
+        r-27 (* r-25 r-17)
+        r-28 (* r-26 r-18)
+        r-29 (+ r-23 r-27)
+        r-30 (+ r-24 r-28)]
+    [r-29 r-30]))
 
 
 
