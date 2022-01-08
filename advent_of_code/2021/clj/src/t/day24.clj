@@ -97,62 +97,70 @@
      [:return v] [v state]
      [:bind ma f] (let [[v state] (to-bindings ma state)]
                     (to-bindings (f v) state))
-     [:expr expr t] (if-let [sym  (get (:rbindings state) expr)]
-                      [sym state]
-                      (let [sym (symbol (str "r-" (count (:rbindings state))))]
-                        [sym (-> state
-                                 (update :bindings concat [(vary-meta sym assoc :tag t)
-                                                           (vary-meta expr assoc :tag t)])
-                                 (update :rbindings assoc expr sym))])))))
+     [:expr expr & t] (if-let [sym (get (:rbindings state) expr)]
+                        [sym state]
+                        (let [sym (with-meta (symbol (str "r-" (count (:rbindings state))))
+                                             (when (seq t)
+                                               {:tag (first t)}))]
+                          [sym (-> state
+                                   (update :bindings concat [sym expr])
+                                   (update :rbindings assoc expr sym))])))))
 
 (defn compile-expr
   [expr]
   (let [h (fn rec [expr]
             (match expr
-              [:reg r] (mdo [s1 [:expr `(get (get ~'state ~r) 0) long]
-                             s2 [:expr `(get (get ~'state ~r) 1) long]]
+              [:reg r] (mdo [s1 [:expr `(get (get ~'state ~r) 0) "long"]
+                             s2 [:expr `(get (get ~'state ~r) 1) "long"]]
                          [s1 s2])
-              [:inp] (mdo [m [:expr `(get ~'input 0) long]
-                           M [:expr `(get ~'input 1) long]]
+              [:inp] (mdo [m [:expr `(get ~'input 0) "long"]
+                           M [:expr `(get ~'input 1) "long"]]
                        [m M])
               [:lit n] (mdo []
                          [n n])
               [:add e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:expr `(unchecked-add ~m1 ~m2) long]
-                                 s2 [:expr `(unchecked-add ~M1 ~M2) long]]
+                                 s1 [:expr `(+ ~m1 ~m2)]
+                                 s2 [:expr `(+ ~M1 ~M2)]]
                              [s1 s2])
               [:mul e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 r1 [:expr `(unchecked-multiply ~m1 ~m2) long]
-                                 r2 [:expr `(unchecked-multiply ~M1 ~M2) long]]
+                                 r1 [:expr `(* ~m1 ~m2)]
+                                 r2 [:expr `(* ~M1 ~M2)]]
                              [r1 r2])
               [:div e [:lit n]] (mdo [[m M] (rec e)
-                                      s1 [:expr `(quot ~m ~n) long]
-                                      s2 [:expr `(quot ~M ~n) long]]
+                                      s1 [:expr `(quot ~m ~n)]
+                                      s2 [:expr `(quot ~M ~n)]]
                                   [s1 s2])
               [:mod e [:lit n]] (mdo [[m M] (rec e)
-                                      s1 [:expr `(> (unchecked-subtract ~M ~m) ~n) boolean]
-                                      s2 [:expr `(if ~s1 0 (rem ~m ~n)) long]
-                                      s3 [:expr `(if ~s1 0 (rem ~M ~n)) long]
-                                      s4 [:expr `(or ~s1 (> ~s2 ~s3)) boolean]
-                                      s5 [:expr `(if ~s4 0 ~s2) long]
-                                      s6 [:expr `(if ~s4 (unchecked-dec ~n) ~s3) long]]
+                                      s1 [:expr `(> (- ~M ~m) ~n)]
+                                      s2 [:expr `(if ~s1 0 (rem ~m ~n))]
+                                      s3 [:expr `(if ~s1 0 (rem ~M ~n))]
+                                      s4 [:expr `(or ~s1 (> ~s2 ~s3))]
+                                      s5 [:expr `(if ~s4 0 ~s2)]
+                                      s6 [:expr `(if ~s4 (dec ~n) ~s3)]]
                                   [s5 s6])
               [:eqn e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:expr `(== ~m1 ~M1 ~m2 ~M2) boolean]
+                                 s1 [:expr `(== ~m1 ~M1 ~m2 ~M2)]
                                  s2 [:expr `(or (< ~M2 ~m1)
-                                                (< ~M1 ~m2)) boolean]
-                                 s3 [:expr `(if ~s2 1 0) long]
-                                 s4 [:expr `(if ~s1 0 1) long]]
+                                                (< ~M1 ~m2))]
+                                 s3 [:expr `(if ~s2 1 0)]
+                                 s4 [:expr `(if ~s1 0 1)]]
                              [s3 s4])))
         [result {:keys [bindings]}] (to-bindings (h expr))]
-    (eval `(fn [~'state ~'input]
-             (let [~@bindings]
-               ~result)))))
+    (binding [*unchecked-math* :warn-on-boxed]
+      (eval `(fn [~'state ~'input]
+               (let [~@bindings]
+                 ~result))))))
 
 (comment
+
+  (compile-expr
+    [:div [:reg :z] [:lit 26]])
+
+  (set! *unchecked-math* :warn-on-boxed)
+  (set! *unchecked-math* false)
 
 (def input (parse (clojure.string/split-lines (slurp "data/day24"))))
 
