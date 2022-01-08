@@ -110,7 +110,7 @@
   {:w [0 0], :x [0 0], :y [0 0], :z [0 0]})
 
 (defn solve
-  [instr size target reverse?]
+  [instr target reverse?]
   (let [split-exprs (to-exprs instr)
         h (fn rec [state exprs input-so-far]
             (let [[m M] (:z (reduce (fn [state expr]
@@ -139,10 +139,8 @@
 
 (defn part1
   [input]
-  (let [input-size (->> input (map first) (filter #{:inp}) count)]
-    (solve input input-size 0 true)))
+  (solve input 0 true))
 
 (defn part2
   [input]
-  (let [input-size (->> input (map first) (filter #{:inp}) count)]
-    (solve input input-size 0 false)))
+  (solve input 0 false))
