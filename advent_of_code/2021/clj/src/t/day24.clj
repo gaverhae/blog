@@ -42,7 +42,7 @@
                        [:eql r1 [:reg r2]] (update acc r1 (fn [prev] [:eql prev (acc r2)]))))
                    {:w [:reg :w], :x [:reg :x], :y [:reg :y], :z [:reg :z]}
                    ops)))
-       #_(map (fn [exprs]
+       (map (fn [exprs]
               (assoc exprs :read (->> exprs
                                       (map val)
                                       (map (fn rec [v]
@@ -58,12 +58,12 @@
                                                (set/union (rec arg1) (rec arg2))
                                                [:reg r] #{r})))
                                       (reduce set/union)))))
-       #_reverse
-       #_(reduce (fn [[read-from-prev exprs] step]
+       reverse
+       (reduce (fn [[read-from-prev exprs] step]
                  [(:read step)
                   (cons (select-keys step read-from-prev) exprs)])
                [#{:z} ()])
-       #_second
+       second
        #_(map (fn [m]
               (->> m
                    (map (fn [[k v]]
