@@ -86,9 +86,6 @@
                                                (r r1 1) `(if ~t1 0 1)]))))]
          {:w [~w ~W] :x [~x ~X] :y [~y ~Y] :z [~z ~Z]})))))
 
-
-
-
 (defn to-exprs
   [instrs]
   (->> instrs
@@ -155,108 +152,84 @@
     expr))
 
 (defmacro mdo
-  [bindings]
-  (if (#{0 1} (count bindings))
+  [bindings body]
+  (if (== 1 (count bindings))
     (throw
       (RuntimeException. "invalid number of elements in mdo bindings"))
-    (let [[n v & r] bindings]
-      (if (empty? r)
-        v
-        [:bind v `(fn [~n] (mdo ~r))]))))
+    (if (empty? bindings)
+      [:return body]
+      (let [[n mv & bindings] bindings]
+        [:bind mv `(fn [~n] (mdo ~bindings ~body))]))))
 
 (defn to-bindings
-  ([m] (to-bindings m {:bindings [], :counter 0}))
+  ([m] (to-bindings m {:bindings (), :rbindings {}}))
   ([m state]
    (match m
      [:return v] [v state]
      [:bind ma f] (let [[v state] (to-bindings ma state)]
                     (to-bindings (f v) state))
-     [:emit expr] [nil (update state :bindings concat expr)]
-     [:get-symbol] (let [sym (symbol (str "r-" (:counter state)))]
-                     [sym (update state :counter inc)]))))
+     [:expr expr] (if-let [sym  (get (:rbindings state) expr)]
+                    [sym state]
+                    (let [sym (symbol (str "r-" (count (:rbindings state))))]
+                      [sym (-> state
+                               (update :bindings concat [sym expr])
+                               (update :rbindings assoc expr sym))])))))
 
 (defn compile-expr
   [expr]
   (let [h (fn rec [expr]
             (match expr
-              [:reg r] (mdo [s1 [:get-symbol]
-                             s2 [:get-symbol]
-                             s3 [:get-symbol]
-                             _ [:emit [s1 `(get ~'state ~r)
-                                       s2 `(get ~s1 0)
-                                       s3 `(get ~s1 1)]]
-                             _ [:return [s2 s3]]])
-              [:inp] (mdo [m [:get-symbol]
-                           M [:get-symbol]
-                           _ [:emit [m `(get ~'input 0)
-                                     M `(get ~'input 1)]]
-                           _ [:return [m M]]])
-              [:lit n] (mdo [_ [:return [n n]]])
+              [:reg r] (mdo [s1 [:expr `(get ~'state ~r)]
+                             s2 [:expr `(get ~s1 0)]
+                             s3 [:expr `(get ~s1 1)]]
+                         [s2 s3])
+              [:inp] (mdo [m [:expr `(get ~'input 0)]
+                           M [:expr `(get ~'input 1)]]
+                       [m M])
+              [:lit n] (mdo []
+                         [n n])
               [:add e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:get-symbol]
-                                 s2 [:get-symbol]
-                                 _ [:emit [s1 `(+ ~m1 ~m2)
-                                           s2 `(+ ~M1 ~M2)]]
-                                 _ [:return [s1 s2]]])
+                                 s1 [:expr `(+ ~m1 ~m2)]
+                                 s2 [:expr `(+ ~M1 ~M2)]]
+                             [s1 s2])
               [:mul e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 a [:get-symbol]
-                                 b [:get-symbol]
-                                 c [:get-symbol]
-                                 d [:get-symbol]
-                                 r1 [:get-symbol]
-                                 r2 [:get-symbol]
-                                 _ [:emit [a `(* ~m1 ~m2)
-                                           b `(* ~m1 ~M2)
-                                           c `(* ~M1 ~m2)
-                                           d `(* ~M1 ~M2)
-                                           r1 `(min ~a ~b ~c ~d)
-                                           r2 `(max ~a ~b ~c ~d)]]
-                                 _ [:return [r1 r2]]])
+                                 a [:expr `(* ~m1 ~m2)]
+                                 b [:expr `(* ~m1 ~M2)]
+                                 c [:expr `(* ~M1 ~m2)]
+                                 d [:expr `(* ~M1 ~M2)]
+                                 r1 [:expr `(min ~a ~b ~c ~d)]
+                                 r2 [:expr `(max ~a ~b ~c ~d)]]
+                             [r1 r2])
               [:div e [:lit n]] (mdo [[m M] (rec e)
-                                      s1 [:get-symbol]
-                                      s2 [:get-symbol]
-                                      s3 [:get-symbol]
-                                      s4 [:get-symbol]
-                                      _ [:emit [s1 `(quot ~m ~n)
-                                                s2 `(quot ~M ~n)
-                                                s3 `(min ~s1 ~s2)
-                                                s4 `(max ~s1 ~s2)]]
-                                      _ [:return [s1 s2]]])
+                                      s1 [:expr `(quot ~m ~n)]
+                                      s2 [:expr `(quot ~M ~n)]
+                                      s3 [:expr `(min ~s1 ~s2)]
+                                      s4 [:expr `(max ~s1 ~s2)]]
+                                  [s1 s2])
               [:mod e [:lit n]] (mdo [[m M] (rec e)
-                                      s1 [:get-symbol]
-                                      s2 [:get-symbol]
-                                      s3 [:get-symbol]
-                                      _ [:emit [s1 `(or (> (- ~M ~m) ~n)
-                                                        (> (rem ~m ~n) (rem ~M ~n)))
-                                                s2 `(if ~s1 0 (rem ~m ~n))
-                                                s3 `(if ~s1 (dec ~n) (rem ~M ~n))]]
-                                      _ [:return [s2 s3]]])
+                                      s1 [:expr `(or (> (- ~M ~m) ~n)
+                                                     (> (rem ~m ~n) (rem ~M ~n)))]
+                                      s2 [:expr `(if ~s1 0 (rem ~m ~n))]
+                                      s3 [:expr `(if ~s1 (dec ~n) (rem ~M ~n))]]
+                                  [s2 s3])
               [:eqn e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:get-symbol]
-                                 s2 [:get-symbol]
-                                 s3 [:get-symbol]
-                                 s4 [:get-symbol]
-                                 _ [:emit [s1 `(= ~m1 ~M1 ~m2 ~M2)
-                                           s2 `(or (< ~M2 ~m1)
-                                                   (< ~M1 ~m2))
-                                           s3 `(if ~s2 1 0)
-                                           s4 `(if ~s1 0 1)]]
-                                 _ [:return [s3 s4]]])
+                                 s1 [:expr `(= ~m1 ~M1 ~m2 ~M2)]
+                                 s2 [:expr `(or (< ~M2 ~m1)
+                                                (< ~M1 ~m2))]
+                                 s3 [:expr `(if ~s2 1 0)]
+                                 s4 [:expr `(if ~s1 0 1)]]
+                             [s3 s4])
               [:eql e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:get-symbol]
-                                 s2 [:get-symbol]
-                                 s3 [:get-symbol]
-                                 s4 [:get-symbol]
-                                 _ [:emit [s1 `(= ~m1 ~M1 ~m2 ~M2)
-                                           s2 `(or (< ~M2 ~m1)
-                                                   (< ~M1 ~m2))
-                                           s3 `(if ~s1 1 0)
-                                           s4 `(if ~s2 0 1)]]
-                                 _ [:return [s3 s4]]])))
+                                 s1 [:expr `(= ~m1 ~M1 ~m2 ~M2)]
+                                 s2 [:expr `(or (< ~M2 ~m1)
+                                                (< ~M1 ~m2))]
+                                 s3 [:expr `(if ~s1 1 0)]
+                                 s4 [:expr `(if ~s2 0 1)]]
+                             [s3 s4])))
         [result {:keys [bindings]}] (to-bindings (h expr))]
     (eval `(fn [~'state ~'input]
              (let [~@bindings]
@@ -288,7 +261,6 @@
 
 
 (compile-expr step)
-
   (let [state init-state
         input [1 9]
         r-0 (get state :z)
@@ -298,69 +270,48 @@
         r-4 (quot r-2 26)
         r-5 (min r-3 r-4)
         r-6 (max r-3 r-4)
-        r-7 (get state :z)
-        r-8 (get r-7 0)
-        r-9 (get r-7 1)
-        r-10 (or (> (- r-9 r-8) 26) (> (rem r-8 26) (rem r-9 26)))
-        r-11 (if r-10 0 (rem r-8 26))
-        r-12 (if r-10 (dec 26) (rem r-9 26))
-        r-13 (+ r-11 -7)
-        r-14 (+ r-12 -7)
-        r-15 (get input 0)
-        r-16 (get input 1)
-        r-17 (= r-13 r-14 r-15 r-16)
-        r-18 (or (< r-16 r-13) (< r-14 r-15))
-        r-19 (if r-17 1 0)
-        r-20 (if r-18 0 1)
-        r-21 (= r-19 r-20 0 0)
-        r-22 (or (< 0 r-19) (< r-20 0))
-        r-23 (if r-21 1 0)
-        r-24 (if r-22 0 1)
-        r-25 (* 25 r-23)
-        r-26 (* 25 r-24)
-        r-27 (* 25 r-23)
-        r-28 (* 25 r-24)
-        r-29 (min r-25 r-26 r-27 r-28)
-        r-30 (max r-25 r-26 r-27 r-28)
-        r-31 (+ r-29 1)
-        r-32 (+ r-30 1)
-        r-33 (* r-3 r-31)
-        r-34 (* r-3 r-32)
-        r-35 (* r-4 r-31)
-        r-36 (* r-4 r-32)
-        r-37 (min r-33 r-34 r-35 r-36)
-        r-38 (max r-33 r-34 r-35 r-36)
-        r-39 (get input 0)
-        r-40 (get input 1)
-        r-41 (+ r-39 3)
-        r-42 (+ r-40 3)
-        r-43 (get state :z)
-        r-44 (get r-43 0)
-        r-45 (get r-43 1)
-        r-46 (or (> (- r-45 r-44) 26) (> (rem r-44 26) (rem r-45 26)))
-        r-47 (if r-46 0 (rem r-44 26))
-        r-48 (if r-46 (dec 26) (rem r-45 26))
-        r-49 (+ r-47 -7)
-        r-50 (+ r-48 -7)
-        r-51 (get input 0)
-        r-52 (get input 1)
-        r-53 (= r-49 r-50 r-51 r-52)
-        r-54 (or (< r-52 r-49) (< r-50 r-51))
-        r-55 (if r-53 1 0)
-        r-56 (if r-54 0 1)
-        r-57 (= r-55 r-56 0 0)
-        r-58 (or (< 0 r-55) (< r-56 0))
-        r-59 (if r-57 1 0)
-        r-60 (if r-58 0 1)
-        r-61 (* r-41 r-59)
-        r-62 (* r-41 r-60)
-        r-63 (* r-42 r-59)
-        r-64 (* r-42 r-60)
-        r-65 (min r-61 r-62 r-63 r-64)
-        r-66 (max r-61 r-62 r-63 r-64)
-        r-67 (+ r-37 r-65)
-        r-68 (+ r-38 r-66)]
-    [r-67 r-68])
+        r-7 (or (> (- r-2 r-1) 26) (> (rem r-1 26) (rem r-2 26)))
+        r-8 (if r-7 0 (rem r-1 26))
+        r-9 (if r-7 (dec 26) (rem r-2 26))
+        r-10 (+ r-8 -7)
+        r-11 (+ r-9 -7)
+        r-12 (get input 0)
+        r-13 (get input 1)
+        r-14 (= r-10 r-11 r-12 r-13)
+        r-15 (or (< r-13 r-10) (< r-11 r-12))
+        r-16 (if r-14 1 0)
+        r-17 (if r-15 0 1)
+        r-18 (= r-16 r-17 0 0)
+        r-19 (or (< 0 r-16) (< r-17 0))
+        r-20 (if r-18 1 0)
+        r-21 (if r-19 0 1)
+        r-22 (* 25 r-20)
+        r-23 (* 25 r-21)
+        r-24 (min r-22 r-23 r-22 r-23)
+        r-25 (max r-22 r-23 r-22 r-23)
+        r-26 (+ r-24 1)
+        r-27 (+ r-25 1)
+        r-28 (* r-3 r-26)
+        r-29 (* r-3 r-27)
+        r-30 (* r-4 r-26)
+        r-31 (* r-4 r-27)
+        r-32 (min r-28 r-29 r-30 r-31)
+        r-33 (max r-28 r-29 r-30 r-31)
+        r-34 (+ r-12 3)
+        r-35 (+ r-13 3)
+        r-36 (* r-34 r-20)
+        r-37 (* r-34 r-21)
+        r-38 (* r-35 r-20)
+        r-39 (* r-35 r-21)
+        r-40 (min r-36 r-37 r-38 r-39)
+        r-41 (max r-36 r-37 r-38 r-39)
+        r-42 (+ r-32 r-40)
+        r-43 (+ r-33 r-41)]
+    [r-42 r-43])
+
+
+
+
 [4 12]
 
 (->> input
@@ -476,7 +427,7 @@
 (def init-state
   {:w [0 0], :x [0 0], :y [0 0], :z [0 0]})
 
-(defn solve
+(defn solve-instr
   [instr target reverse?]
   (let [split-exprs (->> instr
                          (partition-by (fn [[op arg]] (= op :inp)))
@@ -502,10 +453,47 @@
                                       (+ (* 10 input-so-far) next-input))))))))]
     (h init-state split-exprs 0)))
 
+(defn solve-expr
+  [instr target reverse?]
+  (let [split-exprs (->> instr
+                         to-exprs
+                         remove-unneeded-registers
+                         (map (fn [step]
+                                (->> step
+                                     (map (fn [[reg expr]]
+                                            [reg (-> expr
+                                                     simplify-expr
+                                                     compile-expr)]))
+                                     (into {})))))
+        h (fn rec [state exprs input-so-far]
+            (let [[m M] (:z (reduce (fn [state expr]
+                                      (->> expr
+                                           (map (fn [[reg f]]
+                                                  [reg (f state [1 9])]))
+                                           (into {})))
+                                    state
+                                    exprs))]
+              (cond (and (empty? exprs) (== target m M))
+                    input-so-far
+                    (or (empty? exprs) (not (<= m target M)))
+                    nil
+                    :else
+                    (->> (range 9)
+                         (map inc)
+                         ((fn [s] (if reverse? (reverse s) s)))
+                         (some (fn [next-input]
+                                 (rec (->> (first exprs)
+                                           (map (fn [[reg f]]
+                                                  [reg (f state [next-input next-input])]))
+                                           (into {}))
+                                      (rest exprs)
+                                      (+ (* 10 input-so-far) next-input))))))))]
+    (h init-state split-exprs 0)))
+
 (defn part1
   [input]
-  (solve input 0 true))
+  (solve-expr input 0 true))
 
 (defn part2
   [input]
-  (solve input 0 false))
+  (solve-expr input 0 false))
