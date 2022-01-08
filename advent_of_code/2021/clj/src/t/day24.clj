@@ -195,12 +195,8 @@
                              [s1 s2])
               [:mul e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 a [:expr `(* ~m1 ~m2)]
-                                 b [:expr `(* ~m1 ~M2)]
-                                 c [:expr `(* ~M1 ~m2)]
-                                 d [:expr `(* ~M1 ~M2)]
-                                 r1 [:expr `(min ~a ~b ~c ~d)]
-                                 r2 [:expr `(max ~a ~b ~c ~d)]]
+                                 r1 [:expr `(* ~m1 ~m2)]
+                                 r2 [:expr `(* ~M1 ~M2)]]
                              [r1 r2])
               [:div e [:lit n]] (mdo [[m M] (rec e)
                                       s1 [:expr `(quot ~m ~n)]
@@ -383,7 +379,6 @@
      z14016
      Z14017])
 
-
   )
 
 (defn compute-range-expr
@@ -414,7 +409,9 @@
                    (cond (< M2 m1) [0 0]
                          (< M1 m2) [0 0]
                          (= m1 M1 m2 M2) [1 1]
-                         :else [0 1]))))
+                         :else [0 1]))
+    [:eqn e1 e2] [0 1]
+    :else exp))
 
 (def init-state
   {:w [0 0], :x [0 0], :y [0 0], :z [0 0]})
