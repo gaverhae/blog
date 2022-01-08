@@ -221,14 +221,6 @@
                                                 (< ~M1 ~m2))]
                                  s3 [:expr `(if ~s2 1 0)]
                                  s4 [:expr `(if ~s1 0 1)]]
-                             [s3 s4])
-              [:eql e1 e2] (mdo [[m1 M1] (rec e1)
-                                 [m2 M2] (rec e2)
-                                 s1 [:expr `(= ~m1 ~M1 ~m2 ~M2)]
-                                 s2 [:expr `(or (< ~M2 ~m1)
-                                                (< ~M1 ~m2))]
-                                 s3 [:expr `(if ~s1 1 0)]
-                                 s4 [:expr `(if ~s2 0 1)]]
                              [s3 s4])))
         [result {:keys [bindings]}] (to-bindings (h expr))]
     (eval `(fn [~'state ~'input]
