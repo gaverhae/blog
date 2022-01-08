@@ -15,6 +15,80 @@
                            [:reg (keyword arg2)]
                            [:lit (Long/parseLong arg2)])])))))
 
+(defn compile-instr
+  [instr]
+  (let [state (gensym "state")
+        input (gensym "input")
+        i (gensym "i")
+        I (gensym "I")
+        w (gensym "w")
+        W (gensym "W")
+        x (gensym "x")
+        X (gensym "X")
+        y (gensym "y")
+        Y (gensym "Y")
+        z (gensym "z")
+        Z (gensym "Z")
+        t1 (gensym)
+        t2 (gensym)
+        t3 (gensym)
+        t4 (gensym)
+        r (fn [r n]
+            (get-in {:w [w W]
+                     :x [x X]
+                     :y [y Y]
+                     :z [z Z]} [r n]))]
+    (eval `(fn [~state ~input]
+       (let [~i (get ~input 0)
+             ~I (get ~input 1)
+             ~w (get-in ~state [:w 0])
+             ~W (get-in ~state [:w 1])
+             ~x (get-in ~state [:x 0])
+             ~X (get-in ~state [:x 1])
+             ~y (get-in ~state [:y 0])
+             ~Y (get-in ~state [:y 1])
+             ~z (get-in ~state [:z 0])
+             ~Z (get-in ~state [:z 1])
+             ~@(->> instr
+                    (mapcat
+                      (fn [op]
+                        (match op
+                          [:inp r1] [(r r1 0) i (r r1 1) I]
+                          [:add _ [:lit 0]] []
+                          [:add r1 [:lit n]] [(r r1 0) `(+ ~(r r1 0) ~n)
+                                              (r r1 1) `(+ ~(r r1 1) ~n)]
+                          [:add r1 [:reg r2]] [(r r1 0) `(+ ~(r r1 0) ~(r r2 0))
+                                               (r r1 1) `(+ ~(r r1 1) ~(r r2 1))]
+                          [:mul r1 [:lit 0]] [(r r1 0) 0
+                                              (r r1 1) 0]
+                          [:mul r1 [:lit 1]] []
+                          [:mul r1 [:lit n]] [(r r1 0) `(* ~(r r1 0) ~n)
+                                              (r r1 1) `(* ~(r r1 1) ~n)]
+                          [:mul r1 [:reg r2]] [t1 `(* ~(r r1 0) ~(r r2 0))
+                                               t2 `(* ~(r r1 0) ~(r r2 1))
+                                               t3 `(* ~(r r1 1) ~(r r2 0))
+                                               t4 `(* ~(r r1 1) ~(r r2 1))
+                                               (r r1 0) `(min ~t1 ~t2 ~t3 ~t4)
+                                               (r r1 1) `(max ~t1 ~t2 ~t3 ~t4)]
+                          [:div r1 [:lit 1]] []
+                          [:div r1 [:lit n]] [(r r1 0) `(quot ~(r r1 0) ~n)
+                                              (r r1 1) `(quot ~(r r1 1) ~n)]
+                          [:mod r1 [:lit n]] [t1 `(or (> (- ~(r r1 1) ~(r r1 0)) ~n)
+                                                      (> (rem ~(r r1 0) ~n)
+                                                         (rem ~(r r1 1) ~n)))
+                                              (r r1 0) `(if ~t1 0 (rem ~(r r1 0) ~n))
+                                              (r r1 1) `(if ~t1 (dec ~n) (rem ~(r r1 1) ~n))]
+                          [:eql r1 [:lit 0]] []
+                          [:eql r1 [:reg r2]] [t1 `(= ~(r r1 0) ~(r r1 1) ~(r r2 0) ~(r r2 1))
+                                               t2 `(or (< ~(r r2 1) ~(r r1 0))
+                                                       (< ~(r r1 1) ~(r r2 0)))
+                                               (r r1 0) `(if ~t2 1 0)
+                                               (r r1 1) `(if ~t1 0 1)]))))]
+         {:w [~w ~W] :x [~x ~X] :y [~y ~Y] :z [~z ~Z]})))))
+
+
+
+
 (defn to-exprs
   [instrs]
   (->> instrs
@@ -213,7 +287,158 @@
 [4 12]
 
 
+(compile-expr step)
 
+  (let [state init-state
+        input [1 9]
+        r-0 (get state :z)
+        r-1 (get r-0 0)
+        r-2 (get r-0 1)
+        r-3 (quot r-1 26)
+        r-4 (quot r-2 26)
+        r-5 (min r-3 r-4)
+        r-6 (max r-3 r-4)
+        r-7 (get state :z)
+        r-8 (get r-7 0)
+        r-9 (get r-7 1)
+        r-10 (or (> (- r-9 r-8) 26) (> (rem r-8 26) (rem r-9 26)))
+        r-11 (if r-10 0 (rem r-8 26))
+        r-12 (if r-10 (dec 26) (rem r-9 26))
+        r-13 (+ r-11 -7)
+        r-14 (+ r-12 -7)
+        r-15 (get input 0)
+        r-16 (get input 1)
+        r-17 (= r-13 r-14 r-15 r-16)
+        r-18 (or (< r-16 r-13) (< r-14 r-15))
+        r-19 (if r-17 1 0)
+        r-20 (if r-18 0 1)
+        r-21 (= r-19 r-20 0 0)
+        r-22 (or (< 0 r-19) (< r-20 0))
+        r-23 (if r-21 1 0)
+        r-24 (if r-22 0 1)
+        r-25 (* 25 r-23)
+        r-26 (* 25 r-24)
+        r-27 (* 25 r-23)
+        r-28 (* 25 r-24)
+        r-29 (min r-25 r-26 r-27 r-28)
+        r-30 (max r-25 r-26 r-27 r-28)
+        r-31 (+ r-29 1)
+        r-32 (+ r-30 1)
+        r-33 (* r-3 r-31)
+        r-34 (* r-3 r-32)
+        r-35 (* r-4 r-31)
+        r-36 (* r-4 r-32)
+        r-37 (min r-33 r-34 r-35 r-36)
+        r-38 (max r-33 r-34 r-35 r-36)
+        r-39 (get input 0)
+        r-40 (get input 1)
+        r-41 (+ r-39 3)
+        r-42 (+ r-40 3)
+        r-43 (get state :z)
+        r-44 (get r-43 0)
+        r-45 (get r-43 1)
+        r-46 (or (> (- r-45 r-44) 26) (> (rem r-44 26) (rem r-45 26)))
+        r-47 (if r-46 0 (rem r-44 26))
+        r-48 (if r-46 (dec 26) (rem r-45 26))
+        r-49 (+ r-47 -7)
+        r-50 (+ r-48 -7)
+        r-51 (get input 0)
+        r-52 (get input 1)
+        r-53 (= r-49 r-50 r-51 r-52)
+        r-54 (or (< r-52 r-49) (< r-50 r-51))
+        r-55 (if r-53 1 0)
+        r-56 (if r-54 0 1)
+        r-57 (= r-55 r-56 0 0)
+        r-58 (or (< 0 r-55) (< r-56 0))
+        r-59 (if r-57 1 0)
+        r-60 (if r-58 0 1)
+        r-61 (* r-41 r-59)
+        r-62 (* r-41 r-60)
+        r-63 (* r-42 r-59)
+        r-64 (* r-42 r-60)
+        r-65 (min r-61 r-62 r-63 r-64)
+        r-66 (max r-61 r-62 r-63 r-64)
+        r-67 (+ r-37 r-65)
+        r-68 (+ r-38 r-66)]
+    [r-67 r-68])
+[4 12]
+
+(->> input
+     (partition-by (fn [[op arg]] (= op :inp)))
+     (partition 2)
+     (map (fn [[input ops]] (concat input ops)))
+     last
+     compile-instr)
+
+  (let [state14006 init-state
+        input14007 [1 9]
+        i14008 (get input14007 0)
+        I14009 (get input14007 1)
+        w14010 (get-in state14006 [:w 0])
+        W14011 (get-in state14006 [:w 1])
+        x14012 (get-in state14006 [:x 0])
+        X14013 (get-in state14006 [:x 1])
+        y14014 (get-in state14006 [:y 0])
+        Y14015 (get-in state14006 [:y 1])
+        z14016 (get-in state14006 [:z 0])
+        Z14017 (get-in state14006 [:z 1])
+        w14010 i14008
+        W14011 I14009
+        x14012 0
+        X14013 0
+        x14012 (+ x14012 z14016)
+        X14013 (+ X14013 Z14017)
+        G__14018 (or (> (- X14013 x14012) 26) (> (rem x14012 26) (rem X14013 26)))
+        x14012 (if G__14018 0 (rem x14012 26))
+        X14013 (if G__14018 (dec 26) (rem X14013 26))
+        z14016 (quot z14016 26)
+        Z14017 (quot Z14017 26)
+        x14012 (+ x14012 -7)
+        X14013 (+ X14013 -7)
+        G__14018 (= x14012 X14013 w14010 W14011)
+        G__14019 (or (< W14011 x14012) (< X14013 w14010))
+        x14012 (if G__14019 1 0)
+        X14013 (if G__14018 0 1)
+        y14014 0
+        Y14015 0
+        y14014 (+ y14014 25)
+        Y14015 (+ Y14015 25)
+        G__14018 (* y14014 x14012)
+        G__14019 (* y14014 X14013)
+        G__14020 (* Y14015 x14012)
+        G__14021 (* Y14015 X14013)
+        y14014 (min G__14018 G__14019 G__14020 G__14021)
+        Y14015 (max G__14018 G__14019 G__14020 G__14021)
+        y14014 (+ y14014 1)
+        Y14015 (+ Y14015 1)
+        G__14018 (* z14016 y14014)
+        G__14019 (* z14016 Y14015)
+        G__14020 (* Z14017 y14014)
+        G__14021 (* Z14017 Y14015)
+        z14016 (min G__14018 G__14019 G__14020 G__14021)
+        Z14017 (max G__14018 G__14019 G__14020 G__14021)
+        y14014 0
+        Y14015 0
+        y14014 (+ y14014 w14010)
+        Y14015 (+ Y14015 W14011)
+        y14014 (+ y14014 3)
+        Y14015 (+ Y14015 3)
+        G__14018 (* y14014 x14012)
+        G__14019 (* y14014 X14013)
+        G__14020 (* Y14015 x14012)
+        G__14021 (* Y14015 X14013)
+        y14014 (min G__14018 G__14019 G__14020 G__14021)
+        Y14015 (max G__14018 G__14019 G__14020 G__14021)
+        z14016 (+ z14016 y14014)
+        Z14017 (+ Z14017 Y14015)]
+    [w14010
+     W14011
+     x14012
+     X14013
+     y14014
+     Y14015
+     z14016
+     Z14017])
 
 
   )
@@ -254,21 +479,13 @@
 (defn solve
   [instr target reverse?]
   (let [split-exprs (->> instr
-                         to-exprs
-                         remove-unneeded-registers
-                         (map (fn [step]
-                                (->> step
-                                     (map (fn [[reg expr]]
-                                            [reg (-> expr
-                                                     simplify-expr
-                                                     compile-expr)]))
-                                     (into {})))))
+                         (partition-by (fn [[op arg]] (= op :inp)))
+                         (partition 2)
+                         (map (fn [[input ops]] (concat input ops)))
+                         (map compile-instr))
         h (fn rec [state exprs input-so-far]
-            (let [[m M] (:z (reduce (fn [state expr]
-                                      (->> expr
-                                           (map (fn [[reg f]]
-                                                  [reg (f state [1 9])]))
-                                           (into {})))
+            (let [[m M] (:z (reduce (fn [state f]
+                                      (f state [1 9]))
                                     state
                                     exprs))]
               (cond (and (empty? exprs) (== target m M))
@@ -280,10 +497,7 @@
                          (map inc)
                          ((fn [s] (if reverse? (reverse s) s)))
                          (some (fn [next-input]
-                                 (rec (->> (first exprs)
-                                           (map (fn [[reg f]]
-                                                  [reg (f state [next-input next-input])]))
-                                           (into {}))
+                                 (rec ((first exprs) state [next-input next-input])
                                       (rest exprs)
                                       (+ (* 10 input-so-far) next-input))))))))]
     (h init-state split-exprs 0)))
