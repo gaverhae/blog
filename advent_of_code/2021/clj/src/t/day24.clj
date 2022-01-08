@@ -41,7 +41,11 @@
                        [:eql r1 [:lit n]] (update acc r1 (fn [prev] [:eql prev [:lit n]]))
                        [:eql r1 [:reg r2]] (update acc r1 (fn [prev] [:eql prev (acc r2)]))))
                    {:w [:reg :w], :x [:reg :x], :y [:reg :y], :z [:reg :z]}
-                   ops)))
+                   ops)))))
+
+(defn remove-unneeded-registers
+  [exprs]
+  (->> exprs
        (map (fn [exprs]
               (assoc exprs :read (->> exprs
                                       (map val)
@@ -63,18 +67,16 @@
                  [(:read step)
                   (cons (select-keys step read-from-prev) exprs)])
                [#{:z} ()])
-       second
-       (map (fn [m]
-              (->> m
-                   (map (fn [[k v]]
-                          [k
-                           (walk/postwalk
-                             (fn [op] (match op
-                                        [:add [:lit 0] exp] exp
-                                        [:add exp [:lit 0]] exp
-                                        :else op))
-                             v)]))
-                   (into {}))))))
+       second))
+
+(defn simplify-expr
+  [expr]
+  (walk/postwalk
+    (fn [op] (match op
+               [:add [:lit 0] exp] exp
+               [:add exp [:lit 0]] exp
+               :else op))
+    expr))
 
 (defn compute-range-expr
   [exp input state]
@@ -111,7 +113,14 @@
 
 (defn solve
   [instr target reverse?]
-  (let [split-exprs (to-exprs instr)
+  (let [split-exprs (->> instr
+                         to-exprs
+                         remove-unneeded-registers
+                         (map (fn [step]
+                                (->> step
+                                     (map (fn [[reg expr]]
+                                            [reg (simplify-expr expr)]))
+                                     (into {})))))
         h (fn rec [state exprs input-so-far]
             (let [[m M] (:z (reduce (fn [state expr]
                                       (->> expr
