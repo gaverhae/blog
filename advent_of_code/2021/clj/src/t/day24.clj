@@ -203,11 +203,13 @@
                                       s2 [:expr `(quot ~M ~n)]]
                                   [s1 s2])
               [:mod e [:lit n]] (mdo [[m M] (rec e)
-                                      s1 [:expr `(or (> (- ~M ~m) ~n)
-                                                     (> (rem ~m ~n) (rem ~M ~n)))]
-                                      s2 [:expr `(if ~s1 0 (rem ~m ~n))]
-                                      s3 [:expr `(if ~s1 (dec ~n) (rem ~M ~n))]]
-                                  [s2 s3])
+                                      s1 [:expr `(> (- ~M ~m) ~n)]
+                                      s2 [:expr `(or ~s1 (rem ~m ~n))]
+                                      s3 [:expr `(or ~s1 (rem ~M ~n))]
+                                      s4 [:expr `(or ~s1 (> ~s2 ~s3))]
+                                      s5 [:expr `(if ~s4 0 ~s2)]
+                                      s6 [:expr `(if ~s4 (dec ~n) ~s3)]]
+                                  [s5 s6])
               [:eqn e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
                                  s1 [:expr `(= ~m1 ~M1 ~m2 ~M2)]
@@ -235,7 +237,13 @@
             (f init-state [1 9]))))
 ([3 11] [17 25] [10 18] [1 9] [2 10] [13 21] [7 15] [7 15] [4 12] [6 14] [10 18] [4 12] [3 11] [4 12])
 
-(def step [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -7]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 3]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -7]] [:inp]] [:lit 0]]]])
+(def step
+  (->> input
+       to-exprs
+       remove-unneeded-registers
+       simplify-expr
+       (map :z)
+       last))
 
 (compute-range-expr step [1 9] init-state)
 [4 12]
@@ -247,53 +255,36 @@
 
 
 (compile-expr step)
-  (let [state init-state
-        input [1 9]
-        r-0 (get state :z)
+(fn [state input]
+  (let [r-0 (get state :z)
         r-1 (get r-0 0)
         r-2 (get r-0 1)
         r-3 (quot r-1 26)
         r-4 (quot r-2 26)
-        r-5 (min r-3 r-4)
-        r-6 (max r-3 r-4)
-        r-7 (or (> (- r-2 r-1) 26) (> (rem r-1 26) (rem r-2 26)))
-        r-8 (if r-7 0 (rem r-1 26))
-        r-9 (if r-7 (dec 26) (rem r-2 26))
-        r-10 (+ r-8 -7)
-        r-11 (+ r-9 -7)
-        r-12 (get input 0)
-        r-13 (get input 1)
-        r-14 (= r-10 r-11 r-12 r-13)
-        r-15 (or (< r-13 r-10) (< r-11 r-12))
-        r-16 (if r-14 1 0)
-        r-17 (if r-15 0 1)
-        r-18 (= r-16 r-17 0 0)
-        r-19 (or (< 0 r-16) (< r-17 0))
-        r-20 (if r-18 1 0)
-        r-21 (if r-19 0 1)
-        r-22 (* 25 r-20)
-        r-23 (* 25 r-21)
-        r-24 (min r-22 r-23 r-22 r-23)
-        r-25 (max r-22 r-23 r-22 r-23)
-        r-26 (+ r-24 1)
-        r-27 (+ r-25 1)
-        r-28 (* r-3 r-26)
-        r-29 (* r-3 r-27)
-        r-30 (* r-4 r-26)
-        r-31 (* r-4 r-27)
-        r-32 (min r-28 r-29 r-30 r-31)
-        r-33 (max r-28 r-29 r-30 r-31)
-        r-34 (+ r-12 3)
-        r-35 (+ r-13 3)
-        r-36 (* r-34 r-20)
-        r-37 (* r-34 r-21)
-        r-38 (* r-35 r-20)
-        r-39 (* r-35 r-21)
-        r-40 (min r-36 r-37 r-38 r-39)
-        r-41 (max r-36 r-37 r-38 r-39)
-        r-42 (+ r-32 r-40)
-        r-43 (+ r-33 r-41)]
-    [r-42 r-43])
+        r-5 (or (> (- r-2 r-1) 26) (> (rem r-1 26) (rem r-2 26)))
+        r-6 (if r-5 0 (rem r-1 26))
+        r-7 (if r-5 (dec 26) (rem r-2 26))
+        r-8 (+ r-6 -7)
+        r-9 (+ r-7 -7)
+        r-10 (get input 0)
+        r-11 (get input 1)
+        r-12 (= r-8 r-9 r-10 r-11)
+        r-13 (or (< r-11 r-8) (< r-9 r-10))
+        r-14 (if r-13 1 0)
+        r-15 (if r-12 0 1)
+        r-16 (* 25 r-14)
+        r-17 (* 25 r-15)
+        r-18 (+ r-16 1)
+        r-19 (+ r-17 1)
+        r-20 (* r-3 r-18)
+        r-21 (* r-4 r-19)
+        r-22 (+ r-10 3)
+        r-23 (+ r-11 3)
+        r-24 (* r-22 r-14)
+        r-25 (* r-23 r-15)
+        r-26 (+ r-20 r-24)
+        r-27 (+ r-21 r-25)]
+    [r-26 r-27]))
 
 
 
