@@ -189,13 +189,13 @@
                          [n n])
               [:add e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 s1 [:expr `(+ ~m1 ~m2) long]
-                                 s2 [:expr `(+ ~M1 ~M2) long]]
+                                 s1 [:expr `(unchecked-add ~m1 ~m2) long]
+                                 s2 [:expr `(unchecked-add ~M1 ~M2) long]]
                              [s1 s2])
               [:mul e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 r1 [:expr `(* ~m1 ~m2) long]
-                                 r2 [:expr `(* ~M1 ~M2) long]]
+                                 r1 [:expr `(unchecked-multiply ~m1 ~m2) long]
+                                 r2 [:expr `(unchecked-multiply ~M1 ~M2) long]]
                              [r1 r2])
               [:div e [:lit n]] (mdo [[m M] (rec e)
                                       s1 [:expr `(quot ~m ~n) long]
@@ -207,7 +207,7 @@
                                       s3 [:expr `(if ~s1 0 (rem ~M ~n)) long]
                                       s4 [:expr `(or ~s1 (> ~s2 ~s3)) boolean]
                                       s5 [:expr `(if ~s4 0 ~s2) long]
-                                      s6 [:expr `(if ~s4 (dec ~n) ~s3) long]]
+                                      s6 [:expr `(if ~s4 (unchecked-dec ~n) ~s3) long]]
                                   [s5 s6])
               [:eqn e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
