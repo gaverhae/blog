@@ -95,53 +95,80 @@
      [:return v] [v state]
      [:bind ma f] (let [[v state] (to-bindings ma state)]
                     (to-bindings (f v) state))
-     [:emit expr] (let [r (symbol (str "r-" (:counter state)))]
-                    [r (-> state
-                           (update :counter inc)
-                           (update :bindings concat
-                                   [r expr]))])
-     [:emit-2 expr] (let [r1 (symbol (str "r-" (+ 0 (:counter state))))
-                          r2 (symbol (str "r-" (+ 1 (:counter state))))
-                          r3 (symbol (str "r-" (+ 2 (:counter state))))]
-                      [[r2 r3]
-                       (-> state
-                           (update :counter + 3)
-                           (update :bindings concat
-                                   [r1 expr r2 `(nth ~r1 0) r3 `(nth ~r1 1)]))]))))
+     [:emit expr] [nil (update state :bindings concat expr)]
+     [:get-symbol] (let [sym (symbol (str "r-" (:counter state)))]
+                     [sym (update state :counter inc)]))))
 
 (defn compile-expr
   [expr]
   (let [h (fn rec [expr]
             (match expr
-              [:reg r] [:emit-2 `(get ~'state ~r)]
-              [:inp] [:emit-2 'input]
-              [:lit n] [:emit-2 [n n]]
+              [:reg r] (mdo [s1 [:get-symbol]
+                             s2 [:get-symbol]
+                             s3 [:get-symbol]
+                             _ [:emit [s1 `(get ~'state ~r)
+                                       s2 `(get ~s1 0)
+                                       s3 `(get ~s1 1)]]
+                             _ [:return [s2 s3]]])
+              [:inp] (mdo [m [:get-symbol]
+                           M [:get-symbol]
+                           _ [:emit [m `(get ~'input 0)
+                                     M `(get ~'input 1)]]
+                           _ [:return [m M]]])
+              [:lit n] (mdo [_ [:return [n n]]])
               [:add e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 _ [:emit-2 [`(+ ~m1 ~m2)
-                                             `(+ ~M1 ~M2)]]])
+                                 s1 [:get-symbol]
+                                 s2 [:get-symbol]
+                                 _ [:emit [s1 `(+ ~m1 ~m2)
+                                           s2 `(+ ~M1 ~M2)]]
+                                 _ [:return [s1 s2]]])
               [:mul e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 a [:emit `(* ~m1 ~m2)]
-                                 b [:emit `(* ~m1 ~M2)]
-                                 c [:emit `(* ~M1 ~m2)]
-                                 d [:emit `(* ~M1 ~M2)]
-                                 r1 [:emit `(min ~a ~b ~c ~d)]
-                                 r2 [:emit `(max ~a ~b ~c ~d)]
-                                 _ [:emit-2 [r1 r2]]])
+                                 a [:get-symbol]
+                                 b [:get-symbol]
+                                 c [:get-symbol]
+                                 d [:get-symbol]
+                                 r1 [:get-symbol]
+                                 r2 [:get-symbol]
+                                 _ [:emit [a `(* ~m1 ~m2)
+                                           b `(* ~m1 ~M2)
+                                           c `(* ~M1 ~m2)
+                                           d `(* ~M1 ~M2)
+                                           r1 `(min ~a ~b ~c ~d)
+                                           r2 `(max ~a ~b ~c ~d)]]
+                                 _ [:return [r1 r2]]])
               [:div e [:lit n]] (mdo [[m M] (rec e)
-                                      _ [:emit-2 `(sort [(quot ~m ~n) (quot ~M ~n)])]])
+                                      s1 [:get-symbol]
+                                      s2 [:get-symbol]
+                                      s3 [:get-symbol]
+                                      s4 [:get-symbol]
+                                      _ [:emit [s1 `(quot ~m ~n)
+                                                s2 `(quot ~M ~n)
+                                                s3 `(min ~s1 ~s2)
+                                                s4 `(max ~s1 ~s2)]]
+                                      _ [:return [s1 s2]]])
               [:mod e [:lit n]] (mdo [[m M] (rec e)
-                                      _ [:emit-2 `(if (or (> (- ~M ~m) ~n)
-                                                          (> (rem ~m ~n) (rem ~M ~n)))
-                                                    [0 (dec ~n)]
-                                                    [(rem ~m ~n) (rem ~M ~n)])]])
+                                      s1 [:get-symbol]
+                                      s2 [:get-symbol]
+                                      s3 [:get-symbol]
+                                      _ [:emit [s1 `(or (> (- ~M ~m) ~n)
+                                                        (> (rem ~m ~n) (rem ~M ~n)))
+                                                s2 `(if ~s1 0 (rem ~m ~n))
+                                                s3 `(if ~s1 (dec ~n) (rem ~M ~n))]]
+                                      _ [:return [s2 s3]]])
               [:eql e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
-                                 _ [:emit-2 `(cond (< ~M2 ~m1) [0 0]
-                                                   (< ~M1 ~m2) [0 0]
-                                                   (= ~m1 ~M1 ~m2 ~M2) [1 1]
-                                                   :else [0 1])]])))
+                                 s1 [:get-symbol]
+                                 s2 [:get-symbol]
+                                 s3 [:get-symbol]
+                                 s4 [:get-symbol]
+                                 _ [:emit [s1 `(= ~m1 ~M1 ~m2 ~M2)
+                                           s2 `(or (< ~M2 ~m1)
+                                                   (< ~M1 ~m2))
+                                           s3 `(if ~s1 1 0)
+                                           s4 `(if ~s2 0 1)]]
+                                 _ [:return [s3 s4]]])))
         [result {:keys [bindings]}] (to-bindings (h expr))]
     (eval `(fn [~'state ~'input]
              (let [~@bindings]
@@ -155,41 +182,18 @@
      to-exprs
      remove-unneeded-registers
      simplify-expr
-     (map :z))
-([:add [:mul [:reg :z] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 2]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:reg :z] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 16]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:reg :z] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 9]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 14]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:reg :z] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:inp] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 15]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -8]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 1]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -8]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:reg :z] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 12]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 10]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -16]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 6]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -16]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -4]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 6]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -4]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:reg :z] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 11]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 3]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 11]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -3]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 5]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -3]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:reg :z] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 12]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 9]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit 12]] [:inp]] [:lit 0]]]]
-
- [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -7]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 3]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -7]] [:inp]] [:lit 0]]]]
-
-  [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -15]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 2]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -15]] [:inp]] [:lit 0]]]]
-
-  )
+     (map :z)
+     (map compile-expr)
+     (map (fn [f]
+            (f init-state [1 9]))))
+([3 11] [17 25] [10 18] [1 9] [2 10] [13 21] [7 15] [7 15] [4 12] [6 14] [10 18] [4 12] [3 11] [4 12])
 
 (def step [:add [:mul [:div [:reg :z] [:lit 26]] [:add [:mul [:lit 25] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -7]] [:inp]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp] [:lit 3]] [:eql [:eql [:add [:mod [:reg :z] [:lit 26]] [:lit -7]] [:inp]] [:lit 0]]]])
 
 (compute-range-expr step [1 9] init-state)
 [4 12]
 
-(compile-expr step)
+((compile-expr step) init-state [1 9])
 
 ((eval (compile-expr step)) init-state [1 9])
 [4 12]
