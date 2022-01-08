@@ -200,9 +200,7 @@
                              [r1 r2])
               [:div e [:lit n]] (mdo [[m M] (rec e)
                                       s1 [:expr `(quot ~m ~n)]
-                                      s2 [:expr `(quot ~M ~n)]
-                                      s3 [:expr `(min ~s1 ~s2)]
-                                      s4 [:expr `(max ~s1 ~s2)]]
+                                      s2 [:expr `(quot ~M ~n)]]
                                   [s1 s2])
               [:mod e [:lit n]] (mdo [[m M] (rec e)
                                       s1 [:expr `(or (> (- ~M ~m) ~n)
