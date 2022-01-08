@@ -75,6 +75,8 @@
     (fn [op] (match op
                [:add [:lit 0] exp] exp
                [:add exp [:lit 0]] exp
+               [:eql [:eql e1 e2] [:lit 0]] [:eqn e1 e2]
+               [:eql [:lit 0] [:eql e1 e2]] [:eqn e1 e2]
                :else op))
     expr))
 
@@ -157,6 +159,18 @@
                                                 s2 `(if ~s1 0 (rem ~m ~n))
                                                 s3 `(if ~s1 (dec ~n) (rem ~M ~n))]]
                                       _ [:return [s2 s3]]])
+              [:eqn e1 e2] (mdo [[m1 M1] (rec e1)
+                                 [m2 M2] (rec e2)
+                                 s1 [:get-symbol]
+                                 s2 [:get-symbol]
+                                 s3 [:get-symbol]
+                                 s4 [:get-symbol]
+                                 _ [:emit [s1 `(= ~m1 ~M1 ~m2 ~M2)
+                                           s2 `(or (< ~M2 ~m1)
+                                                   (< ~M1 ~m2))
+                                           s3 `(if ~s2 1 0)
+                                           s4 `(if ~s1 0 1)]]
+                                 _ [:return [s3 s4]]])
               [:eql e1 e2] (mdo [[m1 M1] (rec e1)
                                  [m2 M2] (rec e2)
                                  s1 [:get-symbol]
