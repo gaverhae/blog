@@ -108,13 +108,14 @@
 
 (defn compile-expr
   [expr]
-  (let [h (fn rec [expr]
+  (let [reg {:w 0 :x 2 :y 4 :z 6}
+        h (fn rec [expr]
             (match expr
-              [:reg r] (mdo [s1 [:expr `(get (get ~'state ~r) 0) "long"]
-                             s2 [:expr `(get (get ~'state ~r) 1) "long"]]
+              [:reg r] (mdo [s1 [:expr `(aget ~'state ~(reg r))]
+                             s2 [:expr `(aget ~'state ~(inc (reg r)))]]
                          [s1 s2])
-              [:inp] (mdo [m [:expr `(get ~'input 0) "long"]
-                           M [:expr `(get ~'input 1) "long"]]
+              [:inp] (mdo [m [:expr `(aget ~'input 0)]
+                           M [:expr `(aget ~'input 1)]]
                        [m M])
               [:lit n] (mdo []
                          [n n])
@@ -150,9 +151,13 @@
                              [s3 s4])))
         [result {:keys [bindings]}] (to-bindings (h expr))]
     (binding [*unchecked-math* :warn-on-boxed]
-      (eval `(fn [~'state ~'input]
-               (let [~@bindings]
-                 ~result))))))
+      (eval `(fn [~(with-meta 'state {:tag "[J"})
+                  ~(with-meta 'input {:tag "[J"})]
+               (let [~@bindings
+                     ~'ret ~(with-meta `(make-array Long/TYPE 8) {:tag "[J"})]
+                 (aset ~'ret 0 ~(first result))
+                 (aset ~'ret 1 ~(second result))
+                 ~'ret))))))
 
 (comment
 
@@ -232,8 +237,8 @@
 
   )
 
-(def init-state
-  {:w [0 0], :x [0 0], :y [0 0], :z [0 0]})
+(def ^longs init-state
+  (make-array Long/TYPE 8))
 
 (defn solve-expr
   [instr target reverse?]
@@ -246,15 +251,28 @@
                                             [reg (-> expr
                                                      simplify-expr
                                                      compile-expr)]))
-                                     (into {})))))
-        h (fn rec [state exprs input-so-far]
-            (let [[m M] (:z (reduce (fn [state expr]
-                                      (->> expr
-                                           (map (fn [[reg f]]
-                                                  [reg (f state [1 9])]))
-                                           (into {})))
-                                    state
-                                    exprs))]
+                                     (into {})
+                                     ((juxt :w :x :y :z))
+                                     (into-array)))))
+        arr (fn ^longs [^long a]
+              (let [r ^longs (make-array Long/TYPE 2)]
+                (aset r 0 a)
+                (aset r 1 a)
+                r))
+        full ^longs (into-array Long/TYPE [1 9])
+        h (fn rec [^longs state exprs input-so-far]
+            (let [r ^longs (reduce (fn [^longs state fns]
+                                     (let [ret ^longs (make-array Long/TYPE 8)]
+                                       (dotimes [idx 4]
+                                         (when-let [f (get fns idx)]
+                                           (let [r ^longs (f state full)]
+                                             (aset ret (* 2 idx) (aget r 0))
+                                             (aset ret (inc (* 2 idx)) (aget r 1)))))
+                                       ret))
+                                   state
+                                   exprs)
+                  m (aget r 6)
+                  M (aget r 7)]
               (cond (and (empty? exprs) (== target m M))
                     input-so-far
                     (or (empty? exprs) (not (<= m target M)))
@@ -264,10 +282,13 @@
                          (map inc)
                          ((fn [s] (if reverse? (reverse s) s)))
                          (some (fn [next-input]
-                                 (rec (->> (first exprs)
-                                           (map (fn [[reg f]]
-                                                  [reg (f state [next-input next-input])]))
-                                           (into {}))
+                                 (rec (let [ret ^longs (make-array Long/TYPE 8)]
+                                        (dotimes [idx 4]
+                                          (when-let [f (get (first exprs) idx)]
+                                            (let [r ^longs (f state (arr next-input))]
+                                              (aset ret (* 2 idx) (aget r 0))
+                                              (aset ret (inc (* 2 idx)) (aget r 1)))))
+                                        ret)
                                       (rest exprs)
                                       (+ (* 10 input-so-far) next-input))))))))]
     (h init-state split-exprs 0)))
