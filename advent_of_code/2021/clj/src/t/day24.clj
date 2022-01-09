@@ -160,6 +160,162 @@
                  ~'ret))))))
 
 (comment
+(defn solve
+  [instr size target reverse?]
+  (let [h (fn rec [fixed-input]
+            (let [input (take size (concat fixed-input (repeat [1 9])))
+                  [m M] (compute-range instr input)]
+              (cond (and (= (count fixed-input) size)
+                         (== m M target))
+                    (->> fixed-input (map first) (apply str) Long/parseLong)
+                    (or (= (count fixed-input) size)
+                        (not (<= m target M)))
+                    nil
+                    :else
+                    (->> (range 9)
+                         (map inc)
+                         ((fn [s] (if reverse? (reverse s) s)))
+                         (map (fn [n] (conj fixed-input [n n])))
+                         (some rec)))))]
+    (h [])))
+
+
+  (defn to-expr
+    [instrs]
+    (reduce (fn [acc instr]
+              (match instr
+                [:inp r] (-> acc
+                             (assoc r [:inp (:input-count acc)])
+                             (update :input-count inc))
+                [:add _ [:lit 0]] acc
+                [:add r1 [:lit n]] (update acc r1 (fn [prev] [:add prev [:lit n]]))
+                [:add r1 [:reg r2]] (update acc r1 (fn [prev] [:add prev (acc r2)]))
+                [:mul r1 [:lit 0]] (assoc acc r1 [:lit 0])
+                [:mul r1 [:lit 1]] acc
+                [:mul r1 [:lit n]] (update acc r1 (fn [prev] [:mul prev [:lit n]]))
+                [:mul r1 [:reg r2]] (update acc r1 (fn [prev] [:mul prev (acc r2)]))
+                [:div r1 [:lit 1]] acc
+                [:div r1 [:lit n]] (update acc r1 (fn [prev] [:div prev [:lit n]]))
+                [:div r1 [:reg r2]] (update acc r1 (fn [prev] [:div prev (acc r2)]))
+                [:mod r1 [:lit n]] (update acc r1 (fn [prev] [:mod prev [:lit n]]))
+                [:mod r1 [:reg r2]] (update acc r1 (fn [prev] [:mod prev (acc r2)]))
+                [:eql r1 [:lit n]] (update acc r1 (fn [prev] [:eql prev [:lit n]]))
+                [:eql r1 [:reg r2]] (update acc r1 (fn [prev] [:eql prev (acc r2)]))))
+            {:w [:lit 0], :x [:lit 0], :y [:lit 0], :z [:lit 0], :input-count 0}
+            instrs))
+
+  (defn compute-range
+    [op]
+    (match op
+      [:add e1 e2] (let [r1 (compute-range e1)
+                         r2 (compute-range e2)]
+                     [(+ (apply min r1)
+                         (apply min r2))
+                      (+ (apply max r1)
+                         (apply max r2))])
+      [:mul e1 e2] (let [r1 (compute-range e1)
+                         r2 (compute-range e2)]
+                     [(* (apply min r1)
+                         (apply min r2))
+                      (* (apply max r1)
+                         (apply max r2))])
+      [:lit n] [n]
+      [:inp _] [1 9]))
+
+(defn simplify
+  [expr]
+  (walk/postwalk
+    (fn [op]
+      (match op
+        ;; removed as it's a special case of the next one
+        ;; [:add [:lit 0] [:lit 0]] [:lit 0]
+        ;; compute additions when both parts are literals
+        [:add [:lit n1] [:lit n2]] [:lit (+ n1 n2)]
+        ;; adding 0 is a no-op, on both sides
+        [:add exp [:lit 0]] exp
+        [:add [:lit 0] exp] exp
+        ;; multiplying by 1 is a no-op, on both sides
+        [:mul exp [:lit 1]] exp
+        [:mul [:lit 1] exp] exp
+        ;; multiplying by 0 yields 0
+        [:mul [:lit 0] _] [:lit 0]
+        [:mul _ [:lit 0]] [:lit 0]
+        ;; mod 0 x is 0
+        [:mod [:lit 0] _] [:lit 0]
+        ;; inputs are between 1 and 9
+        [:eql [:lit n] [:inp _]] (if (<= 1 n 9) op [:lit 0])
+        ;; compute eql on known inputs
+        [:eql [:lit n1] [:lit n2]] [:lit (if (== n1 n2) 1 0)]
+        [:mod exp [:lit n]] (let [[m M] (compute-range exp)]
+                              (if (<= 0 m M n)
+                                exp
+                                op))
+        ;; else, keep unchanged
+        :else op))
+    expr))
+
+(defn compute-range
+  [instr inputs]
+  (loop [instr instr
+         inputs inputs
+         state {:w [0 0], :x [0 0], :y [0 0], :z [0 0]}]
+    (if (empty? instr)
+      (:z state)
+      (let [op (first instr)]
+        (if (= op [:inp :w])
+          (recur (rest instr)
+                 (rest inputs)
+                 (assoc state :w (first inputs)))
+          (recur (rest instr)
+                 inputs
+                 (match op
+                   [:add r [:lit n]]
+                   (update state r (fn [[m M]] [(+ m n) (+ M n)]))
+                   [:add r1 [:reg r2]]
+                   (update state r1 (fn [[m1 M1]]
+                                      (let [[m2 M2] (get state r2)]
+                                        [(+ m1 m2) (+ M1 M2)])))
+                   [:mul r [:lit n]]
+                   (update state r (fn [[m M]]
+                                     (sort [(* m n) (* M n)])))
+                   [:mul r1 [:reg r2]]
+                   (update state r1 (fn [[m1 M1]]
+                                      (let [[m2 M2] (get state r2)
+                                            prods (for [m [m1 M1]
+                                                        n [m2 M2]]
+                                                    (* m n))]
+                                        [(apply min prods)
+                                         (apply max prods)])))
+                   [:div r [:lit n]]
+                   (update state r (fn [[m M]]
+                                     (sort [(quot m n) (quot M n)])))
+                   [:mod r [:lit n]]
+                   (update state r (fn [[m M]]
+                                     (if (or (> (- M m) n)
+                                             (> (rem m n) (rem M n)))
+                                       [0 (dec n)]
+                                       [(rem m n) (rem M n)])))
+                   [:eql r [:lit n]]
+                   (update state r (fn [[m M]]
+                                     (cond (= m n M) [1 1]
+                                           (<= m n M) [0 1]
+                                           :else [0 0])))
+                   [:eql r1 [:reg r2]]
+                   (update state r1 (fn [[m1 M1]]
+                                      (let [[m2 M2] (get state r2)]
+                                        (cond (< M2 m1) [0 0]
+                                              (< M1 m2) [0 0]
+                                              (= m1 M1 m2 M2) [1 1]
+                                              :else [0 1])))))))))))
+
+
+
+(->> input
+     (take 36)
+     to-expr
+     :z
+     simplify)
+[:add [:mul [:add [:inp 0] [:lit 2]] [:add [:mul [:lit 25] [:eql [:eql [:add [:add [:inp 0] [:lit 2]] [:lit 15]] [:inp 1]] [:lit 0]]] [:lit 1]]] [:mul [:add [:inp 1] [:lit 16]] [:eql [:eql [:add [:add [:inp 0] [:lit 2]] [:lit 15]] [:inp 1]] [:lit 0]]]]
 
   (compile-expr
     [:div [:reg :z] [:lit 26]])
