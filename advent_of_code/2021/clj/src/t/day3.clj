@@ -27,8 +27,6 @@
     (binprod gamma
              (map flip gamma))))
 
-(most-frequent (map first [[\0 \0 \1]]))
-
 (defn part2
   [input]
   (let [most-common-bit #(most-frequent (map first %))
