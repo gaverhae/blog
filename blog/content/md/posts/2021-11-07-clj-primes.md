@@ -1,6 +1,6 @@
 {:title "Computing prime numbers with Clojure"
  :layout :post
- :tags ["clojure"]}
+ :tags ["clojure" "primes"]}
 
 This post is not about prime numbers, really, but they offer a nice, compact
 problem space to explore a number of Clojure language features.
