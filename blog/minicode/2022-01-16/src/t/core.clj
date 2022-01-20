@@ -1,30 +1,54 @@
 (ns t.core
   (:require [taoensso.tufte :as tufte :refer (p profiled)]
-            [clojure.pprint :refer [pprint]])
+            [clojure.string :as string]
+            [clojure.set :as set])
   (:gen-class))
 
-(defn bitset-sieve
-  [^long bound]
-  (let [candidates (java.util.BitSet. bound)]
-    (p :init (.set candidates 2 bound))
-    (p :main-loop
-       (loop [idx 2]
-         (when (< idx bound)
-           (when-let [next-candidate (.get candidates idx)]
-             (loop [update-idx (* idx idx)]
-               (when (< update-idx bound)
-                 (.clear candidates update-idx)
-                 (recur (+ idx update-idx)))))
-           (recur (inc idx)))))
-    (p :final
-       (take-while pos? (iterate #(.nextSetBit candidates (inc %)) 2)))))
+(defn parse
+  [lines]
+  (->> lines
+       (map #(string/split % #"-"))
+       (mapcat (fn [[a b]] [{a #{b}} {b #{a}}]))
+       (apply merge-with set/union {})))
+
+(defn small?
+  [^String s]
+  (p :small? (= s (.toLowerCase s))))
+
+(defn ends?
+  [[path _]]
+  (p :ends? (= (last path) "end")))
+
+(defn part2
+  [input]
+  (loop [num-paths 0
+         paths [[["start"] #{"start"} false]]]
+    (if (empty? paths)
+      num-paths
+      (let [path (for [[path visited twice?] paths
+                       next-step (p :next-step
+                                    (get input (last path)))
+                       :when (p :when
+                                (or (not (visited next-step))
+                                    (and (not= "start" next-step)
+                                         (not twice?))))]
+                   [(p :conj-path (conj path next-step))
+                    (p :visited
+                       (if (small? next-step)
+                         (conj visited next-step)
+                         visited))
+                    (p :twice-check
+                       (or twice?
+                           (boolean (visited next-step))))])]
+        (recur (p :filter-path (->> path (filter ends?) count (+ num-paths)))
+               (p :remove-ends (->> path (remove ends?))))))))
 
 (defn -main
   [& args]
-  (println "Waiting for profiler.")
-  (read-line)
-  (bitset-sieve 100000)
-  #_(->> (profiled {} (bitset-sieve 100000))
-       second
-       deref
-       pprint))
+  (let [input (-> (slurp "day12")
+                  (string/split-lines)
+                  parse)]
+    (->> (profiled {} (part2 input))
+         second
+         deref
+         pprint)))
