@@ -9,7 +9,10 @@
   (->> lines
        (map #(string/split % #"-"))
        (mapcat (fn [[a b]] [{a #{b}} {b #{a}}]))
-       (apply merge-with set/union {})))
+       (apply merge-with set/union {})
+       (reduce (fn [m [k v]]
+                 (assoc m k (into () v)))
+               {})))
 
 (defn small?
   [^String s]
@@ -22,7 +25,7 @@
          next-steps ()
          visited #{}
          twice? false]
-    (cond (and (empty? paths) (empty? next-steps))
+    (cond (and (empty? next-steps) (empty? paths))
           num-paths
           (empty? next-steps)
           (let [[pos visited twice?] (first paths)]
