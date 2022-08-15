@@ -36,6 +36,9 @@
                                          (java.nio.file.Files/isSymbolicLink (.toPath f))))))
     f))
 
+(defn get-inode
+  [^java.io.File f]
+  (java.nio.file.Files/getAttribute (.toPath f) "unix:ino" (make-array java.nio.file.LinkOption 0)))
 
 (defn all-files
   [path]
@@ -48,6 +51,7 @@
                 (let [p (.getAbsolutePath f)]
                   {:path (norm p)
                    :size (.length f)
+                   :inode (get-inode f)
                    :md5 (md5 p)}))))))
 
 (defn extract
