@@ -5,19 +5,6 @@
             [clojure.java.shell :refer [sh]])
   (:import [java.security MessageDigest DigestInputStream]))
 
-(let [null (io/output-stream "/dev/null")]
-  (defn md5
-    [abs-path]
-    (try (let [md (MessageDigest/getInstance "MD5")]
-           (with-open [is (io/input-stream (io/file abs-path))
-                       ds (DigestInputStream. is md)]
-             (io/copy ds null))
-           (format "%032x" (BigInteger. 1 (.digest md))))
-         (catch java.io.FileNotFoundException e
-           (do
-             (println (str "Failed to md5 " abs-path))
-             "0")))))
-
 (defn normalize
   [root]
   (let [abs-root (.getAbsolutePath (io/file root))
@@ -38,7 +25,8 @@
 
 (defn get-inode
   [^java.io.File f]
-  (java.nio.file.Files/getAttribute (.toPath f) "unix:ino" (make-array java.nio.file.LinkOption 0)))
+  (or (java.nio.file.Files/getAttribute (.toPath f) "unix:ino" (make-array java.nio.file.LinkOption 0))
+      (throw (Exception. (str "Null inode for: " (.getAbsolutePath f))))))
 
 (defn all-files
   [path]
@@ -50,9 +38,7 @@
          (map (fn [^java.io.File f]
                 (let [p (.getAbsolutePath f)]
                   {:path (norm p)
-                   :size (.length f)
-                   :inode (get-inode f)
-                   :md5 (md5 p)}))))))
+                   :inode (get-inode f)}))))))
 
 (defn extract
   [src dest]
