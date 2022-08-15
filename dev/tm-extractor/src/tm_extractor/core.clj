@@ -52,21 +52,26 @@
                              (->> (all-files ab)
                                   (map (fn [f] [p f]))))))]
     (loop [seen? #{}
-           i 1
+           i 0
            files files]
       (cond
         (empty? files) (println "Done.")
         :else
-        (let [[bup {:as f :keys [path]}] (first files)]
-          (when (not (seen? f))
+        (let [[bup {:as f :keys [path]}] (first files)
+              new? (not (seen? f))]
+          (when (zero? (rem i 100000))
+            (println (format "%s: %12d %s %s %s"
+                             (.format (java.time.ZonedDateTime/now)
+                                      (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ssx"))
+                             i
+                             (if new? "new" "old")
+                             bup
+                             (subs path 0 (min 100 (count path))))))
+          (when new?
             (sh "mkdir" "-p" (str dest "/" bup (.getParent (io/file path))))
             (sh "ln" (str src "/" bup path) (str dest "/" bup path)))
           (recur (conj seen? f)
-                 (if (== i 100000)
-                   (do
-                     (prn [bup path])
-                     1)
-                   (unchecked-inc-int i))
+                 (inc i)
                  (rest files)))))
     :done))
 
