@@ -52,6 +52,7 @@
                              (->> (all-files ab)
                                   (map (fn [f] [p f]))))))]
     (loop [seen? #{}
+           i 1
            files files]
       (cond
         (empty? files) (println "Done.")
@@ -61,6 +62,11 @@
             (sh "mkdir" "-p" (str dest "/" bup (.getParent (io/file path))))
             (sh "ln" (str src "/" bup path) (str dest "/" bup path)))
           (recur (conj seen? f)
+                 (if (== i 100000)
+                   (do
+                     (prn [bup path])
+                     1)
+                   (unchecked-inc-int i))
                  (rest files)))))
     :done))
 
