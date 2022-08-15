@@ -27,11 +27,21 @@
         (throw (Exception. "bleh"))
         (subs abs-path (count abs-root))))))
 
+(defn file-seq-no-link
+  [f]
+  (tree-seq
+    (fn [^java.io.File f] (.isDirectory f))
+    (fn [^java.io.File f] (->> (.listFiles f)
+                               (remove (fn [^java.io.File f]
+                                         (java.nio.file.Files/isSymbolicLink (.toPath f))))))
+    f))
+
+
 (defn all-files
   [path]
   (let [norm (normalize path)]
     (->> (io/file path)
-         (file-seq)
+         (file-seq-no-link)
          (filter #(.isFile ^java.io.File %))
          (filter #(not= ".DS_Store" (.getName ^java.io.File %)))
          (map (fn [^java.io.File f]
