@@ -65,6 +65,5 @@
     :done))
 
 (defn -main
-  [& _]
-  (prn (extract "/Volumes/Manhattan/Backups.backupdb/gary-mbp"
-                "/Volumes/Manhattan/extract")))
+  [from to]
+  (prn (extract from to)))
