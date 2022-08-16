@@ -3,7 +3,8 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.java.shell :refer [sh]])
-  (:import [java.security MessageDigest DigestInputStream]))
+  (:import [java.io File]
+           [java.nio.file Files Paths LinkOption]))
 
 (defn normalize
   [root]
@@ -17,15 +18,15 @@
 (defn file-seq-no-link
   [f]
   (tree-seq
-    (fn [^java.io.File f] (.isDirectory f))
-    (fn [^java.io.File f] (->> (.listFiles f)
-                               (remove (fn [^java.io.File f]
-                                         (java.nio.file.Files/isSymbolicLink (.toPath f))))))
+    (fn [^File f] (.isDirectory f))
+    (fn [^File f] (->> (.listFiles f)
+                       (remove (fn [^File f]
+                                 (Files/isSymbolicLink (.toPath f))))))
     f))
 
 (defn get-inode
-  [^java.io.File f]
-  (or (java.nio.file.Files/getAttribute (.toPath f) "unix:ino" (make-array java.nio.file.LinkOption 0))
+  [^File f]
+  (or (Files/getAttribute (.toPath f) "unix:ino" (make-array LinkOption 0))
       (throw (Exception. (str "Null inode for: " (.getAbsolutePath f))))))
 
 (defn all-files
@@ -33,21 +34,21 @@
   (let [norm (normalize path)]
     (->> (io/file path)
          (file-seq-no-link)
-         (filter #(.isFile ^java.io.File %))
-         (filter #(not= ".DS_Store" (.getName ^java.io.File %)))
-         (map (fn [^java.io.File f]
+         (filter #(.isFile ^File %))
+         (filter #(not= ".DS_Store" (.getName ^File %)))
+         (map (fn [^File f]
                 (let [p (.getAbsolutePath f)]
                   {:path (norm p)
                    :inode (get-inode f)}))))))
 
 (defn extract
   [src dest]
-  (let [src ^java.io.File (io/file src)
-        dest ^java.io.File (io/file dest)
+  (let [src ^File (io/file src)
+        dest ^File (io/file dest)
         files (->> (.listFiles src)
-                   (remove (fn [^java.io.File f] (= "Latest" (.getName f))))
-                   (map (fn [^java.io.File p] [(.getName p)
-                                               (.getAbsolutePath p)]))
+                   (remove (fn [^File f] (= "Latest" (.getName f))))
+                   (map (fn [^File p] [(.getName p)
+                                       (.getAbsolutePath p)]))
                    (mapcat (fn [[p ab]]
                              (->> (all-files ab)
                                   (map (fn [f] [p f]))))))]
@@ -68,8 +69,9 @@
                              bup
                              (subs path 0 (min 100 (count path))))))
           (when new?
-            (sh "mkdir" "-p" (str dest "/" bup (.getParent (io/file path))))
-            (sh "ln" (str src "/" bup path) (str dest "/" bup path)))
+            (.mkdirs (io/file (str dest "/" bup (.getParent (io/file path)))))
+            (Files/createLink (Paths/get (str dest "/" bup path) (make-array String 0))
+                              (Paths/get (str src "/" bup path) (make-array String 0))))
           (recur (conj seen? f)
                  (inc i)
                  (rest files)))))
