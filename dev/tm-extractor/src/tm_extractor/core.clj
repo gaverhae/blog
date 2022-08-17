@@ -70,8 +70,11 @@
                              (subs path 0 (min 100 (count path))))))
           (when new?
             (.mkdirs (io/file (str dest "/" bup (.getParent (io/file path)))))
-            (Files/createLink (Paths/get (str dest "/" bup path) (make-array String 0))
-                              (Paths/get (str src "/" bup path) (make-array String 0))))
+            (try
+              (Files/createLink (Paths/get (str dest "/" bup path) (make-array String 0))
+                                (Paths/get (str src "/" bup path) (make-array String 0)))
+              (catch Exception _
+                (print (str "Error linking " path ".\n")))))
           (recur (conj seen? f)
                  (inc i)
                  (rest files)))))
