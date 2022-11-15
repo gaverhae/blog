@@ -2,7 +2,8 @@
   (:gen-class)
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
-            [clojure.java.shell :refer [sh]])
+            [clojure.java.shell :refer [sh]]
+            [clojure.data.int-map :as i])
   (:import [java.io File]
            [java.nio.file Files Paths LinkOption]))
 
@@ -52,19 +53,20 @@
                    (mapcat (fn [[p ab]]
                              (->> (all-files ab)
                                   (map (fn [f] [p f]))))))]
-    (loop [seen? #{}
+    (loop [seen? (i/int-set)
            i 0
            files files]
       (cond
         (empty? files) (println "Done.")
         :else
-        (let [[bup {:as f :keys [path]}] (first files)
-              new? (not (seen? f))]
+        (let [[bup {:keys [path inode]}] (first files)
+              new? (not (seen? inode))]
           (when (zero? (rem i 100000))
-            (println (format "%s: %12d %s %s %s"
+            (println (format "%s: %12d %12d %s %s %s"
                              (.format (java.time.ZonedDateTime/now)
                                       (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ssx"))
                              i
+                             (count seen?)
                              (if new? "new" "old")
                              bup
                              (subs path 0 (min 100 (count path))))))
@@ -75,7 +77,7 @@
                                 (Paths/get (str src "/" bup path) (make-array String 0)))
               (catch Exception _
                 (print (str "Error linking " path ".\n")))))
-          (recur (conj seen? f)
+          (recur (conj seen? inode)
                  (inc i)
                  (rest files)))))
     :done))
