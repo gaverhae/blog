@@ -336,3 +336,36 @@
           (when (pos? size)
             (.write xout buf 0 size)
             (recur (+ pos size))))))))
+
+(defn diff
+  [f1 f2]
+  (let [buf1 ^bytes (make-array Byte/TYPE (* 1024 1024))
+        buf2 ^bytes (make-array Byte/TYPE (alength buf1))
+        print-array (fn [arr]
+                      (->> arr
+                           (map (fn [b] (format "%02X" b)))
+                           (partition 32)
+                           (map #(interpose " " %))
+                           (map #(apply str %))
+                           (interpose "\n")
+                           (apply str)))]
+    (with-open [in1 (io/input-stream (io/file f1))
+                in2 (io/input-stream (io/file f2))]
+      (loop [pos 0]
+        (let [r1 (.read in1 buf1)
+              r2 (.read in2 buf2)]
+          (cond (and (== r1 r2)
+                     (pos? r1))
+                (do
+                  (when (not (java.util.Arrays/equals buf1 buf2))
+                    (print (format "%15d\n" pos))
+                    (flush)
+                    (spit "log1" (format "%15d\n%s\n\n" pos (print-array buf1))
+                          :append true)
+                    (spit "log2" (format "%15d\n%s\n\n" pos (print-array buf2))
+                          :append true))
+                  (recur (+ pos (alength buf1))))
+                (== r1 r2 0)
+                (println "Done.")
+                :else
+                (println (format "Error: different lengths: %d & %d, pod: %d" r1 r2 pos))))))))
