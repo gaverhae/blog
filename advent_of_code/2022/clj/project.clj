@@ -10,5 +10,6 @@
   :target-path "target/%s"
   :test-refresh {:quiet true
                  :changes-only true}
+  :test-paths ["src"]
   :repl-options {:init-ns t.core}
   :profiles {:uberjar {:aot :all}})
