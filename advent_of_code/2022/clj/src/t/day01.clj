@@ -8,17 +8,17 @@
   (->> input
        (partition-by #(= % ""))
        (remove #{[""]})
-       (map (fn [s] (reduce + 0 (map (fn [i] (Integer/parseInt i)) s))))))
-
-
+       (map (fn [s] (reduce + 0 (map (fn [i] (Integer/parseInt i)) s))))
+       sort
+       reverse))
 
 (defn part1
   [input]
-  (reduce max input))
+  (first input))
 
 (defn part2
   [input]
-  (->> input sort reverse (take 3) (reduce + 0)))
+  (reduce + 0 (take 3 input)))
 
 (deftest tests
   (are [expected input f]
