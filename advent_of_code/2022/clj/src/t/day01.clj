@@ -1,7 +1,5 @@
 (ns t.day01
-  (:require [t.lib :as lib]
-            [clojure.string :as string]
-            [clojure.test :refer [deftest are]]))
+  (:require [t.lib :as lib]))
 
 (defn parse
   [input]
@@ -20,13 +18,7 @@
   [input]
   (reduce + 0 (take 3 input)))
 
-(deftest tests
-  (are [expected input f]
-       (= expected (-> (slurp (str "data/day01-" input))
-                       string/split-lines
-                       parse
-                       f))
-       24000 "sample" part1
-       75622 "full" part1
-       45000 "sample" part2
-       213159 "full" part2))
+(lib/check
+  parse
+  part1 24000 75622
+  part2 45000 213159)

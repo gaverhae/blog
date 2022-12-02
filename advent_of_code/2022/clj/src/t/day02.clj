@@ -1,8 +1,5 @@
 (ns t.day02
-  (:require [t.lib :as lib]
-            [clojure.core.match :refer [match]]
-            [clojure.string :as string]
-            [clojure.test :refer [deftest are]]))
+  (:require [t.lib :as lib]))
 
 (def rules
   [[1 1 3] [1 2 6] [1 3 0]
@@ -36,13 +33,7 @@
          (fn [[a b c]] [[a c] (+ b c)])
          input))
 
-(deftest tests
-  (are [expected input f]
-       (= expected (-> (slurp (str "data/day02-" input))
-                       string/split-lines
-                       parse
-                       f))
-       15 "sample" part1
-       13268 "full" part1
-       12 "sample" part2
-       15508 "full" part2))
+(lib/check
+  parse
+  part1 15 13268
+  part2 12 15508)
