@@ -1,6 +1,8 @@
 (ns t.lib
-  (:require [clojure.string :as string]
-            [clojure.test :refer [deftest are is testing]]))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as string]
+            [clojure.test :refer [deftest are is testing]]
+            [hato.client :as hc]))
 
 (defn parse-integers
   [lines]
@@ -16,13 +18,25 @@
      ~@(->> [[p1 s1 "sample"] [p1 f1 "full"] [p2 s2 "sample"] [p2 f2 "full"]]
             (keep (fn [[f e input]]
                     (when (and f e)
-                      `(is (= (~f (-> (str (string/replace (ns-name ~*ns*) "t." "data/")
-                                           "-"
-                                           ~input)
-                                      slurp
-                                      string/split-lines
-                                      ~parse))
-                              ~e))))))))
+                      (let [n (gensym)
+                            file (gensym)]
+                        `(let [~n (-> (ns-name ~*ns*)
+                                      (string/replace "t.day" "")
+                                      (Long/parseLong))
+                               ~file (format "data/day%02d-%s" ~n ~input)]
+                           ~(when (= input "full")
+                              `(when (not (.exists (io/file ~file)))
+                                 (spit ~file
+                                       (-> (format "https://adventofcode.com/2022/day/%d/input" ~n)
+                                           (hc/get {:headers
+                                                    {"cookie" (format "session=%s"
+                                                                      (System/getenv "AOC_SESSION"))}})
+                                           :body))))
+                           (is (= (~f (-> ~file
+                                          slurp
+                                          string/split-lines
+                                          ~parse))
+                                  ~e))))))))))
 
 (deftest tests
   (testing "parse-integers"
