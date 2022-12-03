@@ -1,5 +1,6 @@
 (ns recov.core
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [clojure.core.async :as async])
   (:gen-class))
 
 (defn -main
@@ -322,7 +323,7 @@
 
 (defn recov
   [device target]
-  (let [log (let [t (str target ".log")]
+  (let [log (let [t (str device "-recov.log")]
               (spit t (str "start at "
                            (.. (java.time.ZonedDateTime/now)
                                (format java.time.format.DateTimeFormatter/ISO_INSTANT))
@@ -336,6 +337,32 @@
           (when (pos? size)
             (.write xout buf 0 size)
             (recur (+ pos size))))))))
+
+(defn recov-p
+  [device target log-file]
+  (let [now-str (fn [] (.. (java.time.ZonedDateTime/now)
+                           (format java.time.format.DateTimeFormatter/ISO_INSTANT)))
+        log (fn [tpl & is]
+              (spit log-file (apply format (str tpl "\n") is) :append true))]
+    (spit log-file (format "start at %s\n" (now-str)))
+    (let [chan (async/chan)
+          reader (async/thread
+                   (loop [pos 0]
+                     (let [buf (make-array Byte/TYPE (* 256 1024 1024))
+                           ^long size (read-block device pos log buf 2 1024)]
+                       (when (pos? size)
+                         (async/>!! chan [buf size])
+                         (recur (+ pos size)))))
+                   (async/close! chan))
+          writer (async/thread
+                   (with-open [xout (io/output-stream (io/file target))]
+                     (loop []
+                       (when-let [[buf size] (async/<!! chan)]
+                         (.write xout buf 0 size)
+                         (recur)))))]
+      (async/<!! reader)
+      (async/<!! writer)
+      (log "end at %s" (now-str)))))
 
 (defn diff
   [f1 f2]
