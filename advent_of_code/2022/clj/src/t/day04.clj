@@ -7,12 +7,11 @@
   [lines]
   (->> lines
        (map (fn [line]
-              (->> (string/split line #",")
-                   (map (fn [assignment]
-                          (->> (string/split assignment #"-")
-                               (map (fn [i] (Long/parseLong i))))))
-                   (map (fn [[a b]]
-                          (set (range a (inc b))))))))))
+              (let [[_ a b c d] (re-matches #"(\d+)-(\d+),(\d+)-(\d+)" line)
+                    sections (fn [a b]
+                               (set (range (Long/parseLong a)
+                                           (inc (Long/parseLong b)))))]
+                [(sections a b) (sections c d)])))))
 
 (defn part1
   [input]
