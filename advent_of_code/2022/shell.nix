@@ -3,10 +3,12 @@
 let
   sources = import ./nix/sources.nix;
   pkgs = import sources.nixpkgs {};
+  jdk = pkgs.openjdk11_headless;
 in
 pkgs.mkShell {
   buildInputs = [
     pkgs.bash
-    (pkgs.leiningen.override { jdk = pkgs.openjdk11_headless; })
+    (pkgs.leiningen.override { jdk = jdk; })
+    jdk
   ];
 }
