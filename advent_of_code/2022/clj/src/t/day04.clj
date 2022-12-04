@@ -6,14 +6,13 @@
 (defn parse
   [lines]
   (->> lines
-       (map (fn [l]
-              (map (fn [p] (map (fn [i] (Long/parseLong i))
-                                (string/split p #"-")))
-                   (string/split l #","))))
-       (map (fn [l]
-              (map (fn [[a b]]
-                     (set (range a (inc b))))
-                   l)))))
+       (map (fn [line]
+              (->> (string/split line #",")
+                   (map (fn [assignment]
+                          (->> (string/split assignment #"-")
+                               (map (fn [i] (Long/parseLong i))))))
+                   (map (fn [[a b]]
+                          (set (range a (inc b))))))))))
 
 (defn part1
   [input]
@@ -27,11 +26,10 @@
   [input]
   (->> input
        (filter (fn [[p1 p2]]
-                 (not (empty? (set/intersection p1 p2)))))
+                 (seq (set/intersection p1 p2))))
        count))
 
 (lib/check
   parse
   part1 2 424
-  part2 4 0
-  )
+  part2 4 804)
