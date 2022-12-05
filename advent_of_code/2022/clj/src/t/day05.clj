@@ -6,9 +6,7 @@
   (let [[crates _ moves] (partition-by #{""} lines)]
     {:crates (->> (butlast crates)
                   (map (fn [line]
-                         (->> line
-                              (partition 4 4 (repeat \space))
-                              (map (fn [s] (nth s 1))))))
+                         (map (fn [i] (nth line i)) (range 1 (count line) 4))))
                   lib/transpose
                   (map #(remove #{\space} %))
                   vec)
