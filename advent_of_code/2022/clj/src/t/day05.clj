@@ -15,9 +15,9 @@
                   (map #(remove #{\space} %))
                   vec)
      :moves (->> moves
-                 (mapcat (fn [c]
-                           (let [[_ n from to] (re-matches #"move (\d+) from (\d+) to (\d+)" c)]
-                             (repeat (l n) {:from (dec (l from)), :to (dec (l to))})))))}))
+                 (map (fn [c]
+                        (let [[_ n from to] (re-matches #"move (\d+) from (\d+) to (\d+)" c)]
+                          {:n (l n) :from (dec (l from)), :to (dec (l to))}))))}))
 
 (defn part1
   [{:as i :keys [crates moves]}]
@@ -26,15 +26,23 @@
                      (update from rest)
                      (update to #(cons (first (crates from)) %))))
                crates
-               moves)
+               (->> moves
+                    (mapcat (fn [m] (repeat (:n m) m)))))
        (map first)
        (apply str)))
 
 (defn part2
-  [input]
-  )
+  [{:as i :keys [crates moves]}]
+  (->> (reduce (fn [crates {:keys [n from to]}]
+                 (-> crates
+                     (update from #(drop n %))
+                     (update to #(concat (take n (crates from)) %))))
+               crates
+               moves)
+       (map first)
+       (apply str)))
 
 (lib/check
   parse
-  part1 "CMZ" ""
-  #_part2)
+  part1 "CMZ" "SHMSDGZVC"
+  part2 "MCD" "")
