@@ -4,6 +4,10 @@
             [clojure.test :refer [deftest are is testing]]
             [hato.client :as hc]))
 
+(defn l
+  [s]
+  (Long/parseLong s))
+
 (defn parse-integers
   [lines]
   (vec (map #(Long/parseLong %) lines)))
