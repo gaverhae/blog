@@ -1,7 +1,5 @@
 (ns t.day05
-  (:require [t.lib :as lib :refer [l]]
-            [clojure.set :as set]
-            [clojure.string :as string]))
+  (:require [t.lib :as lib :refer [l]]))
 
 (defn parse
   [lines]
@@ -19,20 +17,8 @@
                         (let [[_ n from to] (re-matches #"move (\d+) from (\d+) to (\d+)" c)]
                           {:n (l n) :from (dec (l from)), :to (dec (l to))}))))}))
 
-(defn part1
-  [{:as i :keys [crates moves]}]
-  (->> (reduce (fn [crates {:keys [from to]}]
-                 (-> crates
-                     (update from rest)
-                     (update to #(cons (first (crates from)) %))))
-               crates
-               (->> moves
-                    (mapcat (fn [m] (repeat (:n m) m)))))
-       (map first)
-       (apply str)))
-
-(defn part2
-  [{:as i :keys [crates moves]}]
+(defn solve
+  [crates moves]
   (->> (reduce (fn [crates {:keys [n from to]}]
                  (-> crates
                      (update from #(drop n %))
@@ -42,7 +28,16 @@
        (map first)
        (apply str)))
 
+(defn part1
+  [{:keys [crates moves]}]
+  (solve crates (->> moves
+                     (mapcat (fn [m] (repeat (:n m) (assoc m :n 1)))))))
+
+(defn part2
+  [{:keys [crates moves]}]
+  (solve crates moves))
+
 (lib/check
   parse
   part1 "CMZ" "SHMSDGZVC"
-  part2 "MCD" "")
+  part2 "MCD" "VRZGHDFBQ")
