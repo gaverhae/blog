@@ -7,27 +7,24 @@
   [lines]
   (first lines))
 
-(defn part1
-  [input]
-  (->> input
-       (partition 4 1)
+(defn solve
+  [line size]
+  (->> line
+       (partition size 1)
        (map-indexed (fn [idx e]
-                      (when (= 4 (count (set e)))
+                      (when (= size (count (set e)))
                         idx)))
        (filter identity)
        first
-       (+ 4)))
+       (+ size)))
+
+(defn part1
+  [input]
+  (solve input 4))
 
 (defn part2
   [input]
-  (->> input
-       (partition 14 1)
-       (map-indexed (fn [idx e]
-                      (when (= 14 (count (set e)))
-                        idx)))
-       (filter identity)
-       first
-       (+ 14)))
+  (solve input 14))
 
 (lib/check
   parse
