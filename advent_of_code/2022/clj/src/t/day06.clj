@@ -11,10 +11,9 @@
   [line size]
   (->> line
        (partition size 1)
-       (map-indexed (fn [idx e]
+       (keep-indexed (fn [idx e]
                       (when (= size (count (set e)))
                         idx)))
-       (filter identity)
        first
        (+ size)))
 
