@@ -1,7 +1,5 @@
 (ns t.day06
-  (:require [t.lib :as lib]
-            [clojure.string :as string]
-            [clojure.set :as set]))
+  (:require [t.lib :as lib]))
 
 (defn parse
   [lines]
