@@ -364,6 +364,26 @@
       (async/<!! writer)
       (log "end at %s" (now-str)))))
 
+(defn copy
+  []
+  (with-open [xin (io/input-stream (io/file "/Volumes/BACKUP1/fraction"))
+              xout (io/output-stream (io/file "/dev/disk2s4"))]
+    (let [start (.getEpochSecond (java.time.Instant/now))
+          buf (make-array Byte/TYPE (* 1024 1024 1024))]
+      (loop [p 0]
+        (print (format "%s: %6.2fGB (%4.1fMB/s)\n"
+                       (.. (java.time.ZonedDateTime/now)
+                           (format java.time.format.DateTimeFormatter/ISO_INSTANT))
+                       (double (/ p 1024 1024 1024))
+                       (double (/ (/ p 1024 1024)
+                                  (- (.getEpochSecond (java.time.Instant/now))
+                                     start)))))
+        (flush)
+        (let [size (.read xin buf)]
+          (when (pos? size)
+            (.write xout buf 0 size)
+            (recur (+ p size))))))))
+
 (defn diff
   [f1 f2]
   (let [buf1 ^bytes (make-array Byte/TYPE (* 1024 1024))
