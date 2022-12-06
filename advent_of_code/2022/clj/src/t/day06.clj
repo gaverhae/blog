@@ -1,13 +1,10 @@
 (ns t.day06
   (:require [t.lib :as lib]))
 
-(defn parse
-  [lines]
-  (first lines))
-
 (defn solve
-  [line size]
-  (->> line
+  [input size]
+  (->> input
+       first
        (partition size 1)
        (keep-indexed (fn [idx e]
                       (when (= size (count (set e)))
@@ -24,6 +21,6 @@
   (solve input 14))
 
 (lib/check
-  parse
+  identity
   part1 7 1896
   part2 19 3452)
