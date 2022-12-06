@@ -20,10 +20,16 @@
 
 (defn part2
   [input]
-  input)
+  (->> input
+       (partition 14 1)
+       (map-indexed (fn [idx e]
+                      (when (= 14 (count (set e)))
+                        idx)))
+       (filter identity)
+       first
+       (+ 14)))
 
 (lib/check
   parse
-  part1 7 0
-  #_part2
-  )
+  part1 7 1896
+  part2 19 3452)
