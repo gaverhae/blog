@@ -1,7 +1,5 @@
 (ns t.day07
   (:require [t.lib :as lib :refer [l]]
-            [clojure.string :as string]
-            [clojure.set :as set]
             [clojure.core.match :refer [match]]
             [instaparse.core :as insta]))
 
@@ -62,5 +60,4 @@
 (lib/check
   parse
   part1 95437 1491614
-  part2 24933642 6400111
-  )
+  part2 24933642 6400111)
