@@ -15,6 +15,12 @@
     <number> = #'\\d+'
     <word> = #'[a-zA-Z0-9./]+'"))
 
+(defn prefixes
+  [v]
+  (if (= 1 (count v))
+    [v]
+    (cons v (prefixes (pop v)))))
+
 (defn parse
   [lines]
   (->> lines
@@ -22,17 +28,7 @@
        (map second)
        (map (fn [line] (if (= :file (first line))
                          (update line 1 l)
-                         line)))))
-
-(defn prefixes
-  [v]
-  (if (= 1 (count v))
-    [v]
-    (cons v (prefixes (pop v)))))
-
-(defn part1
-  [input]
-  (->> input
+                         line)))
        (reduce (fn [acc el]
                  (match el
                    [:cd "/"] (assoc acc :cwd ["/"])
@@ -47,16 +43,24 @@
                                            (:tree acc)
                                            (prefixes (:cwd acc))))))
                {})
-       :tree
+       :tree))
+
+(defn part1
+  [input]
+  (->> input
        (keep (fn [[_ size]] (when (< size 100000) size)))
        (reduce + 0)))
 
 (defn part2
   [input]
-  )
+  (let [required-space (- 30000000 (- 70000000 (get input ["/"])))]
+    (->> input
+         (keep (fn [[_ size]] (when (>= size required-space) size)))
+         sort
+         first)))
 
 (lib/check
   parse
   part1 95437 1491614
-  ;part2 4 804
+  part2 24933642 6400111
   )
