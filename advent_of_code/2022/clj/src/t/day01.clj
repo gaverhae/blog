@@ -1,12 +1,12 @@
 (ns t.day01
-  (:require [t.lib :as lib]))
+  (:require [t.lib :as lib :refer [->long]]))
 
 (defn parse
   [input]
   (->> input
        (partition-by #(= % ""))
        (remove #{[""]})
-       (map (fn [s] (reduce + 0 (map (fn [i] (Integer/parseInt i)) s))))
+       (map (fn [s] (reduce + 0 (map ->long s))))
        sort
        reverse))
 

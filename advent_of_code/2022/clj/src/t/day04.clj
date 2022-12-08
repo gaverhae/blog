@@ -1,5 +1,5 @@
 (ns t.day04
-  (:require [t.lib :as lib]
+  (:require [t.lib :as lib :refer [->long]]
             [clojure.set :as set]))
 
 (defn parse
@@ -8,8 +8,7 @@
        (map (fn [line]
               (let [[_ a b c d] (re-matches #"(\d+)-(\d+),(\d+)-(\d+)" line)
                     sections (fn [a b]
-                               (set (range (Long/parseLong a)
-                                           (inc (Long/parseLong b)))))]
+                               (set (range (->long a) (inc (->long b)))))]
                 [(sections a b) (sections c d)])))))
 
 (defn part1

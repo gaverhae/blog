@@ -1,5 +1,5 @@
 (ns t.day05
-  (:require [t.lib :as lib :refer [l]]))
+  (:require [t.lib :as lib :refer [->long]]))
 
 (defn parse
   [lines]
@@ -13,7 +13,7 @@
      :moves (->> moves
                  (map (fn [c]
                         (let [[_ n from to] (re-matches #"move (\d+) from (\d+) to (\d+)" c)]
-                          {:n (l n) :from (dec (l from)), :to (dec (l to))}))))}))
+                          {:n (->long n) :from (dec (->long from)), :to (dec (->long to))}))))}))
 
 (defn solve
   [crates moves]

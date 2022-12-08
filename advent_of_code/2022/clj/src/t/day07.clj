@@ -1,5 +1,5 @@
 (ns t.day07
-  (:require [t.lib :as lib :refer [l]]
+  (:require [t.lib :as lib :refer [->long]]
             [clojure.core.match :refer [match]]
             [instaparse.core :as insta]))
 
@@ -25,7 +25,7 @@
        (map parser)
        (map second)
        (map (fn [line] (if (= :file (first line))
-                         (update line 1 l)
+                         (update line 1 ->long)
                          line)))
        (reduce (fn [acc el]
                  (match el

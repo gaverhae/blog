@@ -1,5 +1,5 @@
 (ns t.day08
-  (:require [t.lib :as lib :refer [l]]
+  (:require [t.lib :as lib :refer [->long]]
             [clojure.string :as string]
             [clojure.set :as set]
             [clojure.core.match :refer [match]]
@@ -8,7 +8,7 @@
 (defn parse
   [lines]
   (->> lines
-       (mapv (fn [line] (mapv (fn [c] (l (str c))) line)))))
+       (mapv (fn [line] (mapv (fn [c] (->long (str c))) line)))))
 
 (defn part1
   [input]

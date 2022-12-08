@@ -4,7 +4,7 @@
             [clojure.test :refer [deftest are is testing]]
             [hato.client :as hc]))
 
-(defn l
+(defn ->long
   [s]
   (Long/parseLong s))
 
