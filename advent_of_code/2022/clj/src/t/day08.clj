@@ -7,46 +7,38 @@
 
 (defn parse
   [lines]
-  (->> lines
-       (mapv (fn [line] (mapv (fn [c] (->long (str c))) line)))))
+  (let [grid (mapv #(mapv (comp ->long str) %) lines)
+        tgrid (lib/transpose grid)]
+    (for [y (range (count grid))
+          x (range (count (first grid)))]
+      {:value (get-in grid [y x])
+       :left (reverse (take x (get grid y)))
+       :right (drop (inc x) (get grid y))
+       :above (reverse (take y (get tgrid x)))
+       :below (drop (inc y) (get tgrid x))})))
 
 (defn part1
   [input]
-  (let [h (count input)
-        w (count (first input))
-        tinput (lib/transpose input)
-        visible (for [y (range 1 (dec h))
-                      x (range 1 (dec w))
-                      :let [v (get-in input [y x])
-                            left (take x (get input y))
-                            right (drop (inc x) (get input y))
-                            above (take y (get tinput x))
-                            below (drop (inc y) (get tinput x))]
-                      :when (or (> v (apply max left))
-                                (> v (apply max right))
-                                (> v (apply max above))
-                                (> v (apply max below)))]
-                  [x y])
-        border (- (* 2 (+ h w)) 4)]
-    (+ (count visible) border)))
+  (->> input
+       (filter (fn [{:keys [value left right above below]}]
+                 (or (> value (apply max -1 left))
+                     (> value (apply max -1 right))
+                     (> value (apply max -1 above))
+                     (> value (apply max -1 below)))))
+       count))
 
 (defn part2
   [input]
-  (let [h (count input)
-        w (count (first input))
-        tinput (lib/transpose input)
-        scenic (for [y (range 1 (dec h))
-                      x (range 1 (dec w))
-                      :let [v (get-in input [y x])
-                            f (fn f [s] (cond (empty? s) ()
-                                              (< (first s) v) (cons (first s) (f (rest s)))
-                                              :else [(first s)]))
-                            left (count (f (reverse (take x (get input y)))))
-                            right (count (f (drop (inc x) (get input y))))
-                            above (count (f (reverse (take y (get tinput x)))))
-                            below (count (f (drop (inc y) (get tinput x))))]]
-                  (* left right above below))]
-    (apply max scenic)))
+  (->> input
+       (map (fn [{:keys [value left right above below]}]
+              (let [f (fn f [s] (cond (empty? s) ()
+                                      (< (first s) value) (cons (first s) (f (rest s)))
+                                      :else [(first s)]))]
+                (* (count (f left))
+                   (count (f right))
+                   (count (f above))
+                   (count (f below))))))
+       (apply max)))
 
 (lib/check
   parse
