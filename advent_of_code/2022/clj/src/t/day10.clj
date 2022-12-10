@@ -7,11 +7,30 @@
 
 (defn parse
   [lines]
-  lines)
+  (->> lines
+       (mapcat (fn [line]
+                 (or (when-let [[_ n] (re-matches #"addx (-?\d+)" line)]
+                       [[:noop] [:add (->long n)]])
+                     (when-let [[_] (re-matches #"noop" line)]
+                       [[:noop]])
+                     (throw (Exception.)))))))
 
 (defn part1
   [input]
-  input)
+  (->> input
+       (reductions (fn [state op]
+                     (match op
+                       [:noop] (-> state
+                                   (update :pc inc))
+                       [:add x] (-> state
+                                    (update :pc inc)
+                                    (update :x + x))))
+                   {:pc 1 :x 1})
+       (filter (fn [state]
+                 (zero? (mod (+ 20 (:pc state)) 40))))
+       (map (fn [state]
+              (* (:pc state) (:x state))))
+       (reduce + 0)))
 
 (defn part2
   [input]
@@ -19,6 +38,6 @@
 
 (lib/check
   parse
-  ;part1 0 0
+  part1 13140 12640
   ;part2 0 0
   )
