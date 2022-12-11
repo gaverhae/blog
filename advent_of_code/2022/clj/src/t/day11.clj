@@ -29,6 +29,7 @@
              {:index (->long index)
               :items items
               :operation operation
+              :div (->long div)
               :throw-to (eval `(fn [~'w]
                                  (if (zero? (mod ~'w ~(->long div)))
                                    ~(->long t)
@@ -57,7 +58,6 @@
                           (reduce (fn [monkeys item]
                                     (let [w (quot (operation item) 3)
                                           t (throw-to w)]
-                                      (prn [index w t])
                                       (update-in monkeys [t :items] conj w)))
                                   (-> monkeys
                                       (update-in [index :activity] + (count items))
@@ -66,10 +66,37 @@
 
 (defn part2
   [input]
+  (let [d (->> input
+               (map :div)
+               (reduce * 1))]
+    (loop [n 0
+           monkeys input]
+      (if (== 10000 n)
+        (->> monkeys
+             (map :activity)
+             sort
+             reverse
+             (take 2)
+             (apply *))
+        (recur (inc n)
+               (loop [i 0
+                      monkeys monkeys]
+                 (if (== i (count monkeys))
+                   monkeys
+                   (let [{:keys [index items operation div throw-to]} (get monkeys i)]
+                     (recur (inc i)
+                            (reduce (fn [monkeys item]
+                                      (let [w (operation item)
+                                            t (throw-to w)]
+                                        (update-in monkeys [t :items] conj (mod w d))))
+                                    (-> monkeys
+                                        (update-in [index :activity] + (count items))
+                                        (assoc-in [index :items] []))
+                                    items)))))))))
   )
 
 (lib/check
   parse
   part1 10605 117624
-  #_part2
+  part2 2713310158 16792940265
   )
