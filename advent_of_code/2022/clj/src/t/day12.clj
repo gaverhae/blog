@@ -55,10 +55,24 @@
 
 (defn part2
   [input]
-  )
+  (dijkstra-search
+    (loop [j 0
+           i 0]
+      (cond (== i (count (first input))) (recur (inc j) 0)
+            (== (long \E) (get-in input [j i])) [j i]
+            :else (recur j (inc i))))
+    (fn [p] (when-let [s (get-in input p)]
+              (== (long \a) s)))
+    (fn [[pos cost-so-far]]
+      (->> (neighbours pos)
+           (keep (fn [p] (when-let [c (height input p)]
+                           (when (>= 1 (- (height input pos)
+                                          (height input p)))
+                             [p (inc cost-so-far)]))))
+           set))))
 
 (lib/check
   parse
   part1 31 383
-  #_part2
+  part2 29 377
   )
