@@ -53,10 +53,16 @@
 
 (defn part2
   [input]
-  )
+  (let [sorted (->> input
+                    (concat [[[[2]] [[6]]]])
+                    (mapcat identity)
+                    (sort-by identity (comparator smaller-than)))]
+    (* (inc (.indexOf ^java.util.List sorted [[2]]))
+       (inc (.indexOf ^java.util.List sorted [[6]])))))
+
 
 (lib/check
   parse
   part1 13 5588
-  #_part2
+  part2 140 23958
   )
