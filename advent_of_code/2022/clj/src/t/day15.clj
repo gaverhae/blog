@@ -42,7 +42,7 @@
                                     (<= (manhattan p s) d))
                                   ds))]
              p)))
-  (let [;target-row 10
+  #_(let [;target-row 10
         target-row 2000000
         beacons (->> input
                      (map second)
@@ -59,16 +59,38 @@
                                   (range (- (second sensor) left-at-target-row)
                                          (+ 1 (second sensor) left-at-target-row))))))
                     set)]
-    (count (set/difference ranges beacons))))
+    (count (set/difference ranges beacons)))
+  0)
 
 (defn part2
   [input]
-  input
-  )
+  (let [;limit 20
+        limit 4000000
+        beacon? (->> input (map second) set)
+        distances (->> input (map (fn [[sensor nearest-beacon]]
+                                    [sensor (manhattan sensor nearest-beacon)])))
+        [y x] (->> input
+                   (mapcat (fn [[[y x] b]]
+                             (let [d (inc (manhattan [y x] b))]
+                               (for [dy (range (- d) (inc d))
+                                     xdir [1 -1]
+                                     :let [dx (* xdir (Math/abs ^long (- d dy)))
+                                           p [(+ y dy) (+ x dx)]]
+                                     :when (and (not (beacon? p))
+                                                (<= 0 (first p) limit)
+                                                (<= 0 (second p) limit)
+                                                (->> distances
+                                                     (every?
+                                                       (fn [[sensor distance]]
+                                                         (> (manhattan sensor p) distance)))))]
+                                 p))))
+                   first)]
+    (+ (* (* 4 1000 1000) x)
+       y)))
 
 
 (lib/check
   parse
   part1 26 4876693
-  #_part2
+  part2 56000011 11645454855041
   )
