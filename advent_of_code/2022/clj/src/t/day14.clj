@@ -75,7 +75,7 @@
 
 
 (lib/check
-  parse
-  part1 24 799
-  part2 93 29076
-  )
+  [part1 sample] 24
+  [part1 puzzle] 799
+  [part2 sample] 93
+  [part2 puzzle] 29076)

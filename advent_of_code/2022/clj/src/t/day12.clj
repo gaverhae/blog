@@ -72,7 +72,7 @@
            set))))
 
 (lib/check
-  parse
-  part1 31 383
-  part2 29 377
-  )
+  [part1 sample] 31
+  [part1 puzzle] 383
+  [part2 sample] 29
+  [part2 puzzle] 377)

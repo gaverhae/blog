@@ -1,6 +1,8 @@
 (ns t.day06
   (:require [t.lib :as lib]))
 
+(def parse identity)
+
 (defn solve
   [input size]
   (->> input
@@ -21,6 +23,7 @@
   (solve input 14))
 
 (lib/check
-  identity
-  part1 7 1896
-  part2 19 3452)
+  [part1 sample] 7
+  [part1 puzzle] 1896
+  [part2 sample] 19
+  [part2 puzzle] 3452)

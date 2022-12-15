@@ -2,6 +2,8 @@
   (:require [clojure.set :as set]
             [t.lib :as lib]))
 
+(def parse identity)
+
 (defn solve
   [groups]
   (->> groups
@@ -26,6 +28,7 @@
        solve))
 
 (lib/check
-  identity
-  part1 157 7716
-  part2 70 2973)
+  [part1 sample] 157
+  [part1 puzzle] 7716
+  [part2 sample] 70
+  [part2 puzzle] 2973)

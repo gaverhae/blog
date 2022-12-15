@@ -6,6 +6,8 @@
    [2 1 0] [2 2 3] [2 3 6]
    [3 1 6] [3 2 0] [3 3 3]])
 
+(def parse identity)
+
 (defn solve
   [parse-second score-fn input]
   (let [score (->> rules
@@ -30,6 +32,7 @@
          input))
 
 (lib/check
-  identity
-  part1 15 13268
-  part2 12 15508)
+  [part1 sample] 15
+  [part1 puzzle] 13268
+  [part2 sample] 12
+  [part2 puzzle] 15508)

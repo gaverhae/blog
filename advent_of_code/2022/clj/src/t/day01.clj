@@ -19,6 +19,7 @@
   (reduce + 0 (take 3 input)))
 
 (lib/check
-  parse
-  part1 24000 75622
-  part2 45000 213159)
+  [part1 sample] 24000
+  [part1 puzzle] 75622
+  [part2 sample] 45000
+  [part2 puzzle] 213159)

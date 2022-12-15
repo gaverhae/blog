@@ -67,7 +67,7 @@
        count))
 
 (lib/check
-  parse
-  part1 13 6212
-  part2 1 2522
-  )
+  [part1 sample] 13
+  [part1 puzzle] 6212
+  [part2 sample] 1
+  [part2 puzzle] 2522)

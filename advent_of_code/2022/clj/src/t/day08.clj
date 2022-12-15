@@ -41,6 +41,7 @@
        (apply max)))
 
 (lib/check
-  parse
-  part1 21 1533
-  part2 8 345744)
+  [part1 sample] 21
+  [part1 puzzle] 1533
+  [part2 sample] 8
+  [part2 puzzle] 345744)

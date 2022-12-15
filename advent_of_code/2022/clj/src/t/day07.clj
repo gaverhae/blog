@@ -39,6 +39,7 @@
          first)))
 
 (lib/check
-  parse
-  part1 95437 1491614
-  part2 24933642 6400111)
+  [part1 sample] 95437
+  [part1 puzzle] 1491614
+  [part2 sample] 24933642
+  [part2 puzzle] 6400111)

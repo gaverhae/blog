@@ -36,6 +36,7 @@
   (solve crates moves))
 
 (lib/check
-  parse
-  part1 "CMZ" "SHMSDGZVC"
-  part2 "MCD" "VRZGHDFBQ")
+  [part1 sample] "CMZ"
+  [part1 puzzle] "SHMSDGZVC"
+  [part2 sample] "MCD"
+  [part2 puzzle] "VRZGHDFBQ")

@@ -92,11 +92,10 @@
                                     (-> monkeys
                                         (update-in [index :activity] + (count items))
                                         (assoc-in [index :items] []))
-                                    items)))))))))
-  )
+                                    items))))))))))
 
 (lib/check
-  parse
-  part1 10605 117624
-  part2 2713310158 16792940265
-  )
+  [part1 sample] 10605
+  [part1 puzzle] 117624
+  [part2 sample] 2713310158
+  [part2 puzzle] 16792940265)

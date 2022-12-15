@@ -20,7 +20,7 @@
      (Math/abs (- y1 y2))))
 
 (defn part1
-  [input]
+  [input target-row]
   #_(let [ds (->> input
                 (map (fn [[s b]] [s (manhattan s b)])))
         grid (reduce (fn [[xmin xmax ymin ymax] [[y1 x1] [y2 x2]]]
@@ -42,8 +42,8 @@
                                     (<= (manhattan p s) d))
                                   ds))]
              p)))
-  #_(let [;target-row 10
-        target-row 2000000
+  (let [;target-row 10
+        ;target-row 2000000
         beacons (->> input
                      (map second)
                      (keep (fn [[y x]]
@@ -59,13 +59,12 @@
                                   (range (- (second sensor) left-at-target-row)
                                          (+ 1 (second sensor) left-at-target-row))))))
                     set)]
-    (count (set/difference ranges beacons)))
-  0)
+    (count (set/difference ranges beacons))))
 
 (defn part2
-  [input]
+  [input limit]
   (let [;limit 20
-        limit 4000000
+        ;limit 4000000
         beacon? (->> input (map second) set)
         distances (->> input (map (fn [[sensor nearest-beacon]]
                                     [sensor (manhattan sensor nearest-beacon)])))
@@ -90,7 +89,7 @@
 
 
 (lib/check
-  parse
-  part1 26 4876693
-  part2 56000011 11645454855041
-  )
+  [part1 sample 10] 26
+  [part1 puzzle 2000000] 4876693
+  [part2 sample 20] 56000011
+  [part2 puzzle 4000000] 11645454855041)
