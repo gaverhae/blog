@@ -19,28 +19,27 @@
 (defn part1
   [input]
   (loop [i 0
-         states #{{:pos "AA", :opened? #{}, :released 0}}]
-    (prn [i (count states)])
+         states {"AA" {#{} 0}}]
+    (prn [i (->> states vals (mapcat vals) count)])
     (if (== 30 i)
-      (->> states (map :released) sort reverse first)
+      (->> states vals (mapcat vals) sort reverse first)
       (recur (inc i)
              (->> states
-                  (mapcat (fn [s]
-                            (let [r (reduce +
-                                            (:released s)
-                                            (map #(get-in input [% :rate])
-                                                 (:opened? s)))]
-                              (->> (get-in input [(:pos s) :tunnels])
-                                   (map (fn [n]
-                                          (-> s
-                                              (assoc :pos n)
-                                              (assoc :released r))))
-                                   (concat (when (and (not ((:opened? s) (:pos s)))
-                                                      (pos? (get-in input [(:pos s) :rate])))
-                                             [(-> s
-                                                  (update :opened? conj (:pos s))
-                                                  (assoc :released r))]))))))
-                  set)))))
+                  (mapcat (fn [[cur-pos states]]
+                            (->> states
+                                 (mapcat (fn [[opened? released]]
+                                           (let [r (reduce +
+                                                           released
+                                                           (map #(get-in input [% :rate])
+                                                                opened?))]
+                                             (->> (get-in input [cur-pos :tunnels])
+                                                  (map (fn [n] [n [opened? r]]))
+                                                  (concat (when (and (not (opened? cur-pos))
+                                                                     (pos? (get-in input [cur-pos :rate])))
+                                                            [[cur-pos [(conj opened? cur-pos) r]]])))))))))
+                  (reduce (fn [states [pos [opened released]]]
+                            (update-in states [pos opened] (fnil max 0) released))
+                          {}))))))
 
 (defn part2
   [input]
