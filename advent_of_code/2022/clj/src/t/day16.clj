@@ -20,7 +20,6 @@
   [input]
   (loop [i 0
          states {"AA" {#{} 0}}]
-    (prn [i (->> states vals (mapcat vals) count)])
     (if (== 30 i)
       (->> states vals (mapcat vals) sort reverse first)
       (recur (inc i)
@@ -43,11 +42,46 @@
 
 (defn part2
   [input]
-  input)
+  (loop [i 0
+         states {["AA" "AA"] {#{} 0}}]
+    (prn [i (->> states vals (mapcat vals) count)])
+    (if (== 26 i)
+      (->> states vals (mapcat vals) sort reverse first)
+      (recur (inc i)
+             (->> states
+                  (mapcat (fn [[[cur-h cur-e] states]]
+                            (->> states
+                                 (mapcat (fn [[opened? released]]
+                                           (let [r (reduce +
+                                                           released
+                                                           (map #(get-in input [% :rate])
+                                                                opened?))]
+                                             (for [h (conj (get-in input [cur-h :tunnels]) cur-h)
+                                                   e (conj (get-in input [cur-e :tunnels]) cur-e)
+                                                   :when (or (and (not= h cur-h)
+                                                                  (not= e cur-e))
+                                                             (and (not= h cur-h)
+                                                                  (not (opened? cur-e))
+                                                                  (pos? (get-in input [cur-e :rate])))
+                                                             (and (not= e cur-e)
+                                                                  (not (opened? cur-h))
+                                                                  (pos? (get-in input [cur-h :rate])))
+                                                             (and (not (opened? cur-e))
+                                                                  (pos? (get-in input [cur-e :rate]))
+                                                                  (not (opened? cur-h))
+                                                                  (pos? (get-in input [cur-h :rate]))))]
+                                               [(vec (sort [h e]))
+                                                [(cond-> opened?
+                                                   (= h cur-h) (conj h)
+                                                   (= e cur-e) (conj e))
+                                                 r]])))))))
+                  (reduce (fn [states [pos [opened released]]]
+                            (update-in states [pos opened] (fnil max 0) released))
+                          {}))))))
 
 (lib/check
-  [part1 sample] 1651
-  [part1 puzzle] 0
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0
+  #_#_[part1 sample] 1651
+  #_#_[part1 puzzle] 1871
+  [part2 sample] 1707
+  [part2 puzzle] 0
   )
