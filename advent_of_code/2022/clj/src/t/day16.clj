@@ -42,10 +42,13 @@
 
 (defn part2
   [input]
-  (let [all-valves (->> input keys set)]
+  (let [all-valves (->> input (filter (comp pos? :rate val)) (map key) set)]
+    (prn [:all (count all-valves) all-valves])
     (loop [i 0
            states {["AA" "AA"] {#{} 0}}]
-      (prn [i (->> states vals (mapcat vals) count)])
+      (prn [i
+            (->> states vals (mapcat vals) count)
+            (->> states vals (mapcat keys) (map count) sort reverse first)])
       (if (== 26 i)
         (->> states vals (mapcat vals) sort reverse first)
         (recur (inc i)
@@ -58,7 +61,7 @@
                                                              (map #(get-in input [% :rate])
                                                                   opened?))]
                                                (if (= opened? all-valves)
-                                                 [:done [all-valves r]]
+                                                 [[[] [all-valves r]]]
                                                  (for [h (conj (get-in input [cur-h :tunnels]) cur-h)
                                                        e (conj (get-in input [cur-e :tunnels]) cur-e)
                                                        :when (or (and (not= h cur-h)
@@ -80,7 +83,30 @@
                                                      r]]))))))))
                     (reduce (fn [states [pos [opened released]]]
                               (update-in states [pos opened] (fnil max 0) released))
-                            {})))))))
+                            {})
+                    (map (fn [[pos kvs]]
+                           (let [[max-ov max-ov-r]
+                                 (->> kvs
+                                      (map (fn [[opened released]]
+                                             [(->> opened
+                                                   (map (fn [v] (get-in input [v :rate])))
+                                                   (reduce + 0))
+                                              released]))
+                                      (reduce (fn [[max-so-far r1] [ov r2]]
+                                                (cond (== ov max-so-far) [ov (max r1 r2)]
+                                                      (> ov max-so-far) [ov r2]
+                                                      (< ov max-so-far) [max-so-far r1]))))]
+                             [pos (reduce (fn [acc [o r]]
+                                            (let [ov (->> o
+                                                          (map (fn [v] (get-in input [v :rate])))
+                                                          (reduce + 0))]
+                                              (if (or (== ov max-ov)
+                                                      (> r max-ov-r))
+                                                (assoc acc o r)
+                                                acc)))
+                                          {}
+                                          kvs)])))
+                    (into {})))))))
 
 (lib/check
   #_#_[part1 sample] 1651
