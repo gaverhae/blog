@@ -35,15 +35,23 @@
        (mapv (fn [[y x]]
                [(+ y h 4) (+ x 2)]))))
 
+(defn tower->line
+  [tower y]
+  (apply str (for [x (range 7)]
+               (if-let [d (tower [y x])]
+                 (str (mod d 5))
+                 "."))))
+
 (defn print-tower
   [tower]
   (println)
-  (loop [y 0]
-    (when (<= y (height tower))
-      (doseq [x (range 7)]
-        (print (tower [y x] \.)))
-      (println) (flush)
-      (recur (inc y)))))
+  (let [h (height tower)]
+    (loop [y 0]
+      (when (<= y h)
+        (doseq [x (range 7)]
+          (print (tower [y x] \.)))
+        (println) (flush)
+        (recur (inc y))))))
 
 (defn push
   [piece direction tower]
@@ -66,44 +74,65 @@
   [piece n tower]
   (reduce (fn [t c] (assoc t c n)) tower piece))
 
-(def prev-height (atom 0))
+(defn step
+  [[tower pieces jets] i]
+  (loop [jets jets
+         piece (make-piece (first pieces) (height tower))]
+    (let [p1 (push piece (first jets) tower)
+          p2 (fall p1 tower)]
+      (if (= p1 p2)
+        [(stop p2 i tower) (rest pieces) (rest jets)]
+        (recur (rest jets) p2)))))
+
+(defn init-state
+  [input]
+  [{[0 0] 0, [0 1] 0, [0 2] 0, [0 3] 0,
+    [0 4] 0, [0 5] 0, [0 6] 0}
+   (cycle (:pieces input))
+   (cycle (:jets input))])
 
 (defn part1
   [input]
-  (reset! prev-height 0)
-  (loop [i 0
-         pieces (cycle (map-indexed vector (:pieces input)))
-         jets (cycle (:jets input))
-         tower {[0 0] 0, [0 1] 0, [0 2] 0, [0 3] 0,
-                [0 4] 0, [0 5] 0, [0 6] 0}]
-    (when (== 0 (mod i 5))
-      (println [i (- (height tower) @prev-height)])
-      (reset! prev-height (height tower)))
-    #_(println i)
-    #_(print-tower tower)
-    (if (== i 2022)
-      (do #_(print-tower tower)
-        (height tower))
-      (let [[p piece] (first pieces)
-            [jets tower]
-            (loop [jets jets
-                   piece (make-piece piece (height tower))]
-              (let [p1 (push piece (first jets) tower)
-                    p2 (fall p1 tower)]
-                #_(prn [:piece piece :direction (first jets) :after p1])
-                (if (= p1 p2)
-                  [(rest jets) (stop p2 p tower)]
-                  (recur (rest jets) p2))))]
-        (recur (inc i) (rest pieces) jets tower)))))
+  (height (first (reduce step (init-state input) (range 2022)))))
+
+(defn ->lines
+  [tower]
+  (let [h (height tower)]
+    (for [y (range (inc h))]
+      (tower->line tower y))))
 
 (defn part2
   [input]
-  (count (:jets input)))
+  (let [num-pieces 1000000000000
+        init-state [{[0 0] 0, [0 1] 0, [0 2] 0, [0 3] 0,
+                     [0 4] 0, [0 5] 0, [0 6] 0}
+                    (cycle (:pieces input))
+                    (cycle (:jets input))]
+        [tower pieces jets] (reduce step init-state (range 4000))
+        h (height tower)
+        t (->> tower
+               ->lines
+               (partition 10 1)
+               vec)
+        pat (get t (- (count t) 10))
+        beg (.indexOf ^java.util.List t pat)
+        period-length (inc (.indexOf ^java.util.List (vec (drop (inc beg) t)) pat))
+        pieces-in-period (->> tower
+                              (keep (fn [[[y x] p]]
+                                      (when (<= beg y (+ beg period-length))
+                                        p)))
+                              set count dec)
+        periods-to-skip (quot (- num-pieces 4000) pieces-in-period)
+        height-to-add (* periods-to-skip period-length)
+        remaining-pieces (rem (- num-pieces 4000) pieces-in-period)
+        [tower' _ _] (reduce step [tower pieces jets] (range remaining-pieces))]
+    (+ height-to-add
+       (height tower'))))
 
 (lib/check
   #_#_[part1 sample] 3068
-  [part1 puzzle] 3151
-  [part2 sample] 0
+  #_#_[part1 puzzle] 3151
+  [part2 sample] 1514285714288
   [part2 puzzle] 0
   )
 
