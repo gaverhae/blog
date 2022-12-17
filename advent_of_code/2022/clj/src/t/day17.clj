@@ -41,10 +41,7 @@
   (loop [y 0]
     (when (<= y (height tower))
       (doseq [x (range 7)]
-        (print (case (get tower [y x])
-                 :floor \-
-                 :rock \#
-                 nil \.)))
+        (print (tower [y x] \.)))
       (println) (flush)
       (recur (inc y)))))
 
@@ -66,39 +63,47 @@
       piece)))
 
 (defn stop
-  [piece tower]
-  (reduce (fn [t c] (assoc t c :rock)) tower piece))
+  [piece n tower]
+  (reduce (fn [t c] (assoc t c n)) tower piece))
+
+(def prev-height (atom 0))
 
 (defn part1
   [input]
+  (reset! prev-height 0)
   (loop [i 0
-         pieces (cycle (:pieces input))
+         pieces (cycle (map-indexed vector (:pieces input)))
          jets (cycle (:jets input))
-         tower {[0 0] :floor, [0 1] :floor, [0 2] :floor, [0 3] :floor,
-                [0 4] :floor, [0 5] :floor, [0 6] :floor}]
+         tower {[0 0] 0, [0 1] 0, [0 2] 0, [0 3] 0,
+                [0 4] 0, [0 5] 0, [0 6] 0}]
+    (when (== 0 (mod i 5))
+      (println [i (- (height tower) @prev-height)])
+      (reset! prev-height (height tower)))
     #_(println i)
     #_(print-tower tower)
     (if (== i 2022)
-      (height tower)
-      (let [[jets tower]
+      (do #_(print-tower tower)
+        (height tower))
+      (let [[p piece] (first pieces)
+            [jets tower]
             (loop [jets jets
-                   piece (make-piece (first pieces) (height tower))]
+                   piece (make-piece piece (height tower))]
               (let [p1 (push piece (first jets) tower)
                     p2 (fall p1 tower)]
                 #_(prn [:piece piece :direction (first jets) :after p1])
                 (if (= p1 p2)
-                  [(rest jets) (stop p2 tower)]
+                  [(rest jets) (stop p2 p tower)]
                   (recur (rest jets) p2))))]
         (recur (inc i) (rest pieces) jets tower)))))
 
 (defn part2
   [input]
-  (take 5 input))
+  (count (:jets input)))
 
 (lib/check
-  [part1 sample] 3068
+  #_#_[part1 sample] 3068
   [part1 puzzle] 3151
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0
+  [part2 sample] 0
+  [part2 puzzle] 0
   )
 
