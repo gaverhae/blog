@@ -132,7 +132,7 @@
 (lib/check
   #_#_[part1 sample] 3068
   #_#_[part1 puzzle] 3151
-  [part2 sample] 1514285714288
-  [part2 puzzle] 0
+  #_#_[part2 sample] 1514285714288
+  #_#_[part2 puzzle] 0
   )
 
