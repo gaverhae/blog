@@ -33,14 +33,47 @@
        (filter (fn [[v n]] (== 1 n)))
        count))
 
+(defn expand
+  [input]
+  (let [input (set input)
+        [minx maxx miny maxy minz maxz]
+        (reduce (fn [[minx maxx miny maxy minz maxz] [x y z]]
+                  [(min x minx) (max x maxx)
+                   (min y miny) (max y maxy)
+                   (min z minz) (max z maxz)])
+                [0 0 0 0 0 0]
+                input)]
+    (loop [steam #{[0 0 0]}]
+      (let [after (set/difference
+                    (->> steam
+                         (mapcat (fn [[x y z]]
+                                   [[(inc x) y z]
+                                    [(dec x) y z]
+                                    [x (inc y) z]
+                                    [x (dec y) z]
+                                    [x y (inc z)]
+                                    [x y (dec z)]]))
+                         (filter (fn [[x y z]]
+                                   (and (<= (dec minx) x (inc maxx))
+                                        (<= (dec miny) y (inc maxy))
+                                        (<= (dec minz) z (inc maxz)))))
+                         (concat steam)
+                         set)
+                    input)]
+        (if (= steam after)
+          steam
+          (recur after))))))
+
 (defn part2
   [input]
-  input)
+  (count (set/intersection
+           (->> input (mapcat cube->faces) set)
+           (->> (expand input) (mapcat cube->faces) set))))
 
 (lib/check
   [part1 sample] 64
-  [part1 puzzle] 0
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0
+  [part1 puzzle] 4302
+  [part2 sample] 58
+  [part2 puzzle] 0
   )
 
