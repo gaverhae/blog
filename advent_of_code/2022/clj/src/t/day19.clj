@@ -23,65 +23,72 @@
                                       :obsidian (->long geode-obsidian)}}})))))
 
 (defn possible-moves
-  [bp]
-  (fn [state]
-    (let [build (for [[robot cost] (-> bp :blueprints)
-                      :when (every? (fn [[k v]]
-                                      (>= (get-in state [:inventory k] 0) v))
-                                    cost)]
-                  (-> state
-                      (update :inventory (fn [inv] (reduce (fn [inv [k v]] (update inv k - v))
-                                                           inv
-                                                           cost)))
-                      (update-in [:robots robot] (fnil inc 0))))]
-      (->> (conj build state)
-           (mapv (fn [s] (update s :inventory (fn [inv]
-                                               (reduce (fn [inv [k v]] (update inv k (fnil + 0) v))
-                                                       inv
-                                                       (:robots state))))))))))
+  [state]
+  (->> (cond-> [state]
+         (>= (state 10) (state 0)) (conj (-> state
+                                             (update 10 - (state 0))
+                                             (update 6 inc)))
+         (>= (state 10) (state 1)) (conj (-> state
+                                             (update 10 - (state 1))
+                                             (update 7 inc)))
+         (and (>= (state 10) (state 2))
+              (>= (state 11) (state 3))) (conj (-> state
+                                                   (update 10 - (state 2))
+                                                   (update 11 - (state 3))
+                                                   (update 8 inc)))
+         (and (>= (state 10) (state 4))
+              (>= (state 12) (state 5))) (conj (-> state
+                                                   (update 10 - (state 4))
+                                                   (update 12 - (state 5))
+                                                   (update 9 inc))))
+       (map (fn [s] (-> s
+                        (update 10 + (state 6))
+                        (update 11 + (state 7))
+                        (update 12 + (state 8))
+                        (update 13 + (state 9)))))))
 
 (defn potential
-  [bp steps-left]
-  (let [triangle (reduce + (range 1 (inc steps-left)))
-        obs-clay-cost (get-in bp [:blueprints :obsidian :clay])
-        obs-ore-cost (get-in bp [:blueprints :obsidian :ore])
-        obsidian-cost (get-in bp [:blueprints :geode :obsidian])
-        ore-cost (get-in bp [:blueprints :geode :ore])]
+  [steps-left]
+  (let [triangle (reduce + (range 1 (inc steps-left)))]
     (fn [state]
-      (let [obsidian-upper-bound (+ (get-in state [:inventory :obsidian] 0)
-                                    (* steps-left (get-in state [:robots :obsidian] 0))
+      (let [obs-clay-cost (state 3)
+            obs-ore-cost (state 2)
+            obsidian-cost (state 5)
+            ore-cost (state 4)
+            obsidian-upper-bound (+ (state 12)
+                                    (* steps-left (state 8))
                                     triangle)
-            ore-upper-bound (+ (get-in state [:inventory :ore] 0)
-                               (* steps-left (get-in state [:robots :ore] 0))
+            ore-upper-bound (+ (state 10)
+                               (* steps-left (state 6))
                                triangle)
-            clay-upper-bound (+ (get-in state [:inventory :clay] 0)
-                                (* steps-left (get-in state [:robots :clay] 0))
+            clay-upper-bound (+ (state 11)
+                                (* steps-left (state 7))
                                 triangle)
-            max-obsidian-under-co (+ (get-in state [:inventory :obsidian] 0)
+            max-obsidian-under-co (+ (state 12)
                                      (* steps-left
                                         (min (quot ore-upper-bound obs-ore-cost)
                                              (quot clay-upper-bound obs-clay-cost))))
-            geode-so-far (get-in state [:inventory :geode] 0)
-            geode-robots (get-in state [:robots :geode] 0)]
+            geode-so-far (state 13)
+            geode-robots (state 9)]
         (+ geode-so-far
            (min (-> (reduce (fn [s _]
-                              (-> (if (and (>= (get-in s [:inventory :ore] 0) ore-cost)
-                                           (>= (get-in s [:inventory :obsidian] 0) obsidian-cost))
+                              (-> (if (and (>= (s 10) ore-cost)
+                                           (>= (s 12) obsidian-cost))
                                     (-> s
-                                        (update-in [:inventory :ore] - ore-cost)
-                                        (update-in [:inventory :obsidian] - obsidian-cost)
-                                        (update-in [:robots :geode] (fnil inc 0)))
+                                        (update 10 - ore-cost)
+                                        (update 12 - obsidian-cost)
+                                        (update 9 inc))
                                     (-> s
-                                        (update-in [:robots :ore] (fnil inc 0))
-                                        (update-in [:robots :clay] (fnil inc 0))
-                                        (update-in [:robots :obsidian] (fnil inc 0))))
-                                  (update-in [:inventory :ore] (fnil + 0) (get-in s [:robots :ore] 0))
-                                  (update-in [:inventory :clay] (fnil + 0) (get-in s [:robots :clay] 0))
-                                  (update-in [:inventory :obsidian] (fnil + 0) (get-in s [:robots :obsidian] 0))
-                                  (update-in [:inventory :geode] (fnil + 0) (get-in s [:robots :geode] 0))))
+                                        (update 6 inc)
+                                        (update 7 inc)
+                                        (update 8 inc)))
+                                  (update 10 + (s 6))
+                                  (update 11 + (s 7))
+                                  (update 12 + (s 8))
+                                  (update 13 + (s 9))))
                             state
                             (range steps-left))
-                    (get-in [:inventory :geode] 0)
+                    (get 13)
                     (- geode-so-far))
                 (* steps-left (+ geode-robots
                                  (quot max-obsidian-under-co obsidian-cost)))
@@ -97,23 +104,27 @@
   (->> input
        (map (fn [bp]
               (loop [t 0
-                     states #{{:robots {:ore 1} :inventory {}}}]
+                     states #{[(-> bp :blueprints :ore :ore)
+                               (-> bp :blueprints :clay :ore)
+                               (-> bp :blueprints :obsidian :ore)
+                               (-> bp :blueprints :obsidian :clay)
+                               (-> bp :blueprints :geode :ore)
+                               (-> bp :blueprints :geode :obsidian)
+                               1 0 0 0
+                               0 0 0 0]}]
                 (let [guaranteed-min (->> states
                                           (map (fn [state]
-                                                 (+ (get-in state [:inventory :geode] 0)
-                                                    (* (- n-max t) (get-in state [:robots :geode] 0)))))
+                                                 (+ (state 13)
+                                                    (* (- n-max t) (state 9)))))
                                           (reduce max 0))
                       states2 (filter (fn [state]
-                                        (>= ((potential bp (- n-max t)) state)
+                                        (>= ((potential (- n-max t)) state)
                                             guaranteed-min))
                                       states)
-                      f (fn [m]
-                          (->> ((juxt :ore :clay :obsidian :geode) m)
-                               (mapv (fn [n] (or n 0)))))
                       mins (->> states2
-                                (reduce (fn [acc {:keys [robots inventory]}]
-                                          (let [robs (f robots)
-                                                invs (f inventory)
+                                (reduce (fn [acc state]
+                                          (let [robs (subvec state 6 10)
+                                                invs (subvec state 10 14)
                                                 prev (get acc robs)]
                                             (if (or (nil? prev)
                                                     (every? (fn [[a b]] (>= a b))
@@ -123,30 +134,30 @@
                                         {}))
                       states3 (->> states2
                                    (remove (fn [s]
-                                             (let [robs (f (:robots s))
+                                             (let [robs (subvec s 6 10)
                                                    prev (get mins robs)
-                                                   invs (f (:inventory s))]
+                                                   invs (subvec s 10 14)]
                                                (and (not (= invs prev))
                                                     (every? (fn [[a b]] (<= a b))
                                                             (map vector invs prev)))))))]
                   (prn [(:id bp) t
                         (count states3)
-                        (reduce max (map (potential bp (- n-max t)) states3))
-                        (reduce min (map (potential bp (- n-max t)) states3))
+                        (reduce max (map (potential (- n-max t)) states3))
+                        (reduce min (map (potential (- n-max t)) states3))
                         guaranteed-min])
                   (cond (== t n-max)
                         (do
                           (prn [:result (:id bp) (->> states3
-                                                      (map (fn [s] (-> s :inventory (:geode 0))))
+                                                      (map (fn [s] (s 13)))
                                                       (reduce max 0))])
                           [(:id bp)
                            (->> states3
-                                (map (fn [s] (-> s :inventory (:geode 0))))
+                                (map (fn [s] (s 13)))
                                 (reduce max 0))])
                         :else
                         (recur (inc t)
                                (->> states3
-                                    (mapcat (possible-moves bp))
+                                    (mapcat possible-moves)
                                     set)))))))))
 
 (defn part1
