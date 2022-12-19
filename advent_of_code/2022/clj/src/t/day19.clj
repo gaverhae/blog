@@ -45,80 +45,84 @@
                         (update 10 + (state 6))
                         (update 11 + (state 7))
                         (update 12 + (state 8))
-                        (update 13 + (state 9)))))))
+                        (update 13 + (state 9))
+                        (update 14 dec))))))
 
-(defn potential
-  [steps-left]
-  (let [triangle (reduce + (range 1 (inc steps-left)))]
-    (fn [state]
-      (let [obs-clay-cost (state 3)
-            obs-ore-cost (state 2)
-            obsidian-cost (state 5)
-            ore-cost (state 4)
-            obsidian-upper-bound (+ (state 12)
-                                    (* steps-left (state 8))
-                                    triangle)
-            ore-upper-bound (+ (state 10)
-                               (* steps-left (state 6))
-                               triangle)
-            clay-upper-bound (+ (state 11)
-                                (* steps-left (state 7))
-                                triangle)
-            max-obsidian-under-co (+ (state 12)
-                                     (* steps-left
-                                        (min (quot ore-upper-bound obs-ore-cost)
-                                             (quot clay-upper-bound obs-clay-cost))))
-            geode-so-far (state 13)
-            geode-robots (state 9)]
-        (+ geode-so-far
-           (min (-> (reduce (fn [s _]
-                              (-> (if (and (>= (s 10) ore-cost)
-                                           (>= (s 12) obsidian-cost))
-                                    (-> s
-                                        (update 10 - ore-cost)
-                                        (update 12 - obsidian-cost)
-                                        (update 9 inc))
-                                    (-> s
-                                        (update 6 inc)
-                                        (update 7 inc)
-                                        (update 8 inc)))
-                                  (update 10 + (s 6))
-                                  (update 11 + (s 7))
-                                  (update 12 + (s 8))
-                                  (update 13 + (s 9))))
-                            state
-                            (range steps-left))
-                    (get 13)
-                    (- geode-so-far))
-                (* steps-left (+ geode-robots
-                                 (quot max-obsidian-under-co obsidian-cost)))
-                (* steps-left (+ geode-robots
-                                 (quot obsidian-upper-bound obsidian-cost)))
-                (* steps-left (+ geode-robots
-                                 (quot ore-upper-bound ore-cost)))
-                (+ (* steps-left geode-robots)
-                   triangle)))))))
+(let [t (memoize (fn [n] (reduce + (range 1 (inc n)))))]
+  (defn upper-bound
+    [state]
+    (let [steps-left (state 14)
+          triangle (t steps-left)
+          obs-clay-cost (state 3)
+          obs-ore-cost (state 2)
+          obsidian-cost (state 5)
+          ore-cost (state 4)
+          obsidian-upper-bound (+ (state 12)
+                                  (* steps-left (state 8))
+                                  triangle)
+          ore-upper-bound (+ (state 10)
+                             (* steps-left (state 6))
+                             triangle)
+          clay-upper-bound (+ (state 11)
+                              (* steps-left (state 7))
+                              triangle)
+          max-obsidian-under-co (+ (state 12)
+                                   (* steps-left
+                                      (min (quot ore-upper-bound obs-ore-cost)
+                                           (quot clay-upper-bound obs-clay-cost))))
+          geode-so-far (state 13)
+          geode-robots (state 9)]
+      (+ geode-so-far
+         (min (-> (reduce (fn [s _]
+                            (-> (if (and (>= (s 10) ore-cost)
+                                         (>= (s 12) obsidian-cost))
+                                  (-> s
+                                      (update 10 - ore-cost)
+                                      (update 12 - obsidian-cost)
+                                      (update 9 inc))
+                                  (-> s
+                                      (update 6 inc)
+                                      (update 7 inc)
+                                      (update 8 inc)))
+                                (update 10 + (s 6))
+                                (update 11 + (s 7))
+                                (update 12 + (s 8))
+                                (update 13 + (s 9))))
+                          state
+                          (range steps-left))
+                  (get 13)
+                  (- geode-so-far))
+              (* steps-left (+ geode-robots
+                               (quot max-obsidian-under-co obsidian-cost)))
+              (* steps-left (+ geode-robots
+                               (quot obsidian-upper-bound obsidian-cost)))
+              (* steps-left (+ geode-robots
+                               (quot ore-upper-bound ore-cost)))
+              (+ (* steps-left geode-robots)
+                 triangle))))))
+
+(defn lower-bound
+  [state]
+  (+ (state 13) (* (state 14) (state 9))))
 
 (defn solve
   [n-max input]
   (->> input
        (map (fn [bp]
-              (loop [t 0
-                     states #{[(-> bp :blueprints :ore :ore)
+              (loop [states #{[(-> bp :blueprints :ore :ore)
                                (-> bp :blueprints :clay :ore)
                                (-> bp :blueprints :obsidian :ore)
                                (-> bp :blueprints :obsidian :clay)
                                (-> bp :blueprints :geode :ore)
                                (-> bp :blueprints :geode :obsidian)
                                1 0 0 0
-                               0 0 0 0]}]
+                               0 0 0 0
+                               n-max]}]
                 (let [guaranteed-min (->> states
-                                          (map (fn [state]
-                                                 (+ (state 13)
-                                                    (* (- n-max t) (state 9)))))
+                                          (map lower-bound)
                                           (reduce max 0))
                       states2 (filter (fn [state]
-                                        (>= ((potential (- n-max t)) state)
+                                        (>= (upper-bound state)
                                             guaranteed-min))
                                       states)
                       mins (->> states2
@@ -140,12 +144,12 @@
                                                (and (not (= invs prev))
                                                     (every? (fn [[a b]] (<= a b))
                                                             (map vector invs prev)))))))]
-                  (prn [(:id bp) t
+                  (prn [(:id bp) (get (first states) 14)
                         (count states3)
-                        (reduce max (map (potential (- n-max t)) states3))
-                        (reduce min (map (potential (- n-max t)) states3))
+                        (reduce max (map upper-bound states3))
+                        (reduce min (map upper-bound states3))
                         guaranteed-min])
-                  (cond (== t n-max)
+                  (cond (zero? (get (first states) 14))
                         (do
                           (prn [:result (:id bp) (->> states3
                                                       (map (fn [s] (s 13)))
@@ -155,8 +159,7 @@
                                 (map (fn [s] (s 13)))
                                 (reduce max 0))])
                         :else
-                        (recur (inc t)
-                               (->> states3
+                        (recur (->> states3
                                     (mapcat possible-moves)
                                     set)))))))))
 
