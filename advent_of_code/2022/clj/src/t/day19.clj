@@ -213,6 +213,5 @@
   #_#_[part1 sample] 33
   #_#_[part1 puzzle] 1127
   [part2 sample] (* 56 62)
-  [part2 puzzle] 0
-  )
+  [part2 puzzle] 21546)
 
