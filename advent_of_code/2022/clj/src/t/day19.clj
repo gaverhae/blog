@@ -102,66 +102,35 @@
                  triangle))))))
 
 (defn lower-bound
-  [state]
+  ^long [state]
   (+ (state 13) (* (state 14) (state 9))))
 
 (defn solve
   [n-max input]
   (->> input
        (map (fn [bp]
-              (loop [states #{[(-> bp :blueprints :ore :ore)
-                               (-> bp :blueprints :clay :ore)
-                               (-> bp :blueprints :obsidian :ore)
-                               (-> bp :blueprints :obsidian :clay)
-                               (-> bp :blueprints :geode :ore)
-                               (-> bp :blueprints :geode :obsidian)
-                               1 0 0 0
-                               0 0 0 0
-                               n-max]}]
-                (let [guaranteed-min (->> states
-                                          (map lower-bound)
-                                          (reduce max 0))
-                      states2 (filter (fn [state]
-                                        (>= (upper-bound state)
-                                            guaranteed-min))
-                                      states)
-                      mins (->> states2
-                                (reduce (fn [acc state]
-                                          (let [robs (subvec state 6 10)
-                                                invs (subvec state 10 14)
-                                                prev (get acc robs)]
-                                            (if (or (nil? prev)
-                                                    (every? (fn [[a b]] (>= a b))
-                                                            (map vector invs prev)))
-                                              (assoc acc robs invs)
-                                              acc)))
-                                        {}))
-                      states3 (->> states2
-                                   (remove (fn [s]
-                                             (let [robs (subvec s 6 10)
-                                                   prev (get mins robs)
-                                                   invs (subvec s 10 14)]
-                                               (and (not (= invs prev))
-                                                    (every? (fn [[a b]] (<= a b))
-                                                            (map vector invs prev)))))))]
-                  (prn [(:id bp) (get (first states) 14)
-                        (count states3)
-                        (reduce max (map upper-bound states3))
-                        (reduce min (map upper-bound states3))
-                        guaranteed-min])
-                  (cond (zero? (get (first states) 14))
-                        (do
-                          (prn [:result (:id bp) (->> states3
-                                                      (map (fn [s] (s 13)))
-                                                      (reduce max 0))])
-                          [(:id bp)
-                           (->> states3
-                                (map (fn [s] (s 13)))
-                                (reduce max 0))])
-                        :else
-                        (recur (->> states3
-                                    (mapcat possible-moves)
-                                    set)))))))))
+              (let [init-state [(-> bp :blueprints :ore :ore)
+                                (-> bp :blueprints :clay :ore)
+                                (-> bp :blueprints :obsidian :ore)
+                                (-> bp :blueprints :obsidian :clay)
+                                (-> bp :blueprints :geode :ore)
+                                (-> bp :blueprints :geode :obsidian)
+                                1 0 0 0
+                                0 0 0 0
+                                n-max]]
+                (loop [to-visit [init-state]
+                       best-so-far 0]
+                  (if (empty? to-visit)
+                    [(:id bp) best-so-far]
+                    (let [state (peek to-visit)
+                          to-visit (pop to-visit)]
+                      (cond (zero? (state 14))
+                            (recur to-visit (max best-so-far (long (state 13))))
+                            (<= (upper-bound state) best-so-far)
+                            (recur to-visit best-so-far)
+                            :else
+                            (recur (reduce conj to-visit (possible-moves state))
+                                   (max best-so-far (lower-bound state))))))))))))
 
 (defn part1
   [input]
