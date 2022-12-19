@@ -49,75 +49,136 @@
 
 (defn part1
   [input]
-  (->> input
-       (map (fn [bp]
-              (loop [t 0
-                     states #{{:robots {:ore 1} :inventory {}}}]
-                (let [
-                      guaranteed-min (->> states
-                                          (map (fn [state]
-                                                 (+ (get-in state [:inventory :geode] 0)
-                                                    (* (- 24 t) (get-in state [:robots :geode] 0)))))
-                                          (reduce max 0))
-                      states2 (filter (fn [state]
-                                        (>= ((potential (- 24 t)) state)
-                                            guaranteed-min))
-                                      states)
-                      f (fn [m]
-                          (->> ((juxt :ore :clay :obsidian :geode) m)
-                               (mapv (fn [n] (or n 0)))))
-                      mins (->> states2
-                                (reduce (fn [acc {:keys [robots inventory]}]
-                                          (let [robs (f robots)
-                                                invs (f inventory)
-                                                prev (get acc robs)]
-                                            (if (or (nil? prev)
-                                                    (every? (fn [[a b]] (>= a b))
-                                                            (map vector invs prev)))
-                                              (assoc acc robs invs)
-                                              acc)))
-                                        {}))
-                      states3 (->> states2
-                                   (remove (fn [s]
-                                             (let [robs (f (:robots s))
-                                                   prev (get mins robs)
-                                                   invs (f (:inventory s))]
-                                               (and (not (= invs prev))
-                                                    (every? (fn [[a b]] (<= a b))
-                                                            (map vector invs prev)))))))
-                      ]
-                  (prn [(:id bp) t
-                        (count states)
-                        (reduce max 0 (map (potential (- 24 t)) states))
-                        (reduce min (map (potential (- 24 t)) states))
-                        guaranteed-min
-                        (count states)
-                        (count states2)
-                        (count states3)])
-                  (cond (== t 24)
-                        (do
-                          (prn [:result (:id bp) (->> states3
-                             (map (fn [s] (-> s :inventory (:geode 0))))
-                             (reduce max 0))])
-                          (->> states3
-                             (map (fn [s] (-> s :inventory (:geode 0))))
-                             (reduce max 0)
-                             (* (:id bp))))
-                        :else
-                        (recur (inc t)
-                               (->> states3
-                                    (mapcat (possible-moves bp))
-                                    set)))))))
-       (reduce +)))
+  (let [n-max 24]
+    (->> input
+         (map (fn [bp]
+                (loop [t 0
+                       states #{{:robots {:ore 1} :inventory {}}}]
+                  (let [
+                        guaranteed-min (->> states
+                                            (map (fn [state]
+                                                   (+ (get-in state [:inventory :geode] 0)
+                                                      (* (- n-max t) (get-in state [:robots :geode] 0)))))
+                                            (reduce max 0))
+                        states2 (filter (fn [state]
+                                          (>= ((potential (- n-max t)) state)
+                                              guaranteed-min))
+                                        states)
+                        f (fn [m]
+                            (->> ((juxt :ore :clay :obsidian :geode) m)
+                                 (mapv (fn [n] (or n 0)))))
+                        mins (->> states2
+                                  (reduce (fn [acc {:keys [robots inventory]}]
+                                            (let [robs (f robots)
+                                                  invs (f inventory)
+                                                  prev (get acc robs)]
+                                              (if (or (nil? prev)
+                                                      (every? (fn [[a b]] (>= a b))
+                                                              (map vector invs prev)))
+                                                (assoc acc robs invs)
+                                                acc)))
+                                          {}))
+                        states3 (->> states2
+                                     (remove (fn [s]
+                                               (let [robs (f (:robots s))
+                                                     prev (get mins robs)
+                                                     invs (f (:inventory s))]
+                                                 (and (not (= invs prev))
+                                                      (every? (fn [[a b]] (<= a b))
+                                                              (map vector invs prev)))))))
+                        ]
+                    (prn [(:id bp) t
+                          (count states)
+                          (reduce max 0 (map (potential (- n-max t)) states))
+                          (reduce min (map (potential (- n-max t)) states))
+                          guaranteed-min
+                          (count states)
+                          (count states2)
+                          (count states3)])
+                    (cond (== t n-max)
+                          (do
+                            (prn [:result (:id bp) (->> states3
+                                                        (map (fn [s] (-> s :inventory (:geode 0))))
+                                                        (reduce max 0))])
+                            (->> states3
+                                 (map (fn [s] (-> s :inventory (:geode 0))))
+                                 (reduce max 0)
+                                 (* (:id bp))))
+                          :else
+                          (recur (inc t)
+                                 (->> states3
+                                      (mapcat (possible-moves bp))
+                                      set)))))))
+         (reduce +))))
 
 (defn part2
   [input]
-  input)
+  (let [n-max 32]
+    (->> input
+         (take 3)
+         (map (fn [bp]
+                (loop [t 0
+                       states #{{:robots {:ore 1} :inventory {}}}]
+                  (let [
+                        guaranteed-min (->> states
+                                            (map (fn [state]
+                                                   (+ (get-in state [:inventory :geode] 0)
+                                                      (* (- n-max t) (get-in state [:robots :geode] 0)))))
+                                            (reduce max 0))
+                        states2 (filter (fn [state]
+                                          (>= ((potential (- n-max t)) state)
+                                              guaranteed-min))
+                                        states)
+                        f (fn [m]
+                            (->> ((juxt :ore :clay :obsidian :geode) m)
+                                 (mapv (fn [n] (or n 0)))))
+                        mins (->> states2
+                                  (reduce (fn [acc {:keys [robots inventory]}]
+                                            (let [robs (f robots)
+                                                  invs (f inventory)
+                                                  prev (get acc robs)]
+                                              (if (or (nil? prev)
+                                                      (every? (fn [[a b]] (>= a b))
+                                                              (map vector invs prev)))
+                                                (assoc acc robs invs)
+                                                acc)))
+                                          {}))
+                        states3 (->> states2
+                                     (remove (fn [s]
+                                               (let [robs (f (:robots s))
+                                                     prev (get mins robs)
+                                                     invs (f (:inventory s))]
+                                                 (and (not (= invs prev))
+                                                      (every? (fn [[a b]] (<= a b))
+                                                              (map vector invs prev)))))))
+                        ]
+                    (prn [(:id bp) t
+                          (count states)
+                          (reduce max 0 (map (potential (- n-max t)) states))
+                          (reduce min (map (potential (- n-max t)) states))
+                          guaranteed-min
+                          (count states)
+                          (count states2)
+                          (count states3)])
+                    (cond (== t n-max)
+                          (do
+                            (prn [:result (:id bp) (->> states3
+                                                        (map (fn [s] (-> s :inventory (:geode 0))))
+                                                        (reduce max 0))])
+                            (->> states3
+                                 (map (fn [s] (-> s :inventory (:geode 0))))
+                                 (reduce max 0)))
+                          :else
+                          (recur (inc t)
+                                 (->> states3
+                                      (mapcat (possible-moves bp))
+                                      set)))))))
+         (reduce *))))
 
 (lib/check
-  [part1 sample] 33
-  [part1 puzzle] 1127
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0
+  #_#_[part1 sample] 33
+  #_#_[part1 puzzle] 1127
+  [part2 sample] (* 56 62)
+  [part2 puzzle] 0
   )
 
