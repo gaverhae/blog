@@ -53,31 +53,59 @@
        (map (fn [bp]
               (loop [t 0
                      states #{{:robots {:ore 1} :inventory {}}}]
-                (let [guaranteed-min (->> states
+                (let [
+                      guaranteed-min (->> states
                                           (map (fn [state]
                                                  (+ (get-in state [:inventory :geode] 0)
                                                     (* (- 24 t) (get-in state [:robots :geode] 0)))))
-                                          (reduce max))]
-                  (prn [(:id bp) t (count states)
-                        (reduce max (map (potential (- 24 t)) states))
+                                          (reduce max 0))
+                      states2 (filter (fn [state]
+                                        (>= ((potential (- 24 t)) state)
+                                            guaranteed-min))
+                                      states)
+                      f (fn [m]
+                          (->> ((juxt :ore :clay :obsidian :geode) m)
+                               (mapv (fn [n] (or n 0)))))
+                      mins (->> states2
+                                (reduce (fn [acc {:keys [robots inventory]}]
+                                          (let [robs (f robots)
+                                                invs (f inventory)
+                                                prev (get acc robs)]
+                                            (if (or (nil? prev)
+                                                    (every? (fn [[a b]] (>= a b))
+                                                            (map vector invs prev)))
+                                              (assoc acc robs invs)
+                                              acc)))
+                                        {}))
+                      states3 (->> states2
+                                   (remove (fn [s]
+                                             (let [robs (f (:robots s))
+                                                   prev (get mins robs)
+                                                   invs (f (:inventory s))]
+                                               (and (not (= invs prev))
+                                                    (every? (fn [[a b]] (<= a b))
+                                                            (map vector invs prev)))))))
+                      ]
+                  (prn [(:id bp) t
+                        (count states)
+                        (reduce max 0 (map (potential (- 24 t)) states))
                         (reduce min (map (potential (- 24 t)) states))
                         guaranteed-min
-                        (->> states
-                             (filter (fn [state]
-                                       (>= ((potential (- 24 t)) state)
-                                           guaranteed-min)))
-                             count)])
+                        (count states)
+                        (count states2)
+                        (count states3)])
                   (cond (== t 24)
-                        (->> states
+                        (do
+                          (prn [:result (:id bp) (->> states3
                              (map (fn [s] (-> s :inventory (:geode 0))))
-                             (reduce max)
-                             (* (:id bp)))
+                             (reduce max 0))])
+                          (->> states3
+                             (map (fn [s] (-> s :inventory (:geode 0))))
+                             (reduce max 0)
+                             (* (:id bp))))
                         :else
                         (recur (inc t)
-                               (->> states
-                                    (filter (fn [state]
-                                              (>= ((potential (- 24 t)) state)
-                                                  guaranteed-min)))
+                               (->> states3
                                     (mapcat (possible-moves bp))
                                     set)))))))
        (reduce +)))
@@ -87,8 +115,8 @@
   input)
 
 (lib/check
-  #_#_[part1 sample] 33
-  [part1 puzzle] 0
+  [part1 sample] 33
+  [part1 puzzle] 1127
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0
   )
