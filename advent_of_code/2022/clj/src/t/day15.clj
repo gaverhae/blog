@@ -89,7 +89,7 @@
 
 
 (lib/check
-  [part1 sample 10] 26
-  [part1 puzzle 2000000] 4876693
-  [part2 sample 20] 56000011
-  [part2 puzzle 4000000] 11645454855041)
+  #_#_[part1 sample 10] 26
+  #_#_[part1 puzzle 2000000] 4876693
+  #_#_[part2 sample 20] 56000011
+  #_#_[part2 puzzle 4000000] 11645454855041)
