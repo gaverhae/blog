@@ -74,6 +74,5 @@
   [part1 sample] 64
   [part1 puzzle] 4302
   [part2 sample] 58
-  [part2 puzzle] 0
-  )
+  [part2 puzzle] 2492)
 

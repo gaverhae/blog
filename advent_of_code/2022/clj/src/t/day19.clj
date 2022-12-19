@@ -40,30 +40,46 @@
                                                        inv
                                                        (:robots state))))))))))
 
+(defn potential
+  [steps-left]
+  (fn [state]
+    (+ (get-in state [:inventory :geode] 0)
+       (+ (* steps-left (get-in state [:robots :geode] 0))
+          (reduce + (range 1 (inc steps-left)))))))
+
 (defn part1
   [input]
   (->> input
        (map (fn [bp]
               (loop [t 0
                      states #{{:robots {:ore 1} :inventory {}}}]
-                (prn [(:id bp) t (count states)])
-                (cond (== t 24)
-                      (->> states
-                           (map (fn [s] (-> s :inventory (:geode 0))))
-                           (reduce max)
-                           (* (:id bp)))
-                      (>= t 18)
-                      (recur (inc t)
-                             (->> states
-                                  (mapcat (possible-moves bp))
-                                  (filter (fn [s]
-                                            (> (get-in s [:inventory :geode] 0) 0)))
-                                  set))
-                      :else
-                      (recur (inc t)
-                             (->> states
-                                  (mapcat (possible-moves bp))
-                                  set))))))
+                (let [guaranteed-min (->> states
+                                          (map (fn [state]
+                                                 (+ (get-in state [:inventory :geode] 0)
+                                                    (* (- 24 t) (get-in state [:robots :geode] 0)))))
+                                          (reduce max))]
+                  (prn [(:id bp) t (count states)
+                        (reduce max (map (potential (- 24 t)) states))
+                        (reduce min (map (potential (- 24 t)) states))
+                        guaranteed-min
+                        (->> states
+                             (filter (fn [state]
+                                       (>= ((potential (- 24 t)) state)
+                                           guaranteed-min)))
+                             count)])
+                  (cond (== t 24)
+                        (->> states
+                             (map (fn [s] (-> s :inventory (:geode 0))))
+                             (reduce max)
+                             (* (:id bp)))
+                        :else
+                        (recur (inc t)
+                               (->> states
+                                    (filter (fn [state]
+                                              (>= ((potential (- 24 t)) state)
+                                                  guaranteed-min)))
+                                    (mapcat (possible-moves bp))
+                                    set)))))))
        (reduce +)))
 
 (defn part2
@@ -71,7 +87,7 @@
   input)
 
 (lib/check
-  [part1 sample] 33
+  #_#_[part1 sample] 33
   [part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0
