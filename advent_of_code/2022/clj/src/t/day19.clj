@@ -148,7 +148,7 @@
        (reduce *)))
 
 (lib/check
-  [part1 sample] 33
-  [part1 puzzle] 1127
-  [part2 sample] (* 56 62)
-  [part2 puzzle] 21546)
+  #_#_[part1 sample] 33
+  #_#_[part1 puzzle] 1127
+  #_#_[part2 sample] (* 56 62)
+  #_#_[part2 puzzle] 21546)
