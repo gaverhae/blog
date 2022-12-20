@@ -13,26 +13,22 @@
 
 (defn rotate
   [acc el]
-  (let [len (count acc)
-        current-index (.indexOf ^java.util.List acc el)
-        target-index (let [t (+ el current-index)]
-                       (cond (neg? t) (dec (mod t len))
-                             (>= t len) (inc (mod t len))
-                             :else t))
-        steps (Math/abs (long (- current-index target-index)))]
-    (if (> current-index target-index)
-      (vec (concat (subvec acc 0 target-index)
-                   [el]
-                   (subvec acc target-index current-index)
-                   (subvec acc (inc current-index))))
-      (vec (concat (subvec acc 0 current-index)
-                   (subvec acc (inc current-index) (inc target-index))
-                   [el]
-                   (subvec acc (inc target-index)))))))
+  (cond (zero? el) acc
+        (pos? el) (let [r (rest (drop-while #(not= % el) (cycle acc)))]
+                    (->> (concat (take el r)
+                                 [el]
+                                 (drop el r))
+                         (take (count acc))))
+        (neg? el) (let [r (rest (drop-while #(not= % el) (cycle (reverse acc))))]
+                    (->> (concat (take (- el) r)
+                                 [el]
+                                 (drop (- el) r))
+                         (take (count acc))
+                         reverse))))
 
 (defn part1
   [input]
-  (let [v (reduce rotate input input)
+  (let [v (vec (reduce rotate input input))
         zero-idx (.indexOf ^java.util.List v 0)]
     (+ (v (mod (+ zero-idx 1000) (count v)))
        (v (mod (+ zero-idx 2000) (count v)))
