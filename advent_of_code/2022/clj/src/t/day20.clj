@@ -18,7 +18,10 @@
                          (take current-index acc))
         rev (if (neg? el) reverse identity)
         c (cycle (rev centered))
-        r (take (count acc) (cons [idx el] (drop (Math/abs el) c)))]
+        r (take (count acc) (cons [idx el]
+                                  (drop (mod (Math/abs el)
+                                             (dec (count acc)))
+                                        c)))]
     (rev r)))
 
 (defn part1
@@ -32,10 +35,21 @@
 
 (defn part2
   [input]
-  input)
+  (let [m (->> input
+               (map (fn [x] (* x 811589153)))
+               (map-indexed vector))
+        v (->> (loop [n 10, s m]
+                 (if (zero? n)
+                   s
+                   (recur (dec n) (reduce rotate s m))))
+               (mapv second))
+        zero-idx (.indexOf ^java.util.List v 0)]
+    (+ (v (mod (+ zero-idx 1000) (count v)))
+       (v (mod (+ zero-idx 2000) (count v)))
+       (v (mod (+ zero-idx 3000) (count v))))))
 
 (lib/check
   [part1 sample] 3
-  [part1 puzzle] 0
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  [part1 puzzle] 9945
+  [part2 sample] 1623178306
+  [part2 puzzle] 3338877775442)
