@@ -12,19 +12,13 @@
        (mapv ->long)))
 
 (defn rotate
-  [acc el]
-  (cond (zero? el) acc
-        (pos? el) (let [r (rest (drop-while #(not= % el) (cycle acc)))]
-                    (->> (concat (take el r)
-                                 [el]
-                                 (drop el r))
-                         (take (count acc))))
-        (neg? el) (let [r (rest (drop-while #(not= % el) (cycle (reverse acc))))]
-                    (->> (concat (take (- el) r)
-                                 [el]
-                                 (drop (- el) r))
-                         (take (count acc))
-                         reverse))))
+  [acc ^long el]
+  (let [current-index (.indexOf ^java.util.List acc el)
+        centered (concat (rest (drop current-index acc))
+                         (take current-index acc))
+        c (cycle (if (neg? el) (reverse centered) centered))
+        r (take (count acc) (cons el (drop (Math/abs el) c)))]
+    (if (neg? el) (reverse r) r)))
 
 (defn part1
   [input]
