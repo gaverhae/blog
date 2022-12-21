@@ -11,34 +11,13 @@
                             direction)))))))
 
 (defn follow
-  [head  tail]
-  (case [(- (head 0) (tail 0))
-         (- (head 1) (tail 1))]
-    [1 -1] tail
-    [1 0] tail
-    [1 1] tail
-    [0 -1] tail
-    [0 0] tail
-    [0 1] tail
-    [-1 -1] tail
-    [-1 0] tail
-    [-1 1] tail
-    [1 -2] [(inc (tail 0)) (dec (tail 1))]
-    [2 -1] [(inc (tail 0)) (dec (tail 1))]
-    [2 0] [(inc (tail 0)) (tail 1)]
-    [1 2] [(inc (tail 0)) (inc (tail 1))]
-    [2 1] [(inc (tail 0)) (inc (tail 1))]
-    [0 2] [(tail 0) (inc (tail 1))]
-    [-1 2] [(dec (tail 0)) (inc (tail 1))]
-    [-2 1] [(dec (tail 0)) (inc (tail 1))]
-    [-2 0] [(dec (tail 0)) (tail 1)]
-    [-2 -1] [(dec (tail 0)) (dec (tail 1))]
-    [-1 -2] [(dec (tail 0)) (dec (tail 1))]
-    [0 -2] [(tail 0) (dec (tail 1))]
-    [2 2] [(inc (tail 0)) (inc (tail 1))]
-    [-2 2] [(dec (tail 0)) (inc (tail 1))]
-    [2 -2] [(inc (tail 0)) (dec (tail 1))]
-    [-2 -2] [(dec (tail 0)) (dec (tail 1))]))
+  [[y0 x0] [y x]]
+  (let [dy ^long (- y0 y)
+        dx ^long (- x0 x)
+        sgn (fn [d] (cond (pos? d) 1 (neg? d) -1 (zero? d) 0))]
+    (cond (and (<= (Math/abs dy) 1)
+               (<= (Math/abs dx) 1)) [y x]
+          :else [(+ (sgn dy) y) (+ (sgn dx) x)])))
 
 (defn part1
   [input]
