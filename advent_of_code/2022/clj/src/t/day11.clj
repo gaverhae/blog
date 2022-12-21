@@ -5,37 +5,42 @@
             [instaparse.core :as insta]
             [t.lib :as lib :refer [->long]]))
 
+(def parser
+  (insta/parser
+    "<S> := <ws> index <ws> items <ws> op <ws> div
+    index := <'Monkey '> num <':'>
+    items := <'Starting items: '> num (<', '> num)*
+    op := <'Operation: new = old '> ('+' | '*') <' '> ('old' | num)
+    div := <'Test: divisible by '> num <if-true> num <if-false> num
+    if-true := <ws> 'If true: throw to monkey' <ws>
+    if-false := <ws> 'If false: throw to monkey ' <ws>
+    <num> := #'-?\\d+'
+    ws := (#'\\s+' | '\\n')*"))
+
 (defn parse
   [lines]
   (->> lines
        (partition-by #(= % ""))
        (remove #{[""]})
-       (map-indexed
-         (fn [idx m]
-           (let [[_ index] (re-matches #"Monkey (\d+):" (nth m 0))
-                 [_ items] (re-matches #"  Starting items: (.*)" (nth m 1))
-                 items (->> (string/split items #", ") (mapv ->long))
-                 [_ op n] (re-matches #"  Operation: new = old (.) (.*)" (nth m 2))
-                 operation (eval `(fn [~'old] (~(case op "*" * "+" +)
-                                                      ~'old
-                                                      ~(if (= "old" n)
-                                                         'old
-                                                         (->long n)))))
-                 [_ div] (re-matches #"  Test: divisible by (\d+)" (nth m 3))
-                 [_ t] (re-matches #"    If true: throw to monkey (\d+)" (nth m 4))
-                 [_ f] (re-matches #"    If false: throw to monkey (\d+)" (nth m 5))]
-             (when (not= idx (->long index))
-               (throw (Exception. "Missing monkey.")))
-             {:index (->long index)
-              :items items
-              :operation operation
-              :div (->long div)
-              :throw-to (eval `(fn [~'w]
-                                 (if (zero? (mod ~'w ~(->long div)))
-                                   ~(->long t)
-                                   ~(->long f))))
-              :activity 0})))
-       vec))
+       (mapv (fn [lines]
+               (->> (parser (apply str lines))
+                    (reduce (fn [acc v]
+                              (match v
+                                [:index n] (assoc acc :index (->long n))
+                                [:items & s] (assoc acc :items (map ->long s))
+                                [:op op p] (assoc acc :op (eval `(fn [~'old]
+                                                                   (~({"+" +, "*" *} op)
+                                                                           ~'old
+                                                                           ~(if (= "old" p)
+                                                                              'old
+                                                                              (->long p))))))
+                                [:div d t f] (-> acc
+                                                 (assoc :div (->long d))
+                                                 (assoc :throw-to (eval `(fn [~'w]
+                                                                           (if (zero? (mod ~'w ~(->long d)))
+                                                                             ~(->long t)
+                                                                             ~(->long f))))))))
+                            {:activity 0}))))))
 
 (defn part1
   [input]
@@ -53,10 +58,10 @@
                     monkeys monkeys]
                (if (== i (count monkeys))
                  monkeys
-                 (let [{:keys [index items operation throw-to]} (get monkeys i)]
+                 (let [{:keys [index items op throw-to]} (get monkeys i)]
                    (recur (inc i)
                           (reduce (fn [monkeys item]
-                                    (let [w (quot (operation item) 3)
+                                    (let [w (quot (op item) 3)
                                           t (throw-to w)]
                                       (update-in monkeys [t :items] conj w)))
                                   (-> monkeys
@@ -83,10 +88,10 @@
                       monkeys monkeys]
                  (if (== i (count monkeys))
                    monkeys
-                   (let [{:keys [index items operation div throw-to]} (get monkeys i)]
+                   (let [{:keys [index items op div throw-to]} (get monkeys i)]
                      (recur (inc i)
                             (reduce (fn [monkeys item]
-                                      (let [w (operation item)
+                                      (let [w (op item)
                                             t (throw-to w)]
                                         (update-in monkeys [t :items] conj (mod w d))))
                                     (-> monkeys
