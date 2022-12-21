@@ -19,29 +19,24 @@
                (<= (Math/abs dx) 1)) [y x]
           :else [(+ (sgn dy) y) (+ (sgn dx) x)])))
 
+(defn solve
+  [input num-tails]
+  (->> input
+       (reduce (fn [[[y x] tails visited] [dy dx]]
+                 (let [head [(+ y dy) (+ x dx)]
+                       tails (rest (reductions follow head tails))]
+                   [head tails (conj visited (last tails))]))
+               [[0 0] (repeat num-tails [0 0]) #{[0 0]}])
+       last
+       count))
+
 (defn part1
   [input]
-  (->> input
-       (reduce (fn [{:keys [head tail visited]} direction]
-                 (let [head [(+ (head 0) (direction 0))
-                             (+ (head 1) (direction 1))]
-                       tail (follow head tail)]
-                   {:head head, :tail tail, :visited (conj visited tail)}))
-               {:head [0 0], :tail [0 0], :visited #{[0 0]}})
-       :visited
-       count))
+  (solve input 1))
 
 (defn part2
   [input]
-  (->> input
-       (reduce (fn [{:keys [head tails visited]} direction]
-                 (let [head [(+ (head 0) (direction 0))
-                             (+ (head 1) (direction 1))]
-                       tails (rest (reductions follow head tails))]
-                   {:head head, :tails tails, :visited (conj visited (last tails))}))
-               {:head [0 0], :tails (repeat 9 [0 0]), :visited #{[0 0]}})
-       :visited
-       count))
+  (solve input 9))
 
 (lib/check
   [part1 sample] 13
