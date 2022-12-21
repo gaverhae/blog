@@ -45,29 +45,29 @@
 (defn solve
   [input restrict-fn max-iter]
   (loop [n 0
+         i 0
          monkeys input]
-    (if (== max-iter n)
-      (->> monkeys
-           (map :activity)
-           sort
-           reverse
-           (take 2)
-           (apply *))
-      (recur (inc n)
-             (loop [i 0
-                    monkeys monkeys]
-               (if (== i (count monkeys))
-                 monkeys
-                 (let [{:keys [index items op throw-to]} (get monkeys i)]
-                   (recur (inc i)
-                          (reduce (fn [monkeys item]
-                                    (let [w (restrict-fn (op item))
-                                          t (throw-to w)]
-                                      (update-in monkeys [t :items] conj w)))
-                                  (-> monkeys
-                                      (update-in [index :activity] + (count items))
-                                      (assoc-in [index :items] []))
-                                  items)))))))))
+    (cond (== n max-iter)
+          (->> monkeys
+               (map :activity)
+               sort
+               reverse
+               (take 2)
+               (apply *))
+          (== i (count monkeys))
+          (recur (inc n) 0 monkeys)
+          :else
+          (let [{:keys [index items op throw-to]} (get monkeys i)]
+            (recur n
+                   (inc i)
+                   (reduce (fn [monkeys item]
+                             (let [w (restrict-fn (op item))
+                                   t (throw-to w)]
+                               (update-in monkeys [t :items] conj w)))
+                           (-> monkeys
+                               (update-in [index :activity] + (count items))
+                               (assoc-in [index :items] []))
+                           items))))))
 
 (defn part1
   [input]
