@@ -42,11 +42,11 @@
                                                                              ~(->long f))))))))
                             {:activity 0}))))))
 
-(defn part1
-  [input]
+(defn solve
+  [input restrict-fn max-iter]
   (loop [n 0
          monkeys input]
-    (if (== 20 n)
+    (if (== max-iter n)
       (->> monkeys
            (map :activity)
            sort
@@ -61,7 +61,7 @@
                  (let [{:keys [index items op throw-to]} (get monkeys i)]
                    (recur (inc i)
                           (reduce (fn [monkeys item]
-                                    (let [w (quot (op item) 3)
+                                    (let [w (restrict-fn (op item))
                                           t (throw-to w)]
                                       (update-in monkeys [t :items] conj w)))
                                   (-> monkeys
@@ -69,35 +69,14 @@
                                       (assoc-in [index :items] []))
                                   items)))))))))
 
+(defn part1
+  [input]
+  (solve input #(quot % 3) 20))
+
 (defn part2
   [input]
-  (let [d (->> input
-               (map :div)
-               (reduce * 1))]
-    (loop [n 0
-           monkeys input]
-      (if (== 10000 n)
-        (->> monkeys
-             (map :activity)
-             sort
-             reverse
-             (take 2)
-             (apply *))
-        (recur (inc n)
-               (loop [i 0
-                      monkeys monkeys]
-                 (if (== i (count monkeys))
-                   monkeys
-                   (let [{:keys [index items op div throw-to]} (get monkeys i)]
-                     (recur (inc i)
-                            (reduce (fn [monkeys item]
-                                      (let [w (op item)
-                                            t (throw-to w)]
-                                        (update-in monkeys [t :items] conj (mod w d))))
-                                    (-> monkeys
-                                        (update-in [index :activity] + (count items))
-                                        (assoc-in [index :items] []))
-                                    items))))))))))
+  (let [d (->> input (map :div) (reduce *))]
+    (solve input #(mod % d) 10000)))
 
 (lib/check
   [part1 sample] 10605
