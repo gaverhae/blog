@@ -8,32 +8,26 @@
     (for [y (range (count grid))
           x (range (count (first grid)))]
       {:value (get-in grid [y x])
-       :left (reverse (take x (get grid y)))
-       :right (drop (inc x) (get grid y))
-       :above (reverse (take y (get tgrid x)))
-       :below (drop (inc y) (get tgrid x))})))
+       :views [(reverse (take x (get grid y)))
+               (drop (inc x) (get grid y))
+               (reverse (take y (get tgrid x)))
+               (drop (inc y) (get tgrid x))]})))
 
 (defn part1
   [input]
   (->> input
-       (filter (fn [{:keys [value left right above below]}]
-                 (or (> value (apply max -1 left))
-                     (> value (apply max -1 right))
-                     (> value (apply max -1 above))
-                     (> value (apply max -1 below)))))
+       (filter (fn [{:keys [value views]}]
+                 (some #(> value (apply max -1 %)) views)))
        count))
 
 (defn part2
   [input]
   (->> input
-       (map (fn [{:keys [value left right above below]}]
+       (map (fn [{:keys [value views]}]
               (let [f (fn f [s] (cond (empty? s) ()
                                       (< (first s) value) (cons (first s) (f (rest s)))
                                       :else [(first s)]))]
-                (* (count (f left))
-                   (count (f right))
-                   (count (f above))
-                   (count (f below))))))
+                (->> views (map (comp count f)) (reduce *)))))
        (apply max)))
 
 (lib/check
