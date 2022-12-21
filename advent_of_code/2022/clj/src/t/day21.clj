@@ -6,15 +6,24 @@
             [instaparse.core :as insta]
             [t.lib :as lib :refer [->long]]))
 
+(def parser
+  (insta/parser
+    "<S> := lit | comp
+    lit := name <': '> num
+    comp := name <': '> name <' '> op <' '> name
+    <num> := #'\\d+'
+    <name> := #'[a-z]+'
+    <op> := '+' | '-' | '/' | '*'"))
+
 (defn parse
   [lines]
   (->> lines
-     (map (fn [line]
-            (if-let [[_ n i] (re-matches #"([a-z]+): (\d+)" line)]
-              [n [:lit (->long i)]]
-              (let [[_ n op1 f op2] (re-matches #"([a-z]+): ([a-z]+) (\+|-|\*|/) ([a-z]+)" line)]
-                [n [:op f op1 op2]]))))
-     (into {})))
+       (map (comp first parser))
+       (map (fn [l]
+              (match l
+                [:lit n v] [n [:lit (->long v)]]
+                [:comp r n1 op n2] [r [:op op n1 n2]])))
+       (into {})))
 
 (defn neval
   [env op]
