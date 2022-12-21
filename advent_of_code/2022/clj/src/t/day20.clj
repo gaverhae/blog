@@ -49,7 +49,7 @@
        (v (mod (+ zero-idx 3000) (count v))))))
 
 (lib/check
-  [part1 sample] 3
-  [part1 puzzle] 9945
-  [part2 sample] 1623178306
-  [part2 puzzle] 3338877775442)
+  #_#_[part1 sample] 3
+  #_#_[part1 puzzle] 9945
+  #_#_[part2 sample] 1623178306
+  #_#_[part2 puzzle] 3338877775442)

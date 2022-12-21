@@ -71,8 +71,8 @@
            (->> (expand input) (mapcat cube->faces) set))))
 
 (lib/check
-  [part1 sample] 64
-  [part1 puzzle] 4302
-  [part2 sample] 58
-  [part2 puzzle] 2492)
+  #_#_[part1 sample] 64
+  #_#_[part1 puzzle] 4302
+  #_#_[part2 sample] 58
+  #_#_[part2 puzzle] 2492)
 
