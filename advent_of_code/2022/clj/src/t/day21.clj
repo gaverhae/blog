@@ -1,8 +1,5 @@
 (ns t.day21
-  (:require [clojure.edn :as edn]
-            [clojure.string :as string]
-            [clojure.set :as set]
-            [clojure.core.match :refer [match]]
+  (:require [clojure.core.match :refer [match]]
             [instaparse.core :as insta]
             [t.lib :as lib :refer [->long]]))
 
