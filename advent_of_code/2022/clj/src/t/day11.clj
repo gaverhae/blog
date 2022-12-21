@@ -40,7 +40,8 @@
                                                                            (if (zero? (mod ~'w ~(->long d)))
                                                                              ~(->long t)
                                                                              ~(->long f))))))))
-                            {:activity 0}))))))
+                            {:activity 0})
+                    ((juxt :index :items :op :div :throw-to :activity)))))))
 
 (defn solve
   [input restrict-fn max-iter]
@@ -49,7 +50,7 @@
          monkeys input]
     (cond (== n max-iter)
           (->> monkeys
-               (map :activity)
+               (map #(get % 5))
                sort
                reverse
                (take 2)
@@ -57,16 +58,16 @@
           (== i (count monkeys))
           (recur (inc n) 0 monkeys)
           :else
-          (let [{:keys [index items op throw-to]} (get monkeys i)]
+          (let [[index items op _ throw-to] (get monkeys i)]
             (recur n
                    (inc i)
                    (reduce (fn [monkeys item]
                              (let [w (restrict-fn (op item))
                                    t (throw-to w)]
-                               (update-in monkeys [t :items] conj w)))
+                               (update-in monkeys [t 1] conj w)))
                            (-> monkeys
-                               (update-in [index :activity] + (count items))
-                               (assoc-in [index :items] []))
+                               (update-in [index 5] + (count items))
+                               (assoc-in [index 1] []))
                            items))))))
 
 (defn part1
@@ -75,7 +76,7 @@
 
 (defn part2
   [input]
-  (let [d (->> input (map :div) (reduce *))]
+  (let [d (->> input (map #(get % 3)) (reduce *))]
     (solve input #(mod % d) 10000)))
 
 (lib/check
