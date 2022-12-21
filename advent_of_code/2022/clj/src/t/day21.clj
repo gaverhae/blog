@@ -59,7 +59,6 @@
                                          [n1 n2 true]
                                          [n2 n1 false])
                         v (neval env (env nh))]
-                    (prn [n := target := (env n) :where nh := v])
                     (match [f ordered]
                       ["*" _] (r env (/ target v) h)
                       ["+" _] (r env (- target v) h)
