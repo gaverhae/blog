@@ -1,9 +1,5 @@
 (ns t.day08
-  (:require [t.lib :as lib :refer [->long]]
-            [clojure.string :as string]
-            [clojure.set :as set]
-            [clojure.core.match :refer [match]]
-            [instaparse.core :as insta]))
+  (:require [t.lib :as lib :refer [->long]]))
 
 (defn parse
   [lines]
