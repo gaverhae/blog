@@ -4,9 +4,11 @@
 (defn parse
   [lines]
   (->> lines
-       (map (fn [line]
-              (let [[_ direction distance] (re-matches #"(\S) (\d+)" line)]
-                [(keyword direction) (->long distance)])))))
+       (mapcat (fn [line]
+                 (let [[_ direction distance] (re-matches #"(\S) (\d+)" line)]
+                   (repeat (->long distance)
+                           ({"U" [1 0], "D" [-1 0], "L" [0 -1], "R" [0 1]}
+                            direction)))))))
 
 (defn follow
   [head  tail]
@@ -41,8 +43,6 @@
 (defn part1
   [input]
   (->> input
-       (mapcat (fn [[d n]] (repeat n d)))
-       (map {:U [1 0], :D [-1 0], :L [0 -1], :R [0 1]})
        (reduce (fn [{:keys [head tail visited]} direction]
                  (let [head [(+ (head 0) (direction 0))
                              (+ (head 1) (direction 1))]
@@ -55,8 +55,6 @@
 (defn part2
   [input]
   (->> input
-       (mapcat (fn [[d n]] (repeat n d)))
-       (map {:U [1 0], :D [-1 0], :L [0 -1], :R [0 1]})
        (reduce (fn [{:keys [head tails visited]} direction]
                  (let [head [(+ (head 0) (direction 0))
                              (+ (head 1) (direction 1))]
