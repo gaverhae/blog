@@ -5,15 +5,21 @@
             [instaparse.core :as insta]
             [t.lib :as lib :refer [->long]]))
 
+(def parser
+  (insta/parser
+    "<S> = noop | add
+    noop = <'noop'>
+    add = <'addx '> num
+    <num> = #'-?\\d+'"))
+
 (defn parse
   [lines]
   (->> lines
-       (mapcat (fn [line]
-                 (or (when-let [[_ n] (re-matches #"addx (-?\d+)" line)]
-                       [[:noop] [:add (->long n)]])
-                     (when-let [[_] (re-matches #"noop" line)]
-                       [[:noop]])
-                     (throw (Exception.)))))))
+       (map (comp first parser))
+       (mapcat (fn [v]
+                 (match v
+                   [:add s] [[:noop] [:add (->long s)]]
+                   _ [v])))))
 
 (defn part1
   [input]
