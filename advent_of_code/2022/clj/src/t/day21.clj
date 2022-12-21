@@ -26,47 +26,49 @@
        (into {})))
 
 (defn neval
-  [env op]
-  (match op
-    [:lit i] i
-    [:op f n1 n2] (({"+" +, "-" -, "*" *, "/" /} f)
-                   (neval env (env n1))
-                   (neval env (env n2)))))
+  [env]
+  (fn r [op]
+    (match op
+      [:lit i] i
+      [:op f n1 n2] (({"+" +, "-" -, "*" *, "/" /} f)
+                     (r (env n1))
+                     (r (env n2))))))
 
 (defn part1
-  [input]
-  (neval input (input "root")))
+  [env]
+  ((neval env) (env "root")))
 
 (defn part2
-  [input]
-  (let [left (get-in input ["root" 2])
-        right (get-in input ["root" 3])
-        contains-humn? (fn r [env n]
+  [env]
+  (let [nev (neval env)
+        left (get-in env ["root" 2])
+        right (get-in env ["root" 3])
+        contains-humn? (fn r [n]
                          (match n
                            [:lit _] false
                            [:op _ a b] (or (= a "humn")
                                            (= b "humn")
-                                           (r env (env a))
-                                           (r env (env b)))))
-        [tbd target] (if (contains-humn? input (input left)) [left right] [right left])
-        target-value (neval input (input target))
-        solve (fn r [env target n]
+                                           (r (env a))
+                                           (r (env b)))))
+        [tbd target] (if (contains-humn? (env left)) [left right] [right left])
+        target-value (nev (env target))
+        solve (fn r [target n]
                 (if (= "humn" n)
                   target
                   (let [[_ f n1 n2] (env n)
-                        [h nh ordered] (if (or (contains-humn? env (env n1))
+                        [h nh ordered] (if (or (contains-humn? (env n1))
                                                (= "humn" n1))
                                          [n1 n2 true]
                                          [n2 n1 false])
-                        v (neval env (env nh))]
+                        v (nev (env nh))]
                     (match [f ordered]
-                      ["*" _] (r env (/ target v) h)
-                      ["+" _] (r env (- target v) h)
-                      ["/" true] (r env (* target v) h)
-                      ["-" true] (r env (+ target v) h)
-                      ["/" false] (r env (/ v target) h)
-                      ["-" false] (r env (- v target) h)))))]
-    (solve input target-value tbd)))
+                      ["*" _] (r (/ target v) h)
+                      ["+" _] (r (- target v) h)
+                      ["/" true] (r (* target v) h)
+                      ["-" true] (r (+ target v) h)
+                      ["/" false] (r (/ v target) h)
+                      ["-" false] (r (- v target) h)))))]
+    (solve target-value tbd)))
 
 (lib/check
   [part1 sample] 152
