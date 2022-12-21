@@ -3,7 +3,7 @@
 let
   sources = import ./nix/sources.nix;
   pkgs = import sources.nixpkgs {};
-  jdk = pkgs.openjdk11_headless;
+  jdk = pkgs.jdk;
 in
 pkgs.mkShell {
   buildInputs = [
