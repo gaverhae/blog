@@ -23,32 +23,12 @@
    [[y (dec x)] [[y (dec x)] [(inc y) (dec x)] [(dec y) (dec x)]]]
    [[y (inc x)] [[y (inc x)] [(inc y) (inc x)] [(dec y) (inc x)]]]])
 
-(defn print-board
-  [positions]
-  (let [[xmin xmax ymin ymax] (reduce (fn [[xmin xmax ymin ymax] [y x]]
-                                        [(min xmin x)
-                                         (max xmax x)
-                                         (min ymin y)
-                                         (max ymax y)])
-                                      [(get (first (keys positions)) 1)
-                                       (get (first (keys positions)) 1)
-                                       (get (first (keys positions)) 0)
-                                       (get (first (keys positions)) 0)]
-                                      (rest (keys positions)))]
-    (doseq [y (range ymin (inc ymax))]
-      (println) (flush)
-      (doseq [x (range xmin (inc xmax))]
-        (print (format "%3s" (str (positions [y x] " . "))))))
-    (println) (flush)))
-
 (defn part1
   [input]
   (loop [n 0
          directions 0
          positions (->> input (map-indexed (fn [idx p] [p idx]))
                         (into {}))]
-    (prn [n positions directions (count positions)])
-    (print-board positions)
     (if (== 10 n)
       (let [[xmin xmax ymin ymax] (reduce (fn [[xmin xmax ymin ymax] [y x]]
                                             [(min xmin x)
@@ -77,10 +57,8 @@
                            (reduce (fn [acc [pos neighs]]
                                      (let [prop (->> neighs
                                                      (some (fn [[move looks]]
-                                                             (prn [:look pos move looks (map positions looks)])
                                                              (when (every? nil? (map positions looks))
                                                                move))))]
-                                       (prn [:prop pos prop])
                                        (assoc acc (val pos) prop)))
                                    {}))
             conflicts (->> proposals
@@ -107,8 +85,6 @@
          directions 0
          positions (->> input (map-indexed (fn [idx p] [p idx]))
                         (into {}))]
-    (prn [n positions directions (count positions)])
-    (print-board positions)
     (let [proposals (->> positions
                          (map (fn [pos] [pos (->> (neighbours (key pos))
                                                   cycle
@@ -122,10 +98,8 @@
                          (reduce (fn [acc [pos neighs]]
                                    (let [prop (->> neighs
                                                    (some (fn [[move looks]]
-                                                           (prn [:look pos move looks (map positions looks)])
                                                            (when (every? nil? (map positions looks))
                                                              move))))]
-                                     (prn [:prop pos prop])
                                      (assoc acc (val pos) prop)))
                                  {}))
           conflicts (->> proposals
