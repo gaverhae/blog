@@ -149,7 +149,7 @@
                new-positions)))))
 
 (lib/check
-  #_#_[part1 sample] 110
-  #_#_[part1 puzzle] 3996
+  [part1 sample] 110
+  [part1 puzzle] 3996
   [part2 sample] 20
-  [part2 puzzle] 0)
+  [part2 puzzle] 908)
