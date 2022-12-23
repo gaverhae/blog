@@ -182,5 +182,5 @@
 (lib/check
   #_#_[part1 sample] 6032
   #_#_[part1 puzzle] 117102
-  [part2 sample 4] 5031
-  [part2 puzzle 50] 0)
+  #_#_[part2 sample 4] 5031
+  #_#_[part2 puzzle 50] 0)
