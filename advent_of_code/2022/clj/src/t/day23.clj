@@ -103,10 +103,53 @@
 
 (defn part2
   [input]
-  input)
+  (loop [n 0
+         directions 0
+         positions (->> input (map-indexed (fn [idx p] [p idx]))
+                        (into {}))]
+    (prn [n positions directions (count positions)])
+    (print-board positions)
+    (let [proposals (->> positions
+                         (map (fn [pos] [pos (->> (neighbours (key pos))
+                                                  cycle
+                                                  (drop directions)
+                                                  (take 4))]))
+                         (remove (fn [[pos neighs]]
+                                   (->> neighs
+                                        (mapcat (fn [[_ adj]] adj))
+                                        (map positions)
+                                        (every? nil?))))
+                         (reduce (fn [acc [pos neighs]]
+                                   (let [prop (->> neighs
+                                                   (some (fn [[move looks]]
+                                                           (prn [:look pos move looks (map positions looks)])
+                                                           (when (every? nil? (map positions looks))
+                                                             move))))]
+                                     (prn [:prop pos prop])
+                                     (assoc acc (val pos) prop)))
+                                 {}))
+          conflicts (->> proposals
+                         vals
+                         (remove nil?)
+                         frequencies
+                         (filter (fn [[k v]] (>= v 2)))
+                         keys
+                         set)
+          new-positions (->> positions
+                             (map (fn [[p idx]]
+                                    (let [to (proposals idx)]
+                                      (if (and to (not (conflicts to)))
+                                        [to idx]
+                                        [p idx]))))
+                             (into {}))]
+      (if (= new-positions positions)
+        (inc n)
+        (recur (inc n)
+               (mod (inc directions) 4)
+               new-positions)))))
 
 (lib/check
-  [part1 sample] 110
-  [part1 puzzle] 0
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  #_#_[part1 sample] 110
+  #_#_[part1 puzzle] 3996
+  [part2 sample] 20
+  [part2 puzzle] 0)
