@@ -7,57 +7,57 @@
 
 (defn parse
   [lines]
-  {:maze (->> lines
-              (map-indexed
-                (fn [y line]
-                  (keep-indexed (fn [x c]
-                                  (when (not= c \.)
-                                    {[y x] [({\# :wall
-                                              \> :right
-                                              \< :left
-                                              \^ :up
-                                              \v :down} c)]}))
-                                line)))
-              (apply concat)
-              (apply merge-with concat))
+  {:blizzards (->> lines
+                   (map-indexed
+                     (fn [y line]
+                       (->> line
+                            (keep-indexed
+                              (fn [x c]
+                                (case c
+                                  \. nil
+                                  \# nil
+                                  \> [:right [y x]]
+                                  \< [:left [y x]]
+                                  \^ [:up [y x]]
+                                  \v [:down [y x]]))))))
+                   (apply concat)
+                   (reduce (fn [acc [dir pos]]
+                             (update acc dir (fnil conj []) pos))
+                           {}))
    :height (count lines)
    :width (count (first lines))
    :start [0 (.indexOf ^String (first lines) ".")]
    :end [(dec (count lines)) (.indexOf ^String (last lines) ".")]})
 
-(defn tick-blizzards
-  [{:as state :keys [maze width height]}]
-  (assoc state :maze
-         (->> maze
-              (mapcat (fn [[[y x] ts]]
-                        (->> ts
-                             (map (fn [t]
-                                    (case t
-                                      :wall {[y x] [t]}
-                                      :down {[(if (= (dec height) (inc y)) 1 (inc y)) x] [t]}
-                                      :up {[(if (zero? (dec y)) (- height 2) (dec y)) x] [t]}
-                                      :left {[y (if (zero? (dec x)) (- width 2) (dec x))] [t]}
-                                      :right {[y (if (= (dec width) (inc x)) 1 (inc x))] [t]}))))))
-              (apply merge-with concat))))
+(defn collides?
+  [blizzards [y x] t width height]
+  (let [left (->> blizzards :left (filter (fn [[yb _]] (= yb y))))
+        right (->> blizzards :right (filter (fn [[yb _]] (= yb y))))
+        up (->> blizzards :up (filter (fn [[_ xb]] (= xb x))))
+        down (->> blizzards :down (filter (fn [[_ xb]] (= xb x))))]
+    (or (some (fn [[_ xb]] (= x (inc (mod (+ (dec xb) (- t)) (- width 2))))) left)
+        (some (fn [[_ xb]] (= x (inc (mod (+ (dec xb)    t ) (- width 2))))) right)
+        (some (fn [[yb _]] (= y (inc (mod (+ (dec yb) (- t)) (- height 2))))) up)
+        (some (fn [[yb _]] (= y (inc (mod (+ (dec yb)    t ) (- height 2))))) down))))
 
 (defn generate-moves
-  [[{:as state :keys [maze pos width height]} cost]]
-  (let [state (tick-blizzards state)
-        [y x] pos]
+  [{:keys [blizzards width height start end]}]
+  (fn [[[y x cost] _]]
     (->> [[y x] [(inc y) x] [(dec y) x] [y (inc x)] [y (dec x)]]
-         (filter (fn [[y x]] (and (<= 0 x (dec width))
-                                  (<= 0 y (dec height)))))
-         (remove (fn [pos] (get-in state [:maze pos])))
-         (map (fn [new-pos]
-                [(-> state (assoc :pos new-pos)) (inc cost)])))))
+         (filter (fn [[y x]] (or (and (<= 1 x (- width 2))
+                                      (<= 1 y (- height 2)))
+                                 (= start [y x])
+                                 (= end [y x]))))
+         (remove (fn [pos] (collides? blizzards pos (inc cost) width height)))
+         (map (fn [[y x]] [[y x (inc cost)] (inc cost)])))))
 
 (defn part1
   [input]
   (lib/a-star-search
-    (assoc input :pos (:start input))
-    (fn [s] (= (:pos s) (:end s)))
-    generate-moves
-    (fn [s] (lib/manhattan (:pos s) (:end s)))))
+    (conj (:start input) 0)
+    (let [end (:end input)] (fn [[y x _]] (= [y x] end)))
+    (generate-moves input)
+    (let [end (:end input)] (fn [[y x _]] (lib/manhattan [y x] end)))))
 
 (defn part2
   [input]
@@ -65,6 +65,6 @@
 
 (lib/check
   [part1 sample] 18
-  #_#_[part1 puzzle] 0
+  [part1 puzzle] 299
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
