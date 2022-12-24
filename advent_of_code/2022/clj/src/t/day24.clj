@@ -61,10 +61,25 @@
 
 (defn part2
   [input]
-  input)
+  (let [trip1 (lib/a-star-search
+                (conj (:start input) 0)
+                (let [end (:end input)] (fn [[y x _]] (= [y x] end)))
+                (generate-moves input)
+                (let [end (:end input)] (fn [[y x _]] (lib/manhattan [y x] end))))
+        trip2 (lib/a-star-search
+                (conj (:end input) trip1)
+                (let [end (:start input)] (fn [[y x _]] (= [y x] end)))
+                (generate-moves input)
+                (let [end (:start input)] (fn [[y x _]] (lib/manhattan [y x] end))))
+        trip3 (lib/a-star-search
+                (conj (:start input) trip2)
+                (let [end (:end input)] (fn [[y x _]] (= [y x] end)))
+                (generate-moves input)
+                (let [end (:end input)] (fn [[y x _]] (lib/manhattan [y x] end))))]
+    trip3))
 
 (lib/check
-  [part1 sample] 18
-  [part1 puzzle] 299
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  #_#_[part1 sample] 18
+  #_#_[part1 puzzle] 299
+  [part2 sample] 54
+  [part2 puzzle] 899)
