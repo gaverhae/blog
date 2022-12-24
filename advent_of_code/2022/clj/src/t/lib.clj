@@ -26,6 +26,11 @@
         (recur (.poll to-visit)
                (conj visited state))))))
 
+(defn manhattan
+  [[^long x1 ^long y1] [^long x2 ^long y2]]
+  (+ (Math/abs (- x1 x2))
+     (Math/abs (- y1 y2))))
+
 (defmacro check
   [& specs]
   `(deftest ~'check

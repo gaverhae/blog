@@ -14,15 +14,10 @@
                     [_ sx sy bx by] (re-matches re line)]
                 [[(->long sy) (->long sx)] [(->long by) (->long bx)]])))))
 
-(defn manhattan
-  [[^long x1 ^long y1] [^long x2 ^long y2]]
-  (+ (Math/abs (- x1 x2))
-     (Math/abs (- y1 y2))))
-
 (defn part1
   [input target-row]
   #_(let [ds (->> input
-                (map (fn [[s b]] [s (manhattan s b)])))
+                (map (fn [[s b]] [s (lib/manhattan s b)])))
         grid (reduce (fn [[xmin xmax ymin ymax] [[y1 x1] [y2 x2]]]
                        [(min xmin x1 x2)
                         (max xmax x1 x2)
@@ -39,7 +34,7 @@
                  :let [p [y x]]
                  :when (and (not (beacon? p))
                             (some (fn [[s d]]
-                                    (<= (manhattan p s) d))
+                                    (<= (lib/manhattan p s) d))
                                   ds))]
              p)))
   (let [;target-row 10
@@ -52,7 +47,7 @@
                      set)
         ranges (->> input
                     (mapcat (fn [[sensor nearest-beacon]]
-                              (let [no-beacon-distance (manhattan sensor nearest-beacon)
+                              (let [no-beacon-distance (lib/manhattan sensor nearest-beacon)
                                     left-at-target-row (- no-beacon-distance
                                                           (Math/abs ^long (- target-row (first sensor))))]
                                 (when (not (neg? left-at-target-row))
@@ -67,10 +62,10 @@
         ;limit 4000000
         beacon? (->> input (map second) set)
         distances (->> input (map (fn [[sensor nearest-beacon]]
-                                    [sensor (manhattan sensor nearest-beacon)])))
+                                    [sensor (lib/manhattan sensor nearest-beacon)])))
         [y x] (->> input
                    (mapcat (fn [[[y x] b]]
-                             (let [d (inc (manhattan [y x] b))]
+                             (let [d (inc (lib/manhattan [y x] b))]
                                (for [dy (range (- d) (inc d))
                                      xdir [1 -1]
                                      :let [dx (* xdir (Math/abs ^long (- d dy)))
@@ -81,7 +76,7 @@
                                                 (->> distances
                                                      (every?
                                                        (fn [[sensor distance]]
-                                                         (> (manhattan sensor p) distance)))))]
+                                                         (> (lib/manhattan sensor p) distance)))))]
                                  p))))
                    first)]
     (+ (* (* 4 1000 1000) x)
