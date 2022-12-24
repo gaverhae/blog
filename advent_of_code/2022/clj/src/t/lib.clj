@@ -12,6 +12,20 @@
   [s]
   (apply mapv vector s))
 
+(defn dijkstra-search
+  [initial final? generate-moves]
+  (let [to-visit (java.util.PriorityQueue. 100 (fn [x y] (compare (first x) (first y))))]
+    (loop [[cost state] [0 initial]
+           visited #{}]
+      (when (not (visited state))
+        (doseq [[nxt-state nxt-cost] (generate-moves [state cost])]
+          (when (not (visited nxt-state))
+            (.add to-visit [nxt-cost nxt-state]))))
+      (if (final? state)
+        cost
+        (recur (.poll to-visit)
+               (conj visited state))))))
+
 (defmacro check
   [& specs]
   `(deftest ~'check

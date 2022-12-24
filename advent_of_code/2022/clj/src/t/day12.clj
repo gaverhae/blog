@@ -5,20 +5,6 @@
             [instaparse.core :as insta]
             [t.lib :as lib :refer [->long]]))
 
-(defn dijkstra-search
-  [initial final? generate-moves]
-  (let [to-visit (java.util.PriorityQueue. 100 compare)]
-    (loop [[cost state] [0 initial]
-           visited #{}]
-      (when (not (visited state))
-        (doseq [[nxt-state nxt-cost] (generate-moves [state cost])]
-          (when (not (visited nxt-state))
-            (.add to-visit [nxt-cost nxt-state]))))
-      (if (final? state)
-        cost
-        (recur (.poll to-visit)
-               (conj visited state))))))
-
 (defn parse
   [lines]
   (->> lines
@@ -37,7 +23,7 @@
 
 (defn part1
   [input]
-  (dijkstra-search
+  (lib/dijkstra-search
     (loop [j 0
            i 0]
       (cond (== i (count (first input))) (recur (inc j) 0)
@@ -55,7 +41,7 @@
 
 (defn part2
   [input]
-  (dijkstra-search
+  (lib/dijkstra-search
     (loop [j 0
            i 0]
       (cond (== i (count (first input))) (recur (inc j) 0)
