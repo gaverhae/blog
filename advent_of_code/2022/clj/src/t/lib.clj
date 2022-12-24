@@ -26,6 +26,21 @@
         (recur (.poll to-visit)
                (conj visited state))))))
 
+(defn a-star-search
+  [initial final? generate-moves heuristic]
+  (let [to-visit (java.util.PriorityQueue. 100 (fn [x y] (compare (first x) (first y))))]
+    (loop [[guess cost state] [(heuristic initial) 0 initial]
+           visited #{}]
+      (when (not (visited state))
+        (doseq [[nxt-state nxt-cost] (generate-moves [state cost])]
+          (when (not (visited nxt-state))
+            (.add to-visit [(+ nxt-cost (heuristic nxt-state))
+                            nxt-cost nxt-state]))))
+      (if (final? state)
+        cost
+        (recur (.poll to-visit)
+               (conj visited state))))))
+
 (defn manhattan
   [[^long x1 ^long y1] [^long x2 ^long y2]]
   (+ (Math/abs (- x1 x2))

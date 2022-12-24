@@ -53,17 +53,18 @@
 
 (defn part1
   [input]
-  (lib/dijkstra-search
+  (lib/a-star-search
     (assoc input :pos (:start input))
     (fn [s] (= (:pos s) (:end s)))
-    generate-moves))
+    generate-moves
+    (fn [s] (lib/manhattan (:pos s) (:end s)))))
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  [part1 sample] 0
-  [part1 puzzle] 0
+  [part1 sample] 18
+  #_#_[part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
