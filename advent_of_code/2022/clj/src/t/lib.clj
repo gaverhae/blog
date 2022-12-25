@@ -30,10 +30,7 @@
   [initial final? generate-moves heuristic]
   (let [to-visit (java.util.PriorityQueue. 100 (fn [x y] (compare (first x) (first y))))]
     (loop [[guess cost state] [(heuristic initial) 0 initial]
-           visited #{}
-           i 0]
-      (when (zero? (mod i 1000))
-        (prn [(- guess cost) guess cost state]))
+           visited #{}]
       (when (not (visited state))
         (doseq [[nxt-state nxt-cost] (generate-moves [state cost])]
           (when (not (visited nxt-state))
@@ -42,8 +39,7 @@
       (if (final? state)
         cost
         (recur (.poll to-visit)
-               (conj visited state)
-               (inc i))))))
+               (conj visited state))))))
 
 (defn manhattan
   [[^long x1 ^long y1] [^long x2 ^long y2]]

@@ -81,5 +81,5 @@
 (lib/check
   #_#_[part1 sample] 18
   #_#_[part1 puzzle] 299
-  [part2 sample] 54
-  [part2 puzzle] 899)
+  #_#_[part2 sample] 54
+  #_#_[part2 puzzle] 899)
