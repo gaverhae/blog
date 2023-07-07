@@ -19,8 +19,7 @@ def load_assets():
             "fonts": {"calibri": pygame.font.SysFont('calibri', 64),
                       "attack": pygame.font.Font('assets/AttackGraffiti.ttf', 32)},
             "sounds": {"sound_1": pygame.mixer.Sound("assets/sound_1.wav"),
-                       "sound_2": pygame.mixer.Sound("assets/sound_2.wav"),
-                       "music": pygame.mixer.music.load("assets/music.wav")}}
+                       "sound_2": pygame.mixer.Sound("assets/sound_2.wav")}}
 
 def draw_shapes(disp, assets):
     disp.fill(blue)
@@ -52,26 +51,33 @@ def render_text(disp, assets):
     disp.blit(sys_t, sys_tr)
     disp.blit(cus_t, cus_tr)
 
-def play_sounds(disp, assets):
-    disp.fill(black)
-    assets["sounds"]["sound_1"].play()
-    pygame.time.delay(2000)
-    assets["sounds"]["sound_2"].set_volume(.1)
-    assets["sounds"]["sound_2"].play()
-    pygame.time.delay(2000)
-    pass
+def display_state(disp, assets, state):
+    state["render"](disp, assets)
+    if state.get("transition"):
+        state["transition"].play()
+    if state.get("music"):
+        pygame.mixer.music.play(-1, 0.0)
+    else:
+        pygame.mixer.music.stop()
 
 def main():
     pygame.init()
     assets = load_assets()
+    assets["sounds"]["sound_2"].set_volume(.1)
+    pygame.mixer.music.load("assets/music.wav")
 
     display = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Adding Sounds!")
 
-    states = [draw_shapes, draw_dragons, render_text, play_sounds]
-    state_pos = 0
+    states = [{"render": draw_shapes,
+               "transition": assets["sounds"]["sound_1"]},
+              {"render": draw_dragons,
+               "transition": assets["sounds"]["sound_2"]},
+              {"render": render_text,
+               "music": True}]
 
-    pygame.mixer.music.play(-1, 0.0)
+    state_pos = 0
+    display_state(display, assets, states[state_pos])
 
     running = True
     while running:
@@ -80,7 +86,7 @@ def main():
                 running = False
             if pygame.event.event_name(event.type) == "MouseButtonUp":
                 state_pos = (state_pos + 1) % len(states)
-        states[state_pos](display, assets)
+                display_state(display, assets, states[state_pos])
         pygame.display.update()
     pygame.quit()
 
