@@ -17,7 +17,10 @@ def load_assets():
     return {"dragon": {"left": pygame.image.load("assets/dragon_left.png"),
                        "right": pygame.image.load("assets/dragon_right.png")},
             "fonts": {"calibri": pygame.font.SysFont('calibri', 64),
-                      "attack": pygame.font.Font('assets/AttackGraffiti.ttf', 32)}}
+                      "attack": pygame.font.Font('assets/AttackGraffiti.ttf', 32)},
+            "sounds": {"sound_1": pygame.mixer.Sound("assets/sound_1.wav"),
+                       "sound_2": pygame.mixer.Sound("assets/sound_2.wav"),
+                       "music": pygame.mixer.music.load("assets/music.wav")}}
 
 def draw_shapes(disp, assets):
     disp.fill(blue)
@@ -49,15 +52,26 @@ def render_text(disp, assets):
     disp.blit(sys_t, sys_tr)
     disp.blit(cus_t, cus_tr)
 
+def play_sounds(disp, assets):
+    disp.fill(black)
+    assets["sounds"]["sound_1"].play()
+    pygame.time.delay(2000)
+    assets["sounds"]["sound_2"].set_volume(.1)
+    assets["sounds"]["sound_2"].play()
+    pygame.time.delay(2000)
+    pass
+
 def main():
     pygame.init()
     assets = load_assets()
 
     display = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Blitting Text!")
+    pygame.display.set_caption("Adding Sounds!")
 
-    states = [draw_shapes, draw_dragons, render_text]
+    states = [draw_shapes, draw_dragons, render_text, play_sounds]
     state_pos = 0
+
+    pygame.mixer.music.play(-1, 0.0)
 
     running = True
     while running:
