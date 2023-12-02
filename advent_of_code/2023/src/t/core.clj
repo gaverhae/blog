@@ -1,5 +1,6 @@
 (ns t.core
   (:require [clojure.string :as s]))
+(comment
 
 (defn foo
   "I don't do a whole lot."
@@ -303,3 +304,4 @@
                      Long/parseLong)))
          (reduce + 0)))
 53348
+)
