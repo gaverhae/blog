@@ -60,7 +60,7 @@
                       (let [file# (format "data/day%02d-puzzle" ~'day)]
                         (when (not (.exists (io/file file#)))
                           (spit file#
-                                (-> (format "https://adventofcode.com/2022/day/%d/input"
+                                (-> (format "https://adventofcode.com/2023/day/%d/input"
                                             ~'day)
                                     (hc/get {:headers
                                              {"cookie" (format "session=%s"
