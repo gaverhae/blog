@@ -49,11 +49,28 @@
          (reduce + 0))))
 
 (defn part2
-  [input]
-  input)
+  [{:keys [numbers symbols]}]
+  (let [parts (->> numbers
+                   (map (fn [[n [y x0]]]
+                          [n (set (for [x (range x0 (+ x0 (count n)))]
+                                           [y x]))])))]
+    (->> symbols
+         (filter (fn [[s _]] (= s \*)))
+         (map (fn [[s [y x]]]
+                [s (set [[(dec y) (dec x)] [(dec y) x] [(dec y) (inc x)]
+                         [     y  (dec x)] [     y  x] [     y  (inc x)]
+                         [(inc y) (dec x)] [(inc y) x] [(inc y) (inc x)]])]))
+         (map (fn [[s adj]]
+                [s (->> parts
+                        (filter (fn [[n ps]] (seq (set/intersection adj ps))))
+                        (map (comp ->long first)))]))
+         (filter (fn [[s adj]] (= 2 (count adj))))
+         (map second)
+         (map (fn [[x y]] (* x y)))
+         (reduce + 0))))
 
 (lib/check
   [part1 sample] 4361
   [part1 puzzle] 559667
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  [part2 sample] 467835
+  [part2 puzzle] 86841457)
