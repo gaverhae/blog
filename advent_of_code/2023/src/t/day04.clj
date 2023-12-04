@@ -8,26 +8,34 @@
   [lines]
   (->> lines
        (map (fn [line]
-              (let [[_ winning have] (->> (s/split line #"\||:")
+              (let [[[id] winning have] (->> (s/split line #"\||:")
                                           (map (fn [s] (map parse-long (re-seq #"\d+" s)))))]
-
-                [winning have])))))
+                [id (count (set/intersection (set winning) (set have)))])))
+       (into {})))
 
 (defn part1
   [input]
   (->> input
-       (map (fn [[w h]] (count (set/intersection (set w) (set h)))))
-       (remove #{0})
-       (map dec)
-       (map #(long (math/pow 2 %)))
+       (keep (fn [[id c]] (when (pos? c) (long (math/pow 2 (dec c))))))
        (reduce + 0)))
 
 (defn part2
   [input]
-  input)
+  (loop [haves (->> input (map (fn [[k v]] [k 1])) (into {}))
+         cards (->> input keys sort)]
+    (if (empty? cards)
+      (->> haves vals (reduce + 00))
+      (let [id (first cards)
+            num-copies (haves id)
+            matching (input id)]
+        (recur (reduce (fn [acc el]
+                         (update acc el + num-copies))
+                       haves
+                       (range (inc id) (+ (inc id) matching)))
+               (rest cards))))))
 
 (lib/check
   [part1 sample] 13
   [part1 puzzle] 25183
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  [part2 sample] 30
+  [part2 puzzle] 5667240)
