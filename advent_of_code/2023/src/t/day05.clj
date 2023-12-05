@@ -21,13 +21,13 @@
   (let [[[_ [_ & seeds]] & maps] (parser (apply str (interpose "\n" lines)))]
     {:seeds (->> seeds (map parse-long))
      :maps (->> maps
-                (map (fn [[_ & nums]]
+                (map-indexed (fn [step [_ & nums]]
                        (->> nums
                             (map (fn [[_ & nums]]
                                    (map parse-long nums)))
                             (map (fn [[dest src rng]]
                                    (fn [in]
-                                     (when (< src in (+ src rng))
+                                     (when (<= src in (dec (+ src rng)))
                                        (+ dest (- in src))))))
                             ((fn [fns]
                                (fn [in]
@@ -45,11 +45,18 @@
 
 
 (defn part2
-  [input]
-  input)
+  [{:keys [seeds maps]}]
+  (->> seeds
+       (partition 2)
+       (mapcat (fn [[a b]] (range a (+ a b))))
+       (map (fn [seed]
+              (reduce (fn [acc el] (el acc))
+                      seed
+                      maps)))
+       (reduce min)))
 
 (lib/check
   [part1 sample] 35
-  [part1 puzzle] 240320250
-  #_#_[part2 sample] 0
+  #_#_[part1 puzzle] 240320250
+  [part2 sample] 46
   #_#_[part2 puzzle] 0)
