@@ -2,22 +2,50 @@
   (:require [clojure.math :as math]
             [clojure.set :as set]
             [clojure.string :as s]
-            [t.lib :as lib :refer [->long]]))
+            [instaparse.core :as insta]
+            [t.lib :as lib]))
+
+(def parser
+  (insta/parser
+    "<S> = seeds map+
+     seeds = <'seeds: '> nums
+     nums = num (<' '> num)+
+     <num> = #'\\d+'
+     nl = #'\\n'
+     map = <nl> <nl> <map-title> <nl> nums (<nl> nums)+
+     map-title = #'[a-z -]+:'
+    "))
 
 (defn parse
   [lines]
-  lines)
+  (let [[[_ [_ & seeds]] & maps] (parser (apply str (interpose "\n" lines)))]
+    {:seeds (->> seeds (map parse-long))
+     :maps (->> maps
+                (map (fn [[_ & nums]]
+                       (->> nums
+                            (map (fn [[_ & nums]]
+                                   (map parse-long nums)))
+                            (mapcat (fn [[dest src rng]]
+                                      (map vector (range src (+ src rng))
+                                                  (range dest (+ dest rng)))))
+                            (into {})))))}))
 
 (defn part1
-  [input]
-  input)
+  [{:keys [seeds maps]}]
+  (->> seeds
+       (map (fn [seed]
+              (reduce (fn [acc el] (el acc acc))
+                      seed
+                      maps)))
+       (reduce min 100)))
+
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  #_#_[part1 sample] 0
-  #_#_[part1 puzzle] 0
+  [part1 sample] 35
+  [part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
