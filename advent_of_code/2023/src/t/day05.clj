@@ -25,19 +25,23 @@
                        (->> nums
                             (map (fn [[_ & nums]]
                                    (map parse-long nums)))
-                            (mapcat (fn [[dest src rng]]
-                                      (map vector (range src (+ src rng))
-                                                  (range dest (+ dest rng)))))
-                            (into {})))))}))
+                            (map (fn [[dest src rng]]
+                                   (fn [in]
+                                     (when (< src in (+ src rng))
+                                       (+ dest (- in src))))))
+                            ((fn [fns]
+                               (fn [in]
+                                 (or (first (keep (fn [f] (f in)) fns))
+                                     in))))))))}))
 
 (defn part1
   [{:keys [seeds maps]}]
   (->> seeds
        (map (fn [seed]
-              (reduce (fn [acc el] (el acc acc))
+              (reduce (fn [acc el] (el acc))
                       seed
                       maps)))
-       (reduce min 100)))
+       (reduce min)))
 
 
 (defn part2
@@ -46,6 +50,6 @@
 
 (lib/check
   [part1 sample] 35
-  [part1 puzzle] 0
+  [part1 puzzle] 240320250
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
