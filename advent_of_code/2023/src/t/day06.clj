@@ -24,10 +24,22 @@
 
 (defn part2
   [input]
-  input)
+  (let [[total-time record-distance] (->> input
+                                          lib/transpose
+                                          (map (fn [nums] (parse-long (apply str nums)))))
+        shortest (loop [press 0]
+                   (if (> (* press (- total-time press)) record-distance)
+                     press
+                     (recur (inc press))))
+        longest (loop [press total-time]
+                   (if (> (* press (- total-time press)) record-distance)
+                     press
+                     (recur (dec press))))]
+    (inc (- longest shortest))))
+
 
 (lib/check
   [part1 sample] 288
   [part1 puzzle] 608902
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  [part2 sample] 71503
+  [part2 puzzle] 46173809)
