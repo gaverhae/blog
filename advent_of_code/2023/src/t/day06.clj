@@ -7,18 +7,27 @@
 
 (defn parse
   [lines]
-  lines)
+  (->> lines
+       (map (fn [line] (map parse-long (re-seq #"\d+" line))))
+       lib/transpose))
 
 (defn part1
   [input]
-  input)
+  (->> input
+       (map (fn [[t d]]
+              (for [press (range t)
+                    :let [traveled (* press (- t press))]
+                    :when (> traveled d)]
+                [press traveled])))
+       (map count)
+       (reduce * 1)))
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  #_#_[part1 sample] 0
-  #_#_[part1 puzzle] 0
+  [part1 sample] 288
+  [part1 puzzle] 608902
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
