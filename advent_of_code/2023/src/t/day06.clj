@@ -8,35 +8,32 @@
 (defn parse
   [lines]
   (->> lines
-       (map (fn [line] (map parse-long (re-seq #"\d+" line))))
-       lib/transpose))
+       (map (fn [line] (re-seq #"\d+" line)))))
+
+(defn solve-one
+  [[t d]]
+  (->> [[t dec] [0 inc]]
+       (map (fn [[start dir]]
+              (loop [press start]
+                (if (> (* press (- t press)) d)
+                  press
+                  (recur (dir press))))))
+       (apply -)
+       inc))
 
 (defn part1
   [input]
   (->> input
-       (map (fn [[t d]]
-              (for [press (range t)
-                    :let [traveled (* press (- t press))]
-                    :when (> traveled d)]
-                [press traveled])))
-       (map count)
+       (map (fn [nums] (map parse-long nums)))
+       lib/transpose
+       (map solve-one)
        (reduce * 1)))
 
 (defn part2
   [input]
-  (let [[total-time record-distance] (->> input
-                                          lib/transpose
-                                          (map (fn [nums] (parse-long (apply str nums)))))
-        shortest (loop [press 0]
-                   (if (> (* press (- total-time press)) record-distance)
-                     press
-                     (recur (inc press))))
-        longest (loop [press total-time]
-                   (if (> (* press (- total-time press)) record-distance)
-                     press
-                     (recur (dec press))))]
-    (inc (- longest shortest))))
-
+  (->> input
+       (map (fn [nums] (parse-long (apply str nums))))
+       solve-one))
 
 (lib/check
   [part1 sample] 288
