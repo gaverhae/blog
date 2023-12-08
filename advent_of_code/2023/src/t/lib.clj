@@ -46,6 +46,16 @@
   (+ (Math/abs (- x1 x2))
      (Math/abs (- y1 y2))))
 
+(defn gcd
+  [a b]
+  (cond (= a b) a
+        (> a b) (recur (- a b) b)
+        (< a b) (recur a (- b a))))
+
+(defn lcm
+  [a b]
+  (quot (* a b) (gcd a b)))
+
 (defmacro check
   [& specs]
   `(deftest ~'check
