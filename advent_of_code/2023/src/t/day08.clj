@@ -11,7 +11,7 @@
                     (map {\L 0, \R 1}))
    :nodes (->> (drop 2 lines)
                (map (fn [line]
-                      (let [[_ start left right] (re-find #"([A-Z]+) = \(([A-Z]+), ([A-Z]+)\)" line)]
+                      (let [[_ start left right] (re-find #"([A-Z0-9]+) = \(([A-Z0-9]+), ([A-Z0-9]+)\)" line)]
                         [start [left right]])))
                (into {}))})
 
@@ -27,11 +27,20 @@
              (get-in nodes [pos (first directions)])))))
 
 (defn part2
-  [input]
-  input)
+  [{:keys [directions nodes]}]
+  (loop [s 0
+         ds (cycle directions)
+         pos (->> nodes keys (filter (fn [s] (= \A (get s 2)))))]
+    (if (every? (fn [s] (= \Z (get s 2))) pos)
+      s
+      (recur (inc s)
+             (rest ds)
+             (->> pos
+                  (map (fn [p] (get-in nodes [p (first ds)])))
+                  set)))))
 
 (lib/check
-  [part1 sample] 2
+  [part1 sample1] 2
   [part1 puzzle] 15517
-  #_#_[part2 sample] 0
+  [part2 sample2] 6
   #_#_[part2 puzzle] 0)
