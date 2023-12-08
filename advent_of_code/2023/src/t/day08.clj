@@ -43,4 +43,4 @@
   [part1 sample1] 2
   [part1 puzzle] 15517
   [part2 sample2] 6
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle] 0)
