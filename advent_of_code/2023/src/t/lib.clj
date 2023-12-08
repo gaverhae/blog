@@ -56,6 +56,14 @@
                                slurp
                                string/split-lines
                                ~'parse))
+           ~'sample1 (delay (-> (format "data/day%02d-sample1" ~'day)
+                                slurp
+                                string/split-lines
+                                ~'parse))
+           ~'sample2 (delay (-> (format "data/day%02d-sample2" ~'day)
+                                slurp
+                                string/split-lines
+                                ~'parse))
            ~'puzzle (delay
                       (let [file# (format "data/day%02d-puzzle" ~'day)]
                         (when (not (.exists (io/file file#)))
