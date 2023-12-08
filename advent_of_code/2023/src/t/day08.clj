@@ -36,8 +36,7 @@
       (recur (inc s)
              (rest ds)
              (->> pos
-                  (map (fn [p] (get-in nodes [p (first ds)])))
-                  set)))))
+                  (mapv (fn [p] (get-in nodes [p (first ds)]))))))))
 
 (lib/check
   [part1 sample1] 2
