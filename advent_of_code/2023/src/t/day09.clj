@@ -30,10 +30,23 @@
 
 (defn part2
   [input]
-  input)
+  (->> input
+       (map (fn [line]
+              line
+              (loop [seqs [line]]
+                (if (every? zero? (first seqs))
+                  (reduce (fn [acc el]
+                            (- el acc))
+                          (first (first seqs))
+                          (map first (rest seqs)))
+                  (recur (cons (->> (first seqs)
+                                    (partition 2 1)
+                                    (map (fn [[a b]] (- b a))))
+                               seqs))))))
+       (reduce + 0)))
 
 (lib/check
   [part1 sample] 114
   [part1 puzzle] 1953784198
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  [part2 sample] 2
+  [part2 puzzle] 957)
