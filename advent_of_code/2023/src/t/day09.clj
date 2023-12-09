@@ -9,7 +9,7 @@
   [lines]
   (->> lines
        (map (fn [line]
-              (map parse-long (re-seq #"\d+" line))))))
+              (map parse-long (re-seq #"-?\d+" line))))))
 
 (defn part1
   [input]
@@ -34,6 +34,6 @@
 
 (lib/check
   [part1 sample] 114
-  [part1 puzzle] 0
+  [part1 puzzle] 1953784198
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
