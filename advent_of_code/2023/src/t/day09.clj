@@ -9,41 +9,32 @@
   [lines]
   (->> lines
        (map (fn [line]
-              (map parse-long (re-seq #"-?\d+" line))))))
-
-(defn part1
-  [input]
-  (->> input
+              (map parse-long (re-seq #"-?\d+" line))))
        (map (fn [line]
-              line
               (loop [seqs [line]]
                 (if (every? zero? (first seqs))
-                  (reduce (fn [acc el]
-                            (+ acc (last el)))
-                          (last (first seqs))
-                          (rest seqs))
+                  seqs
                   (recur (cons (->> (first seqs)
                                     (partition 2 1)
                                     (map (fn [[a b]] (- b a))))
-                               seqs))))))
-       (reduce + 0)))
+                               seqs))))))))
 
-(defn part2
-  [input]
-  (->> input
-       (map (fn [line]
-              line
-              (loop [seqs [line]]
-                (if (every? zero? (first seqs))
-                  (reduce (fn [acc el]
-                            (- el acc))
-                          (first (first seqs))
-                          (map first (rest seqs)))
-                  (recur (cons (->> (first seqs)
-                                    (partition 2 1)
-                                    (map (fn [[a b]] (- b a))))
-                               seqs))))))
-       (reduce + 0)))
+(defn solve
+  [op select]
+  (fn [input]
+    (->> input
+         (map (fn [seqs]
+                (reduce (fn [acc el]
+                          (op el acc))
+                        (select (first seqs))
+                        (map select (rest seqs)))))
+         (reduce + 0))))
+
+(def part1
+  (solve + last))
+
+(def part2
+  (solve - first))
 
 (lib/check
   [part1 sample] 114
