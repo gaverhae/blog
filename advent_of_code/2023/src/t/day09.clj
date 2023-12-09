@@ -7,18 +7,33 @@
 
 (defn parse
   [lines]
-  lines)
+  (->> lines
+       (map (fn [line]
+              (map parse-long (re-seq #"\d+" line))))))
 
 (defn part1
   [input]
-  input)
+  (->> input
+       (map (fn [line]
+              line
+              (loop [seqs [line]]
+                (if (every? zero? (first seqs))
+                  (reduce (fn [acc el]
+                            (+ acc (last el)))
+                          (last (first seqs))
+                          (rest seqs))
+                  (recur (cons (->> (first seqs)
+                                    (partition 2 1)
+                                    (map (fn [[a b]] (- b a))))
+                               seqs))))))
+       (reduce + 0)))
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  [part1 sample] 0
-  #_#_[part1 puzzle] 0
+  [part1 sample] 114
+  [part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
