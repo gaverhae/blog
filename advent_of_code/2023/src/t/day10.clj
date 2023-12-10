@@ -11,10 +11,12 @@
 
 (defn first-connected-neighbour
   [[y0 x0] grid seen?]
-  (first (for [[y x c1 c2] [[(dec y0) x0 #{\| \L \J \S} #{\| \7 \F \S}]
+  (first (for [[y x c1 c2] [
+                            [(inc y0) x0 #{\| \7 \F \S} #{\| \L \J \S}]
+                            [(dec y0) x0 #{\| \L \J \S} #{\| \7 \F \S}]
                             [y0  (dec x0) #{\- \J \7 \S} #{\- \L \F \S}]
                             [y0  (inc x0) #{\- \F \L \S} #{\- \J \7 \S}]
-                            [(inc y0) x0 #{\| \7 \F \S} #{\| \L \J \S}]]
+                            ]
                :let [pipe (get-in grid [y x])]
                :when (and pipe
                           (c1 (get-in grid [y0 x0]))
@@ -43,7 +45,7 @@
   [input])
 
 (lib/check
-  [part1 sample] 8
-  #_#_[part1 puzzle] 0
+  #_#_[part1 sample] 8
+  [part1 puzzle] 6968
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
