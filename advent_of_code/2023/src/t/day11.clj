@@ -59,5 +59,5 @@
   [part1 sample] 374
   [part1 puzzle] 9947476
   [part2 sample 10] 1030
-  [part2 sample 100] 8419
-  #_#_[part2 puzzle 1000000] 0)
+  [part2 sample 100] 8410
+  [part2 puzzle 1000000] 519939907614)
