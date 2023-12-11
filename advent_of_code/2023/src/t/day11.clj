@@ -28,18 +28,12 @@
 
 (defn solve
   [{:keys [empty-lines empty-cols base-coords]} expand]
-  (let [adjusted (->> base-coords
+  (let [adjust (fn [coord empties]
+                 (->> empties (filter #(< % coord)) count (* (dec expand)) (+ coord)))
+        adjusted (->> base-coords
                       (map (fn [[y x]]
-                             [(->> empty-lines
-                                   (filter #(< % y))
-                                   count
-                                   (* (dec expand))
-                                   (+ y))
-                              (->> empty-cols
-                                   (filter #(< % x))
-                                   count
-                                   (* (dec expand))
-                                   (+ x))])))]
+                             [(adjust y empty-lines)
+                              (adjust x empty-cols)])))]
     (->> (for [g1 adjusted
                g2 adjusted
                :when (and (= 1 (compare g1 g2))
