@@ -66,8 +66,14 @@
   (->> input
        unchunk
        (pmap (fn [[s p]]
-              (solve-line (str s \? s \? s \? s \? s)
-                          (apply concat (repeat 5 p)))))
+               (let [a (solve-line s p)
+                     b (solve-line (str s \? s) (concat p p))
+                     c (solve-line (str s \? s \? s) (concat p p p))
+                     d (quot b a)]
+                 (if (= (* a d d) c)
+                   (* a d d d d)
+                   (solve-line (str s \? s \? s \? s \? s)
+                               (concat p p p p p))))))
        (map-indexed (fn [idx c]
                       (println (format "%s: %4d: %d"
                                        (str (java.time.LocalDateTime/now))
