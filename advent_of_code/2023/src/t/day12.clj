@@ -12,38 +12,38 @@
               (let [[symbols bounds] (s/split line #" ")]
                 [symbols
                  (->> (re-seq #"\d+" bounds)
-                      (map parse-long))])))))
+                      (map parse-long)
+                      vec)])))))
 
 (defn match-line
   [[symbols pattern]]
-  (let [matches? (fn [line]
-                   (->> line
-                        (re-seq #"#+")
-                        (map count)
-                        (= pattern)))
-        pre-matches? (fn [line]
-                       (let [line-p (->> line
-                                         (re-seq #"#+")
-                                         (map count))]
-                         (and (<= (count line-p) (count pattern))
-                              (= (butlast (take (count line-p) pattern))
-                                 (butlast line-p)))))]
-    (->> (loop [to-process symbols
-                processed []]
-           (if (empty? to-process)
-             processed
-             (let [s (first to-process)
-                   to-process (rest to-process)]
-               (recur to-process
-                      (->> (if (= \? s) [\. \#] [s])
-                           (mapcat (fn [new-s]
-                                     (if (empty? processed)
-                                       [(str new-s)]
-                                       (->> processed
-                                            (map (fn [prev] (str prev new-s)))))))
-                           (filter pre-matches?))))))
-         (filter matches?)
-         count)))
+  (loop [to-process [[(vec (re-seq #"[?#]+" symbols)) pattern]]
+         matched 0]
+    (if (empty? to-process)
+      matched
+      (let [[[symbols pattern] to-process] ((juxt peek pop) to-process)]
+        (cond (and (empty? pattern) (or (empty? symbols)
+                                        (every? (fn [s] (every? #{\?} s)) symbols)))
+              (recur to-process (inc matched))
+              (or (empty? pattern) (empty? symbols))
+              (recur to-process matched)
+              :else (let [[s symbols] ((juxt peek pop) symbols)
+                          [p pattern] ((juxt peek pop) pattern)]
+                      (cond (and (> p (count s)) (some #{\#} s))
+                            (recur to-process matched)
+                            (> p (count s))
+                            (recur (conj to-process [symbols (conj pattern p)]) matched)
+                            (= \# (get s p) (get s 0))
+                            (recur to-process matched)
+                            (= \? (get s 0))
+                            (recur (conj to-process [(conj symbols (subs s 1)) (conj pattern p)]
+                                                    [(conj symbols (str \# (subs s 1))) (conj pattern p)])
+                                   matched)
+                            (or (= p (count s))
+                                (and (= (inc p) (count s)) (= \? (get s p))))
+                            (recur (conj to-process [symbols pattern]) matched)
+                            (= \? (get s p))
+                            (recur (conj to-process [(conj symbols (subs s (inc p))) pattern]) matched))))))))
 
 (defn part1
   [input]
@@ -51,34 +51,16 @@
        (map match-line)
        (reduce + 0)))
 
-(defn unchunk
-  [s]
-  (when (seq s)
-    (lazy-seq
-      (cons (first s)
-            (unchunk (next s))))))
-
 (defn part2
   [input]
   (->> input
-       unchunk
        (map (fn [[symbols pattern]]
-              (let [a (match-line [symbols pattern])
-                    b (match-line [(str symbols "?" symbols) (concat pattern pattern)])
-                    c (match-line [(str symbols "?" symbols "?" symbols) (concat pattern pattern pattern)])
-                    d (quot b a)]
-                (if (= c (* a d d))
-                  (* a d d d d)
-                  (do (prn [:error a b c (match-line [(str symbols "?" symbols "?" symbols "?" symbols)
-                                                  (concat pattern pattern pattern pattern)])])
-                      0)
-                  #_(match-line [(str symbols "?" symbols "?" symbols "?" symbols "?" symbols)
-                               (concat pattern pattern pattern pattern pattern)])))))
-       (map-indexed (fn [i c] (println (format "%4d: %d" (inc i) c)) c))
+              (match-line [(str symbols "?" symbols "?" symbols "?" symbols "?" symbols)
+                           (concat pattern pattern pattern pattern pattern)])))
        (reduce + 0)))
 
 (lib/check
-  #_#_[part1 sample] 21
-  #_#_[part1 puzzle] 7090
-  #_#_[part2 sample] 525152
-  [part2 puzzle] 0)
+  [part1 sample] 21
+  [part1 puzzle] 7090
+  [part2 sample] 525152
+  #_#_[part2 puzzle] 0)
