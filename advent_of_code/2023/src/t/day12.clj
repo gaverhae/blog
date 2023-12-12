@@ -34,12 +34,6 @@
       (if (empty? to-process)
         n
         (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
-          (let [calc-s (reduce + (count s) (map count ss))
-                calc-p (reduce + p ps)]
-            (when (not= calc-s num-s)
-              (prn [:num-s calc-s num-s [s ss p ps]]))
-            (when (not= calc-p num-p)
-              (prn [:num-p calc-p num-p [s ss p ps]])))
           (cond (and (nil? s) (nil? p)) (recur to-process (inc n))
                 (> num-p num-s) (recur to-process n)
                 (and (nil? p) (every? (fn [segm] (every? #{\?} segm)) (cons s ss))) (recur to-process (inc n))
@@ -78,7 +72,7 @@
        (reduce + 0)))
 
 (lib/check
-  #_#_[part1 sample] 21
-  #_#_[part1 puzzle] 7090
+  [part1 sample] 21
+  [part1 puzzle] 7090
   [part2 sample] 525152
   #_#_[part2 puzzle] 0)
