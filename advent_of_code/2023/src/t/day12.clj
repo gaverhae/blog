@@ -63,6 +63,7 @@
 
 (defn part2
   [input]
+  (println (format "%s" (str (java.time.LocalDateTime/now))))
   (->> input
        unchunk
        (pmap (fn [[s p]]
