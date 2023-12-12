@@ -17,15 +17,18 @@
 
 (defn solve-line
   [symbols pat]
-  (let [process (fn [segment n]
-                  (cond (and (> n (count segment)) (every? #{\?} segment)) [[false ""]]
-                        (> n (count segment)) []
-                        (= (first segment) \?) [[false (str \# (subs segment 1))]
-                                                [false (subs segment 1)]]
-                        (= n (count segment)) [[true ""]]
-                        (= \? (get segment n)) [[true (subs segment (inc n))]]
-                        (= \# (get segment n)) []
-                        :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n]))))))]
+  (let [process (fn [process segment n]
+                  (let [process (fn [segment n] (process process segment n))]
+                    (cond (and (> n (count segment)) (every? #{\?} segment)) [[false ""]]
+                          (> n (count segment)) []
+                          (= (first segment) \?) (concat (process (str \# (subs segment 1)) n)
+                                                         (process (subs segment 1) n))
+                          (= n (count segment)) [[true ""]]
+                          (= \? (get segment n)) [[true (subs segment (inc n))]]
+                          (= \# (get segment n)) []
+                          :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n])))))))
+        process (memoize process)
+        process (partial process process)]
     (loop [to-process [[(re-seq #"[?#]+" symbols) pat]]
            n 0]
       (if (empty? to-process)
@@ -48,16 +51,25 @@
        (map (fn [[s p]] (solve-line s p)))
        (reduce + 0)))
 
+(defn unchunk
+  [s]
+  (when (seq s)
+    (lazy-seq
+      (cons (first s)
+            (unchunk (rest s))))))
+
 (defn part2
   [input]
   (->> input
-       (map (fn [[s p]]
+       unchunk
+       (pmap (fn [[s p]]
               (solve-line (str s \? s \? s \? s \? s)
                           (apply concat (repeat 5 p)))))
+       (map-indexed (fn [idx c] (prn [(inc idx) c]) c))
        (reduce + 0)))
 
 (lib/check
-  [part1 sample] 21
-  [part1 puzzle] 7090
-  [part2 sample] 525152
-  #_#_[part2 puzzle] 0)
+  #_#_[part1 sample] 21
+  #_#_[part1 puzzle] 7090
+  #_#_[part2 sample] 525152
+  [part2 puzzle] 0)
