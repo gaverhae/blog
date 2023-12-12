@@ -51,14 +51,26 @@
        (map match-line)
        (reduce + 0)))
 
+(defn unchunk
+  [s]
+  (when (seq s)
+    (lazy-seq
+      (cons (first s)
+            (unchunk (next s))))))
+
 (defn part2
   [input]
   (->> input
        (map (fn [[symbols pattern]]
               (let [a (match-line [symbols pattern])
                     b (match-line [(str symbols "?" symbols) (concat pattern pattern)])
+                    d (match-line [(str symbols "?" symbols "?" symbols) (concat pattern pattern pattern)])
                     c (quot b a)]
+                (when (not= d (* a c c))
+                  (prn [:error a b c d symbols pattern]))
                 (* a c c c c))))
+       unchunk
+       #_(map-indexed (fn [i c] (println (format "%4d: %d" (inc i) c)) c))
        (reduce + 0)))
 
 (lib/check
