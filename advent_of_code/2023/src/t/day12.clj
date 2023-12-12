@@ -51,22 +51,13 @@
 (defn part2
   [input]
   (->> input
-       (take 2)
        (map (fn [[s p]]
-              (let [a (solve-line s p)
-                    b (solve-line (str s "?" s) (apply concat (repeat 2 p)))
-                    c (solve-line (str s "?" s "?" s) (apply concat (repeat 3 p)))
-                    d (solve-line (str s "?" s "?" s "?" s) (apply concat (repeat 4 p)))
-                    e (solve-line (str s "?") (apply concat (repeat 1 p)))
-                    f (solve-line (str s "?" s "?") (apply concat (repeat 2 p)))
-                    g (solve-line (str s "?" s "?" s "?") (apply concat (repeat 3 p)))
-                    h (solve-line (str s "?" s "?" s "?" s "?") (apply concat (repeat 4 p)))
-                    ]
-                [a b c d e f g h])))
-       #_(reduce + 0)))
+              (solve-line (str s \? s \? s \? s \? s)
+                          (apply concat (repeat 5 p)))))
+       (reduce + 0)))
 
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
-  #_#_[part2 sample] 525152
+  [part2 sample] 525152
   #_#_[part2 puzzle] 0)
