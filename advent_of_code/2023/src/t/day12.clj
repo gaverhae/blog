@@ -17,52 +17,30 @@
 
 (defn solve-line
   [symbols pat]
-  (loop [to-process [[(->> (s/split symbols #"\.")
-                           (map (fn [segment]
-                                  (->> segment
-                                       (map {\? 0, \# 1})
-                                       (into-array Long/TYPE)))))
-                      pat]]
-         matched 0]
-    (if (empty? to-process)
-      matched
-      (let [[s pat] (peek to-process), to-process (pop to-process)]
-        (cond (and (empty? pat) (->> s
-                                     (every? (fn [^longs arr]
-                                               (loop [i 0]
-                                                 (cond (== i (alength arr)) true
-                                                       (== 0 (aget arr i)) (recur (inc i))
-                                                       (== 1 (aget arr i)) false))))))
-              (recur to-process (inc matched))
-              (or (empty? pat) (empty? s))
-              (recur to-process matched)
-              :else (let [^longs arr (first s), s (rest s)
-                          p (first pat), pat (rest pat)]
-                      (cond (and (> p (alength arr)) (loop [i 0]
-                                                       (cond (== i (alength arr)) true
-                                                             (== 0 (aget arr i)) (recur (inc i))
-                                                             (== 1 (aget arr i)) false)))
-                            (recur (conj to-process [s (cons p pat)]) matched)
-                            (> p (alength arr))
-                            (recur to-process matched)
-                            (and (== 1 (aget arr 0))
-                                 (> (alength arr) p)
-                                 (== 1 (aget arr p)))
-                            (recur to-process matched)
-                            (== 0 (aget arr 0))
-                            (recur (conj to-process
-                                         [(cons (Arrays/copyOfRange arr 1 (alength arr)) s) (cons p pat)]
-                                         [(cons (let [arc (Arrays/copyOf arr (alength arr))]
-                                                  (aset arc 0 1)
-                                                  arc)
-                                                s)
-                                          (cons p pat)])
-                                   matched)
-                            (or (== p (alength arr))
-                                (and (== (inc p) (alength arr)) (== 0 (aget arr p))))
-                            (recur (conj to-process [s pat]) matched)
-                            (== 0 (aget arr p))
-                            (recur (conj to-process [(cons (Arrays/copyOfRange arr (int (inc p)) (alength arr)) s) pat]) matched))))))))
+  (let [process (fn [segment n]
+                  (cond (and (> n (count segment)) (every? #{\?} segment)) [[false ""]]
+                        (> n (count segment)) []
+                        (= (first segment) \?) [[false (str \# (subs segment 1))]
+                                                [false (subs segment 1)]]
+                        (= n (count segment)) [[true ""]]
+                        (= \? (get segment n)) [[true (subs segment (inc n))]]
+                        (= \# (get segment n)) []
+                        :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n]))))))]
+    (loop [to-process [[(re-seq #"[?#]+" symbols) pat]]
+           n 0]
+      (if (empty? to-process)
+        n
+        (let [[[[s & ss] [p & ps]] to-process] ((juxt peek pop) to-process)]
+          (cond (and (nil? s) (nil? p)) (recur to-process (inc n))
+                (and (nil? p) (every? (fn [segm] (every? #{\?} segm)) (cons s ss))) (recur to-process (inc n))
+                (nil? p) (recur to-process n)
+                (nil? s) (recur to-process n)
+                :else (recur (reduce (fn [acc [drop? re]]
+                                       (conj acc [(if (seq re) (cons re ss) ss)
+                                                  (if drop? ps (cons p ps))]))
+                                     to-process
+                                     (process s p))
+                             n)))))))
 
 (defn part1
   [input]
@@ -88,7 +66,7 @@
        #_(reduce + 0)))
 
 (lib/check
-  #_#_[part1 sample] 21
-  #_#_[part1 puzzle] 7090
-  [part2 sample] 525152
-  [part2 puzzle] 0)
+  [part1 sample] 21
+  [part1 puzzle] 7090
+  #_#_[part2 sample] 525152
+  #_#_[part2 puzzle] 0)
