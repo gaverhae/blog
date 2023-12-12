@@ -21,7 +21,15 @@
                      (->> line
                           (re-seq #"#+")
                           (map count)
-                          (= pattern))))]
+                          (= pattern))))
+        pre-matches? (fn [pattern]
+                       (fn [line]
+                         (let [line-p (->> line
+                                           (re-seq #"#+")
+                                           (map count))]
+                           (and (<= (count line-p) (count pattern))
+                                (= (butlast (take (count line-p) pattern))
+                                   (butlast line-p))))))]
     (->> in
          (map (fn [[symbols pattern]]
                 (->> (loop [to-process symbols
@@ -34,9 +42,10 @@
                                   (->> (if (= \? s) [\. \#] [s])
                                        (mapcat (fn [new-s]
                                                  (if (empty? processed)
-                                                   [new-s]
+                                                   [(str new-s)]
                                                    (->> processed
-                                                        (map (fn [prev] (str prev new-s))))))))))))
+                                                        (map (fn [prev] (str prev new-s)))))))
+                                       (filter (pre-matches? pattern)))))))
                      (filter (matches? pattern))
                      count)))
          (reduce + 0))))
