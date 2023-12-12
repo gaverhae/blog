@@ -69,7 +69,10 @@
                     d (quot b a)]
                 (if (= c (* a d d))
                   (* a d d d d)
-                  (match-line [(str symbols "?" symbols "?" symbols "?" symbols "?" symbols)
+                  (do (prn [:error a b c (match-line [(str symbols "?" symbols "?" symbols "?" symbols)
+                                                  (concat pattern pattern pattern pattern)])])
+                      0)
+                  #_(match-line [(str symbols "?" symbols "?" symbols "?" symbols "?" symbols)
                                (concat pattern pattern pattern pattern pattern)])))))
        (map-indexed (fn [i c] (println (format "%4d: %d" (inc i) c)) c))
        (reduce + 0)))
