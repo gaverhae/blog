@@ -43,10 +43,36 @@
 
 (defn part2
   [input]
-  input)
+  (let [matches? (fn [pattern]
+                   (fn [line]
+                     (->> line
+                          (re-seq #"#+")
+                          (map count)
+                          (= pattern))))]
+    (->> input
+         (map (fn [[symbols pattern]]
+                [(apply str (repeat 5 symbols))
+                 (apply concat (repeat 5 pattern))]))
+         (map (fn [[symbols pattern]]
+                (->> (loop [to-process symbols
+                            processed []]
+                       (if (empty? to-process)
+                         processed
+                         (let [s (first to-process)
+                               to-process (rest to-process)]
+                           (recur to-process
+                                  (->> (if (= \? s) [\. \#] [s])
+                                       (mapcat (fn [new-s]
+                                                 (if (empty? processed)
+                                                   [new-s]
+                                                   (->> processed
+                                                        (map (fn [prev] (str prev new-s))))))))))))
+                     (filter (matches? pattern))
+                     count)))
+         (reduce + 0))))
 
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
-  #_#_[part2 sample] 0
+  [part2 sample] 0
   #_#_[part2 puzzle] 0)
