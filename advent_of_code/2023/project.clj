@@ -1,5 +1,6 @@
 (defproject t "app"
   :dependencies [[org.clojure/clojure "1.11.1"]
+                 [org.clojure/core.async "1.6.681"]
                  [org.clojure/core.match "1.0.0"]
                  [instaparse "1.4.12"]
                  [criterium "0.4.6"]

@@ -1,5 +1,6 @@
 (ns t.day12
-  (:require [clojure.math :as math]
+  (:require [clojure.core.async :as async]
+            [clojure.math :as math]
             [clojure.set :as set]
             [clojure.string :as s]
             [instaparse.core :as insta]
@@ -54,39 +55,62 @@
        (map (fn [[s p]] (solve-line s p)))
        (reduce + 0)))
 
-(defn unchunk
-  [s]
-  (when (seq s)
-    (lazy-seq
-      (cons (first s)
-            (unchunk (rest s))))))
-
 (defn part2
   [input]
   (println (format "%s" (str (java.time.LocalDateTime/now))))
-  (->> input
-       unchunk
-       (pmap (fn [[s p]]
-               (let [a (solve-line s p)
-                     b (solve-line (str s \? s) (concat p p))
-                     c (solve-line (str s \? s \? s) (concat p p p))
-                     d (quot b a)]
-                 (if (= (* a d d) c)
-                   [(* a d d d d) true]
-                   [(solve-line (str s \? s \? s \? s \? s)
-                                (concat p p p p p))
-                    false]))))
-       (map-indexed (fn [idx [c fast?]]
-                      (println (format "%s: %4d: %10d %s"
-                                       (str (java.time.LocalDateTime/now))
-                                       (inc idx)
-                                       c
-                                       (if fast? "x" " ")))
-                      c))
-       (reduce + 0)))
+  (let [ins (async/chan)
+        out (async/chan)
+        final (async/chan)
+        num-workers 4
+        reader (async/thread
+                 (->> input
+                      (map-indexed (fn [i line] (async/>!! ins [i line])))
+                      doall)
+                 (async/close! ins))
+        output (async/thread
+                 (loop [msg (async/<!! out)
+                        total 0
+                        idx 0
+                        workers-done 0]
+                   (cond (and (= :done msg) (= (dec num-workers) workers-done))
+                         (async/>!! final total)
+                         (= :done msg)
+                         (recur (async/<!! out) total idx (inc workers-done))
+                         :else
+                         (let [[n c fast?] msg]
+                           (println (format "%s: %4d[%4d]: %10d %s"
+                                            (str (java.time.LocalDateTime/now))
+                                            (inc idx)
+                                            n
+                                            c
+                                            (if fast? "x" " ")))
+                           (recur (async/<!! out) (+ total c) (inc idx) workers-done)))))
+        workers (->> (range num-workers)
+                     (map (fn [i]
+                            (async/thread
+                              (loop [line (async/<!! ins)]
+                                (if-let [[n [s p]] line]
+                                  (let [a (solve-line s p)
+                                        b (solve-line (str s \? s) (concat p p))
+                                        c (solve-line (str s \? s \? s) (concat p p p))
+                                        d (quot b a)]
+                                    (async/>!! out
+                                               (if (= (* a d d) c)
+                                                 [n (* a d d d d) true]
+                                                 [n (solve-line (str s \? s \? s \? s \? s)
+                                                                (concat p p p p p))
+                                                  false]))
+                                    (recur (async/<!! ins)))
+                                  (async/>!! out :done))))))
+                     vec)
+        result (async/<!! final)]
+    (async/<!! reader)
+    (async/<!! output)
+    (doseq [w workers] (async/<!! w))
+    result))
 
 (lib/check
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
-  #_#_[part2 sample] 525152
-  [part2 puzzle] 0)
+  [part2 sample] 525152
+  #_#_[part2 puzzle] 0)
