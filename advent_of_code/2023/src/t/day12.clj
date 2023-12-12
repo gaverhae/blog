@@ -71,13 +71,16 @@
                      c (solve-line (str s \? s \? s) (concat p p p))
                      d (quot b a)]
                  (if (= (* a d d) c)
-                   (* a d d d d)
-                   (solve-line (str s \? s \? s \? s \? s)
-                               (concat p p p p p))))))
-       (map-indexed (fn [idx c]
-                      (println (format "%s: %4d: %d"
+                   [(* a d d d d) true]
+                   [(solve-line (str s \? s \? s \? s \? s)
+                                (concat p p p p p))
+                    false]))))
+       (map-indexed (fn [idx [c fast?]]
+                      (println (format "%s: %4d: %10d %s"
                                        (str (java.time.LocalDateTime/now))
-                                       (inc idx) c))
+                                       (inc idx)
+                                       c
+                                       (if fast? "x" " ")))
                       c))
        (reduce + 0)))
 
