@@ -3,7 +3,8 @@
             [clojure.set :as set]
             [clojure.string :as s]
             [instaparse.core :as insta]
-            [t.lib :as lib]))
+            [t.lib :as lib])
+  (:import [java.util Arrays]))
 
 (defn parse
   [lines]
@@ -18,35 +19,52 @@
   [in]
   (->> in
        (map (fn [[symbols pat]]
-              (loop [to-process [[(s/split symbols #"\.") pat]]
+              (loop [to-process [[(->> (s/split symbols #"\.")
+                                       (map (fn [segment]
+                                              (->> segment
+                                                   (map {\? 0, \# 1})
+                                                   (into-array Long/TYPE)))))
+                                  pat]]
                      matched 0]
                 (if (empty? to-process)
                   matched
                   (let [[s pat] (peek to-process), to-process (pop to-process)]
-                    (cond (and (empty? pat) (->> s (every? (fn [g] (every? #{\?} g)))))
+                    (cond (and (empty? pat) (->> s
+                                                 (every? (fn [^longs arr]
+                                                           (loop [i 0]
+                                                             (cond (== i (alength arr)) true
+                                                                   (== 0 (aget arr i)) (recur (inc i))
+                                                                   (== 1 (aget arr i)) false))))))
                           (recur to-process (inc matched))
                           (or (empty? pat) (empty? s))
                           (recur to-process matched)
-                          :else (let [g (first s), s (rest s)
+                          :else (let [^longs arr (first s), s (rest s)
                                       p (first pat), pat (rest pat)]
-                                  (cond (and (> p (count g)) (every? #{\?} g))
+                                  (cond (and (> p (alength arr)) (loop [i 0]
+                                                                   (cond (== i (alength arr)) true
+                                                                         (== 0 (aget arr i)) (recur (inc i))
+                                                                         (== 1 (aget arr i)) false)))
                                         (recur (conj to-process [s (cons p pat)]) matched)
-                                        (> p (count g))
+                                        (> p (alength arr))
                                         (recur to-process matched)
-                                        (= \# (get g p) (first g))
+                                        (and (== 1 (aget arr 0))
+                                             (> (alength arr) p)
+                                             (== 1 (aget arr p)))
                                         (recur to-process matched)
-                                        (= \? (first g))
+                                        (== 0 (aget arr 0))
                                         (recur (conj to-process
-                                                     [(cons (subs g 1) s) (cons p pat)]
-                                                     [(cons (str \# (subs g 1)) s) (cons p pat)])
+                                                     [(cons (Arrays/copyOfRange arr 1 (alength arr)) s) (cons p pat)]
+                                                     [(cons (let [arc (Arrays/copyOf arr (alength arr))]
+                                                              (aset arc 0 1)
+                                                              arc)
+                                                            s)
+                                                      (cons p pat)])
                                                matched)
-                                        (or (= p (count g))
-                                            (and (= (inc p) (count g)) (= \? (get g p))))
+                                        (or (== p (alength arr))
+                                            (and (== (inc p) (alength arr)) (== 0 (aget arr p))))
                                         (recur (conj to-process [s pat]) matched)
-                                        (= \? (get g p))
-                                        (recur (conj to-process
-                                                     [(cons (subs g (inc p)) s) pat])
-                                               matched)))))))))
+                                        (== 0 (aget arr p))
+                                        (recur (conj to-process [(cons (Arrays/copyOfRange arr (int (inc p)) (alength arr)) s) pat]) matched)))))))))
        #_(map-indexed (fn [i x] (prn [(inc i) x]) x))
        (reduce + 0)))
 
