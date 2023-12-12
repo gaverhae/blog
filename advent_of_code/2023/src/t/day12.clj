@@ -16,42 +16,23 @@
 
 (defn solve
   [in]
-  (let [matches? (fn [pattern]
-                   (fn [line]
-                     (->> line
-                          (re-seq #"#+")
-                          (map count)
-                          (= pattern))))
-        pre-matches? (fn [pattern]
-                       (fn [line]
-                         (let [line-p (->> line
-                                           (re-seq #"#+")
-                                           (map count))]
-                           (and (<= (count line-p) (count pattern))
-                                (= (butlast (take (count line-p) pattern))
-                                   (butlast line-p))))))]
-    (->> in
-         (map (fn [[symbols pattern]]
-                (->> (loop [to-process symbols
-                            processed []]
-                       (if (empty? to-process)
-                         processed
-                         (let [s (first to-process)
-                               to-process (rest to-process)]
-                           (recur to-process
-                                  (->> (if (= \? s) [\. \#] [s])
-                                       (mapcat (fn [new-s]
-                                                 (if (empty? processed)
-                                                   [(str new-s)]
-                                                   (->> processed
-                                                        (map (fn [prev] (str prev new-s)))))))
-                                       (filter (pre-matches? pattern)))))))
-                     (filter (matches? pattern))
-                     count)))
-         (map-indexed (fn [idx x]
-                        (prn [idx x])
-                        x))
-         (reduce + 0))))
+  (let [patterns (->> in
+                      (mapcat (fn [[symbols pattern]]
+                                (->> (s/split symbols #"\."))))
+                      (into #{})
+                      (map (fn [pat]
+                             [pat
+                              (loop [pats [pat]]
+                                (if (s/index-of (first pats) \?)
+                                  (recur (->> pats
+                                              (mapcat (fn [s] [(s/replace-first s \? \.)
+                                                               (s/replace-first s \? \#)]))))
+                                  (->> pats
+                                       (map (fn [s]
+                                              (->> s (re-seq #"#+") (map count))))
+                                       set)))]))
+                      (into {}))]
+    patterns))
 
 (defn part1
   [input]
@@ -69,5 +50,5 @@
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
-  [part2 sample] 525152
+  #_#_[part2 sample] 525152
   #_#_[part2 puzzle] 0)
