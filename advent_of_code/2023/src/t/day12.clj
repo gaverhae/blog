@@ -61,6 +61,7 @@
 (defn part2
   [input]
   (->> input
+       unchunk
        (map (fn [[symbols pattern]]
               (let [a (match-line [symbols pattern])
                     b (match-line [(str symbols "?" symbols) (concat pattern pattern)])
@@ -70,7 +71,6 @@
                   (* a d d d d)
                   (match-line [(str symbols "?" symbols "?" symbols "?" symbols "?" symbols)
                                (concat pattern pattern pattern pattern pattern)])))))
-       unchunk
        (map-indexed (fn [i c] (println (format "%4d: %d" (inc i) c)) c))
        (reduce + 0)))
 
