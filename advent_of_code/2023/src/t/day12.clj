@@ -21,7 +21,7 @@
               (loop [to-process [[(s/split symbols #"\.") pat ""]]
                      matched []]
                 (if (empty? to-process)
-                  matched
+                  (count matched)
                   (let [[s pat matched-so-far] (peek to-process), to-process (pop to-process)]
                     (prn [s pat matched-so-far to-process matched])
                     (cond (and (empty? pat) (->> s (every? (fn [g] (every? #{\?} g)))))
@@ -30,31 +30,29 @@
                           (recur to-process matched)
                           :else (let [g (first s), s (rest s)
                                       p (first pat), pat (rest pat)]
-                                  (cond (and (zero? p) (= \? (first g)))
-                                        (recur (conj to-process [(cons (subs g 1) s) pat (str matched-so-far \.)]) matched)
-                                        (and (zero? p) (empty? g))
-                                        (recur (conj to-process [s pat matched-so-far]) matched)
-                                        (zero? p)
-                                        (recur to-process matched)
-                                        (and (> p (count g)) (every? #{\?} g))
-                                        (recur (conj to-process [s (cons p pat) (apply str matched-so-far (repeat (count g) \.))]) matched)
+                                  (cond (and (> p (count g)) (every? #{\?} g))
+                                        (recur (conj to-process [s (cons p pat) (apply str (concat matched-so-far (repeat (count g) \.)))]) matched)
                                         (> p (count g))
                                         (recur to-process matched)
-                                        (empty? g)
+                                        (= \# (get g p) (first g))
                                         (recur to-process matched)
-                                        (= \# (first g))
-                                        (recur (conj to-process [(cons (subs g 1) s) (cons (dec p) pat) (str matched-so-far \#)]) matched)
                                         (= \? (first g))
                                         (recur (conj to-process
-                                                     #_[(cons (subs g 1) s) (cons p pat) (str matched-so-far \.)]
-                                                     [(cons (subs g 1) s) (cons (dec p) pat) (str matched-so-far \#)])
-                                               matched)))))))))))
+                                                     [(cons (subs g 1) s) (cons p pat) (str matched-so-far \.)]
+                                                     [(cons (str \# (subs g 1)) s) (cons p pat) matched-so-far])
+                                               matched)
+                                        (or (= p (count g))
+                                            (and (= (inc p) (count g)) (= \? (get g p))))
+                                        (recur (conj to-process [s pat (apply str (concat matched-so-far (repeat p \#) (when (= (count g) (inc p)) [\.])))]) matched)
+                                        (= \? (get g p))
+                                        (recur (conj to-process
+                                                     [(cons (subs g (inc p)) s) pat (apply str (concat matched-so-far (repeat p \#) [\.]))])
+                                               matched)))))))))
+       (reduce + 0)))
 
 (defn part1
   [input]
   (->> input
-       (drop 5)
-       (take 1)
        solve))
 
 (defn part2
