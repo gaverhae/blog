@@ -68,7 +68,7 @@
         num-workers 4
         reader (async/thread
                  (->> input
-                      (map-indexed (fn [i line] (async/>!! ins [i line])))
+                      (map-indexed (fn [i line] (async/>!! ins [(inc i) line])))
                       doall)
                  (async/close! ins))
         output (async/thread
@@ -116,5 +116,5 @@
 (lib/check
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
-  [part2 sample] 525152
-  #_#_[part2 puzzle] 0)
+  #_#_[part2 sample] 525152
+  [part2 puzzle] 0)
