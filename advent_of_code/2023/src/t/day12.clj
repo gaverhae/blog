@@ -7,18 +7,46 @@
 
 (defn parse
   [lines]
-  lines)
+  (->> lines
+       (map (fn [line]
+              (let [[symbols bounds] (s/split line #" ")]
+                [symbols
+                 (->> (re-seq #"\d+" bounds)
+                      (map parse-long))])))))
 
 (defn part1
   [input]
-  input)
+  (let [matches? (fn [pattern]
+                   (fn [line]
+                     (->> line
+                          (re-seq #"#+")
+                          (map count)
+                          (= pattern))))]
+    (->> input
+         (map (fn [[symbols pattern]]
+                (->> (loop [to-process symbols
+                            processed []]
+                       (if (empty? to-process)
+                         processed
+                         (let [s (first to-process)
+                               to-process (rest to-process)]
+                           (recur to-process
+                                  (->> (if (= \? s) [\. \#] [s])
+                                       (mapcat (fn [new-s]
+                                                 (if (empty? processed)
+                                                   [new-s]
+                                                   (->> processed
+                                                        (map (fn [prev] (str prev new-s))))))))))))
+                     (filter (matches? pattern))
+                     count)))
+         (reduce + 0))))
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  #_#_[part1 sample] 0
-  #_#_[part1 puzzle] 0
+  [part1 sample] 21
+  [part1 puzzle] 7090
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
