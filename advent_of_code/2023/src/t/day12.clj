@@ -30,12 +30,16 @@
                           :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n num-s num-p])))))))
         process (memoize process)
         process (partial process process)]
-    (loop [to-process [[(re-seq #"[?#]+" symbols) pat (count (re-seq #"#|\?" symbols)) (reduce + 0 pat)]]
+    (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
+                             (map (fn [s] (if (every? #{\#} s) (count s) s))))
+                        pat (count (re-seq #"#|\?" symbols)) (reduce + 0 pat)]]
            n 0]
       (if (empty? to-process)
         n
         (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
-          (cond (and (nil? s) (nil? p)) (recur to-process (inc n))
+          (cond (and (integer? s) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
+                (integer? s) (recur to-process n)
+                (and (nil? s) (nil? p)) (recur to-process (inc n))
                 (> num-p num-s) (recur to-process n)
                 (and (nil? p) (every? (fn [segm] (every? #{\?} segm)) (cons s ss))) (recur to-process (inc n))
                 (nil? p) (recur to-process n)
