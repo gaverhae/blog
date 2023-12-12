@@ -23,7 +23,6 @@
                 (if (empty? to-process)
                   (count matched)
                   (let [[s pat matched-so-far] (peek to-process), to-process (pop to-process)]
-                    (prn [s pat matched-so-far to-process matched])
                     (cond (and (empty? pat) (->> s (every? (fn [g] (every? #{\?} g)))))
                           (recur to-process (conj matched (apply str matched-so-far (repeat (reduce + 0 (map count s)) \.))))
                           (or (empty? pat) (empty? s))
@@ -65,6 +64,6 @@
 
 (lib/check
   [part1 sample] 21
-  #_#_[part1 puzzle] 7090
-  #_#_[part2 sample] 525152
+  [part1 puzzle] 7090
+  [part2 sample] 525152
   #_#_[part2 puzzle] 0)
