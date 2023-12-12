@@ -12,52 +12,64 @@
               (let [[symbols bounds] (s/split line #" ")]
                 [symbols
                  (->> (re-seq #"\d+" bounds)
-                      (map parse-long)
-                      vec)])))))
+                      (map parse-long))])))))
 
-(defn match-line
-  [[symbols pattern]]
-  (loop [to-process [[(vec (re-seq #"[?#]+" symbols)) pattern]]
-         matched 0]
-    (if (empty? to-process)
-      matched
-      (let [[[symbols pattern] to-process] ((juxt peek pop) to-process)]
-        (cond (and (empty? pattern) (or (empty? symbols)
-                                        (every? (fn [s] (every? #{\?} s)) symbols)))
-              (recur to-process (inc matched))
-              (or (empty? pattern) (empty? symbols))
-              (recur to-process matched)
-              :else (let [[s symbols] ((juxt peek pop) symbols)
-                          [p pattern] ((juxt peek pop) pattern)]
-                      (cond (and (> p (count s)) (some #{\#} s))
-                            (recur to-process matched)
-                            (> p (count s))
-                            (recur (conj to-process [symbols (conj pattern p)]) matched)
-                            (= \# (get s p) (get s 0))
-                            (recur to-process matched)
-                            (= \? (get s 0))
-                            (recur (conj to-process [(conj symbols (subs s 1)) (conj pattern p)]
-                                                    [(conj symbols (str \# (subs s 1))) (conj pattern p)])
-                                   matched)
-                            (or (= p (count s))
-                                (and (= (inc p) (count s)) (= \? (get s p))))
-                            (recur (conj to-process [symbols pattern]) matched)
-                            (= \? (get s p))
-                            (recur (conj to-process [(conj symbols (subs s (inc p))) pattern]) matched))))))))
+(defn solve
+  [in]
+  (->> in
+       (map (fn [[symbols pat]]
+              (loop [to-process [[(s/split symbols #"\.") pat ""]]
+                     matched []]
+                (if (empty? to-process)
+                  (count matched)
+                  (let [[s pat matched-so-far] (peek to-process), to-process (pop to-process)]
+                    (cond (and (empty? pat) (->> s (every? (fn [g] (every? #{\?} g)))))
+                          (recur to-process (conj matched (apply str matched-so-far (repeat (reduce + 0 (map count s)) \.))))
+                          (or (empty? pat) (empty? s))
+                          (recur to-process matched)
+                          :else (let [g (first s), s (rest s)
+                                      p (first pat), pat (rest pat)]
+                                  (cond (and (> p (count g)) (every? #{\?} g))
+                                        (recur (conj to-process [s (cons p pat) (apply str (concat matched-so-far (repeat (count g) \.)))]) matched)
+                                        (> p (count g))
+                                        (recur to-process matched)
+                                        (= \# (get g p) (first g))
+                                        (recur to-process matched)
+                                        (= \? (first g))
+                                        (recur (conj to-process
+                                                     [(cons (subs g 1) s) (cons p pat) (str matched-so-far \.)]
+                                                     [(cons (str \# (subs g 1)) s) (cons p pat) matched-so-far])
+                                               matched)
+                                        (or (= p (count g))
+                                            (and (= (inc p) (count g)) (= \? (get g p))))
+                                        (recur (conj to-process [s pat (apply str (concat matched-so-far (repeat p \#) (when (= (count g) (inc p)) [\.])))]) matched)
+                                        (= \? (get g p))
+                                        (recur (conj to-process
+                                                     [(cons (subs g (inc p)) s) pat (apply str (concat matched-so-far (repeat p \#) [\.]))])
+                                               matched)))))))))
+       #_(map-indexed (fn [i x] (prn [(inc i) x]) x))
+       (reduce + 0)))
 
 (defn part1
   [input]
   (->> input
-       (map match-line)
-       (reduce + 0)))
+       solve))
+
+(defn unchunk
+  [s]
+  (when (seq s)
+    (lazy-seq
+      (cons (first s)
+            (unchunk (next s))))))
 
 (defn part2
   [input]
   (->> input
        (map (fn [[symbols pattern]]
-              (match-line [(str symbols "?" symbols "?" symbols "?" symbols "?" symbols)
-                           (concat pattern pattern pattern pattern pattern)])))
-       (reduce + 0)))
+              [(apply str (interpose \? (repeat 5 symbols)))
+               (apply concat (repeat 5 pattern))]))
+       unchunk
+       solve))
 
 (lib/check
   [part1 sample] 21
