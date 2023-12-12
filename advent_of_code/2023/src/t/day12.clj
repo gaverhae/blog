@@ -62,7 +62,7 @@
        (reduce + 0)))
 
 (lib/check
-  [part1 sample] 21
-  [part1 puzzle] 7090
+  #_#_[part1 sample] 21
+  #_#_[part1 puzzle] 7090
   [part2 sample] 525152
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle] 0)
