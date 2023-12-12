@@ -48,6 +48,9 @@
                                        (filter (pre-matches? pattern)))))))
                      (filter (matches? pattern))
                      count)))
+         (map-indexed (fn [idx x]
+                        (prn [idx x])
+                        x))
          (reduce + 0))))
 
 (defn part1
@@ -59,12 +62,12 @@
   [input]
   (->> input
        (map (fn [[symbols pattern]]
-              [(apply str (repeat 5 symbols))
+              [(apply str (interpose \? (repeat 5 symbols)))
                (apply concat (repeat 5 pattern))]))
        solve))
 
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
-  #_#_[part2 sample] 0
+  [part2 sample] 525152
   #_#_[part2 puzzle] 0)
