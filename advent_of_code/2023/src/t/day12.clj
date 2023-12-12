@@ -47,6 +47,7 @@
                                         (recur (conj to-process
                                                      [(cons (subs g (inc p)) s) pat (apply str (concat matched-so-far (repeat p \#) [\.]))])
                                                matched)))))))))
+       (map-indexed (fn [i x] (prn [(inc i) x]) x))
        (reduce + 0)))
 
 (defn part1
@@ -54,16 +55,24 @@
   (->> input
        solve))
 
+(defn unchunk
+  [s]
+  (when (seq s)
+    (lazy-seq
+      (cons (first s)
+            (unchunk (next s))))))
+
 (defn part2
   [input]
   (->> input
        (map (fn [[symbols pattern]]
               [(apply str (interpose \? (repeat 5 symbols)))
                (apply concat (repeat 5 pattern))]))
+       unchunk
        solve))
 
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
   [part2 sample] 525152
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle] 0)
