@@ -64,17 +64,18 @@
        (map (fn [[symbols pattern]]
               (let [a (match-line [symbols pattern])
                     b (match-line [(str symbols "?" symbols) (concat pattern pattern)])
-                    d (match-line [(str symbols "?" symbols "?" symbols) (concat pattern pattern pattern)])
-                    c (quot b a)]
-                (when (not= d (* a c c))
-                  (prn [:error a b c d symbols pattern]))
-                (* a c c c c))))
+                    c (match-line [(str symbols "?" symbols "?" symbols) (concat pattern pattern pattern)])
+                    d (quot b a)]
+                (if (= c (* a d d))
+                  (* a d d d d)
+                  (match-line [(str symbols "?" symbols "?" symbols "?" symbols "?" symbols)
+                               (concat pattern pattern pattern pattern pattern)])))))
        unchunk
-       #_(map-indexed (fn [i c] (println (format "%4d: %d" (inc i) c)) c))
+       (map-indexed (fn [i c] (println (format "%4d: %d" (inc i) c)) c))
        (reduce + 0)))
 
 (lib/check
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
-  [part2 sample] 525152
+  #_#_[part2 sample] 525152
   [part2 puzzle] 0)
