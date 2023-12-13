@@ -37,7 +37,7 @@
       (if (empty? to-process)
         n
         (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
-          (cond (and (integer? s) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
+          (cond (and (integer? s) (integer? p) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
                 (integer? s) (recur to-process n)
                 (and (nil? s) (nil? p)) (recur to-process (inc n))
                 (> num-p num-s) (recur to-process n)
@@ -65,7 +65,7 @@
   (let [ins (async/chan)
         out (async/chan)
         final (async/chan)
-        num-workers 4
+        num-workers 6
         reader (async/thread
                  (->> input
                       (map-indexed (fn [i line] (async/>!! ins [(inc i) line])))
@@ -117,4 +117,4 @@
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample] 525152
-  [part2 puzzle] 0)
+  #_#_[part2 puzzle] 0)
