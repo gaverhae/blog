@@ -58,36 +58,37 @@
 
 (defmacro check
   [& specs]
-  `(deftest ~'check
-     (let [~'day (-> (ns-name ~*ns*)
-                     (string/replace "t.day" "")
-                     (Long/parseLong))
-           ~'sample (delay (-> (format "data/day%02d-sample" ~'day)
+  `(do
+     (def ~'day (-> (ns-name ~*ns*)
+                    (string/replace "t.day" "")
+                    (Long/parseLong)))
+     (def ~'sample (delay (-> (format "data/day%02d-sample" ~'day)
+                              slurp
+                              string/split-lines
+                              ~'parse)))
+     (def ~'sample1 (delay (-> (format "data/day%02d-sample1" ~'day)
                                slurp
                                string/split-lines
-                               ~'parse))
-           ~'sample1 (delay (-> (format "data/day%02d-sample1" ~'day)
-                                slurp
-                                string/split-lines
-                                ~'parse))
-           ~'sample2 (delay (-> (format "data/day%02d-sample2" ~'day)
-                                slurp
-                                string/split-lines
-                                ~'parse))
-           ~'puzzle (delay
-                      (let [file# (format "data/day%02d-puzzle" ~'day)]
-                        (when (not (.exists (io/file file#)))
-                          (spit file#
-                                (-> (format "https://adventofcode.com/2023/day/%d/input"
-                                            ~'day)
-                                    (hc/get {:headers
-                                             {"cookie" (format "session=%s"
-                                                               (System/getenv "AOC_SESSION"))}})
-                                    :body)))
-                        (-> file#
-                            slurp
-                            string/split-lines
-                            ~'parse)))]
+                               ~'parse)))
+     (def ~'sample2 (delay (-> (format "data/day%02d-sample2" ~'day)
+                               slurp
+                               string/split-lines
+                               ~'parse)))
+     (def ~'puzzle (delay
+                     (let [file# (format "data/day%02d-puzzle" ~'day)]
+                       (when (not (.exists (io/file file#)))
+                         (spit file#
+                               (-> (format "https://adventofcode.com/2023/day/%d/input"
+                                           ~'day)
+                                   (hc/get {:headers
+                                            {"cookie" (format "session=%s"
+                                                              (System/getenv "AOC_SESSION"))}})
+                                   :body)))
+                       (-> file#
+                           slurp
+                           string/split-lines
+                           ~'parse))))
+     (deftest ~'check
        ~@(->> specs
               (partition 2)
               (map (fn [[[part input & args] expected]]
