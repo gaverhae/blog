@@ -93,7 +93,7 @@
                          :else
                          (let [[n c method] msg]
                            (println (format "%s: %4d[%4d]: %10d %s"
-                                            (str (java.time.LocalDateTime/now))
+                                            (subs (str (java.time.LocalDateTime/now)) 0 19)
                                             (inc idx)
                                             n
                                             c
