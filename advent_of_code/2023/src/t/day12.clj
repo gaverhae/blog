@@ -41,7 +41,7 @@
                 (integer? s) (recur to-process n)
                 (and (nil? s) (nil? p)) (recur to-process (inc n))
                 (> num-p num-s) (recur to-process n)
-                (and (nil? p) (every? (fn [segm] (every? #{\?} segm)) (cons s ss))) (recur to-process (inc n))
+                (and (nil? p) (every? (fn [segm] (and (seqable? segm) (every? #{\?} segm))) (cons s ss))) (recur to-process (inc n))
                 (nil? p) (recur to-process n)
                 (nil? s) (recur to-process n)
                 :else (recur (reduce (fn [acc [drop? re num-s num-p]]
