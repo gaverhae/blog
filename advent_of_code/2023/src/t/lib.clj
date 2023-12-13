@@ -98,3 +98,9 @@
   (testing "transpose"
     (are [expected actual] (= expected actual)
          [[1 4] [2 5] [3 6]] (transpose [[1 2 3] [4 5 6]]))))
+
+(defmacro timed
+  [& exprs]
+  `(let [start# (System/currentTimeMillis)
+         _# (do ~@exprs)]
+     (- (System/currentTimeMillis) start#)))
