@@ -103,7 +103,7 @@
                                             w))
                            (when (and use-file? (not= method "c"))
                              (spit "day12" (str n " " c "\n") :append true))
-                           (recur (async/<!! out) (+ total c) (inc idx) workers-done)))))
+                           (recur (async/<!! out) (long (+ total c)) (inc idx) workers-done)))))
         workers (->> (range num-workers)
                      (map (fn [i]
                             (async/thread
