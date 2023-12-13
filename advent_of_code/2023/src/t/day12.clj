@@ -65,7 +65,7 @@
   (let [ins (async/chan)
         out (async/chan)
         final (async/chan)
-        num-workers 6
+        num-workers 7
         precomputed (if use-file?
                       (->> (slurp "day12")
                            s/split-lines
@@ -75,10 +75,12 @@
                       {})
         reader (async/thread
                  (->> input
-                      (map-indexed (fn [i line]
-                                     (if-let [res (precomputed (inc i))]
-                                       (async/>!! out [(inc i) res "c"])
-                                       (async/>!! ins [(inc i) line]))))
+                      (map-indexed (fn [i line] [i line]))
+                      reverse
+                      (map (fn [[i line]]
+                             (if-let [res (precomputed (inc i))]
+                               (async/>!! out [(inc i) res "c"])
+                               (async/>!! ins [(inc i) line]))))
                       doall)
                  (async/close! ins))
         output (async/thread
