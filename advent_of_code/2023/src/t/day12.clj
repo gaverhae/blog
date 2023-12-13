@@ -79,7 +79,7 @@
                       reverse
                       (map (fn [[i line]]
                              (if-let [res (precomputed (inc i))]
-                               (async/>!! out [(inc i) res "c"])
+                               (async/>!! out [(inc i) res "c" "m"])
                                (async/>!! ins [(inc i) line]))))
                       doall)
                  (async/close! ins))
@@ -93,13 +93,14 @@
                          (= :done msg)
                          (recur (async/<!! out) total idx (inc workers-done))
                          :else
-                         (let [[n c method] msg]
-                           (println (format "%s: %4d[%4d]: %10d %s"
+                         (let [[n c method w] msg]
+                           (println (format "%s: %4d[%4d]: %10d %s %s"
                                             (subs (str (java.time.LocalDateTime/now)) 0 19)
                                             (inc idx)
                                             n
                                             c
-                                            method))
+                                            method
+                                            w))
                            (when (and use-file? (not= method "c"))
                              (spit "day12" (str n " " c "\n") :append true))
                            (recur (async/<!! out) (+ total c) (inc idx) workers-done)))))
@@ -114,10 +115,10 @@
                                         d (quot b a)]
                                     (async/>!! out
                                                (if (= (* a d d) c)
-                                                 [n (* a d d d d) "f"]
+                                                 [n (* a d d d d) "f" i]
                                                  [n (solve-line (str s \? s \? s \? s \? s)
                                                                 (concat p p p p p))
-                                                  "b"]))
+                                                  "b" i]))
                                     (recur (async/<!! ins)))
                                   (async/>!! out :done))))))
                      vec)
