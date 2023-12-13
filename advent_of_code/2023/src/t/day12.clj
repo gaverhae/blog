@@ -60,15 +60,25 @@
        (reduce + 0)))
 
 (defn part2
-  [input]
+  [input use-file?]
   (println (format "%s" (str (java.time.LocalDateTime/now))))
   (let [ins (async/chan)
         out (async/chan)
         final (async/chan)
         num-workers 6
+        precomputed (if use-file?
+                      (->> (slurp "day12")
+                           s/split-lines
+                           (map (fn [line] (s/split line #" ")))
+                           (map (fn [line] (mapv parse-long line)))
+                           (into {}))
+                      {})
         reader (async/thread
                  (->> input
-                      (map-indexed (fn [i line] (async/>!! ins [(inc i) line])))
+                      (map-indexed (fn [i line]
+                                     (if-let [res (precomputed (inc i))]
+                                       (async/>!! out [(inc i) res "c"])
+                                       (async/>!! ins [(inc i) line]))))
                       doall)
                  (async/close! ins))
         output (async/thread
@@ -81,13 +91,15 @@
                          (= :done msg)
                          (recur (async/<!! out) total idx (inc workers-done))
                          :else
-                         (let [[n c fast?] msg]
+                         (let [[n c method] msg]
                            (println (format "%s: %4d[%4d]: %10d %s"
                                             (str (java.time.LocalDateTime/now))
                                             (inc idx)
                                             n
                                             c
-                                            (if fast? "x" " ")))
+                                            method))
+                           (when (and use-file? (not= method "c"))
+                             (spit "day12" (str n " " c "\n") :append true))
                            (recur (async/<!! out) (+ total c) (inc idx) workers-done)))))
         workers (->> (range num-workers)
                      (map (fn [i]
@@ -100,10 +112,10 @@
                                         d (quot b a)]
                                     (async/>!! out
                                                (if (= (* a d d) c)
-                                                 [n (* a d d d d) true]
+                                                 [n (* a d d d d) "f"]
                                                  [n (solve-line (str s \? s \? s \? s \? s)
                                                                 (concat p p p p p))
-                                                  false]))
+                                                  "b"]))
                                     (recur (async/<!! ins)))
                                   (async/>!! out :done))))))
                      vec)
@@ -117,4 +129,4 @@
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample] 525152
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle true] 0)
