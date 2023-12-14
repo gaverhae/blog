@@ -145,6 +145,7 @@
 (comment
 
 ;; 500d98820b7f5 50058
+;; without memo: 81815
   (lib/timed (benchmark))
 
   )
