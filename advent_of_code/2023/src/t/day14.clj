@@ -43,6 +43,6 @@
 
 (lib/check
   [part1 sample] 136
-  #_#_[part1 puzzle] 0
+  [part1 puzzle] 109638
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
