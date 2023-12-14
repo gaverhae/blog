@@ -132,19 +132,19 @@
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
-  #_#_[part2 puzzle true] 0)
+  [part2 puzzle true] 0)
 
 (defn benchmark
   []
   (->> @puzzle
-       (take 3)
+       (take 10)
        (map (fn [[s p]] (solve-line (str s \? s \? s \? s) (concat p p p p))))
        doall)
   nil)
 
 (comment
 
+;; 500d98820b7f5 50058
   (lib/timed (benchmark))
-36669
 
   )
