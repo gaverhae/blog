@@ -15,4 +15,5 @@
                  :changes-only true}
   :test-paths ["src"]
   :repl-options {:init-ns t.core}
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all
+                       :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}})
