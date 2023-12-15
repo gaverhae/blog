@@ -30,18 +30,17 @@
                           :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n num-s num-p])))))))
         process (memoize process)
         process (partial process process)]
-    (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
-                             (map (fn [s] (if (every? #{\#} s) (count s) s))))
-                        pat (count (re-seq #"#|\?" symbols)) (reduce + 0 pat)]]
+    (loop [to-process [[(->> (re-seq #"[?#]+" symbols))
+                        pat
+                        (count (re-seq #"#|\?" symbols))
+                        (reduce + 0 pat)]]
            n 0]
       (if (empty? to-process)
         n
         (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
-          (cond (and (integer? s) (integer? p) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
-                (integer? s) (recur to-process n)
-                (and (nil? s) (nil? p)) (recur to-process (inc n))
+          (cond (and (nil? s) (nil? p)) (recur to-process (inc n))
                 (> num-p num-s) (recur to-process n)
-                (and (nil? p) (every? (fn [segm] (and (seqable? segm) (every? #{\?} segm))) (cons s ss))) (recur to-process (inc n))
+                (and (nil? p) (every? (fn [segm] (every? #{\?} segm)) (cons s ss))) (recur to-process (inc n))
                 (nil? p) (recur to-process n)
                 (nil? s) (recur to-process n)
                 :else (recur (reduce (fn [acc [drop? re num-s num-p]]
@@ -129,9 +128,9 @@
     result))
 
 (lib/check
-  #_#_[part1 sample] 21
-  #_#_[part1 puzzle] 7090
-  #_#_[part2 sample false] 525152
+  [part1 sample] 21
+  [part1 puzzle] 7090
+  [part2 sample false] 525152
   #_#_[part2 puzzle true] 0)
 
 (defn benchmark
