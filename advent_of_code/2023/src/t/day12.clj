@@ -18,18 +18,15 @@
 
 (defn solve-line
   [symbols pat]
-  (let [process (fn [process segment n diff-s diff-p]
-                  (let [process (fn [segment n diff-s diff-p] (process process segment n diff-s diff-p))]
-                    (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- diff-s (count segment)) diff-p]]
-                          (> n (count segment)) []
-                          (= (first segment) \?) (concat (process (str \# (subs segment 1)) n diff-s diff-p)
-                                                         (process (subs segment 1) n (dec diff-s) diff-p))
-                          (= n (count segment)) [[true "" (- diff-s (count segment)) (- diff-p n)]]
-                          (= \? (get segment n)) [[true (subs segment (inc n)) (- diff-s (inc n)) (- diff-p n)]]
-                          (= \# (get segment n)) []
-                          :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p])))))))
-        process (memoize process)
-        process (partial process process)]
+  (let [process (fn ! [segment n diff-s diff-p]
+                  (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- diff-s (count segment)) diff-p]]
+                        (> n (count segment)) []
+                        (= (first segment) \?) (concat (! (str \# (subs segment 1)) n diff-s diff-p)
+                                                       (! (subs segment 1) n (dec diff-s) diff-p))
+                        (= n (count segment)) [[true "" (- diff-s (count segment)) (- diff-p n)]]
+                        (= \? (get segment n)) [[true (subs segment (inc n)) (- diff-s (inc n)) (- diff-p n)]]
+                        (= \# (get segment n)) []
+                        :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p]))))))]
     (loop [to-process [[(->> (re-seq #"[?#]+" symbols))
                         pat
                         (count (re-seq #"#|\?" symbols))
@@ -146,7 +143,8 @@
 ;; 500d98820b7f5 50058
 ;; without memo: 81815
 ;; 2300260284e5a 51691
+;; 83517a3cb6d99 50933
   (lib/timed (benchmark))
-50933
+77723
 
   )
