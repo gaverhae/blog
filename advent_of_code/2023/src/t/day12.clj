@@ -18,36 +18,39 @@
 
 (defn solve-line
   [symbols pat]
-  (let [process (fn [process segment n]
-                  (let [process (fn [segment n] (process process segment n))]
-                    (cond (and (> n (count segment)) (every? #{\?} segment)) [[false ""]]
+  (let [process (fn [process segment n num-s num-p]
+                  (let [process (fn [segment n num-s num-p] (process process segment n num-s num-p))]
+                    (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- num-s (count segment)) num-p]]
                           (> n (count segment)) []
-                          (= (first segment) \?) (concat (process (str \# (subs segment 1)) n)
-                                                         (process (subs segment 1) n))
-                          (= n (count segment)) [[true ""]]
-                          (= \? (get segment n)) [[true (subs segment (inc n))]]
+                          (= (first segment) \?) (concat (process (str \# (subs segment 1)) n num-s num-p)
+                                                         (process (subs segment 1) n (dec num-s) num-p))
+                          (= n (count segment)) [[true "" (- num-s (count segment)) (- num-p n)]]
+                          (= \? (get segment n)) [[true (subs segment (inc n)) (- num-s (inc n)) (- num-p n)]]
                           (= \# (get segment n)) []
-                          :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n])))))))
+                          :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n num-s num-p])))))))
         process (memoize process)
         process (partial process process)]
     (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
                              (map (fn [s] (if (every? #{\#} s) (count s) s))))
-                        pat]]
+                        pat (count (re-seq #"#|\?" symbols)) (reduce + 0 pat)]]
            n 0]
       (if (empty? to-process)
         n
-        (let [[[[s & ss] [p & ps]] to-process] ((juxt peek pop) to-process)]
-          (cond (and (integer? s) (integer? p) (== s p)) (recur (conj to-process [ss ps]) n)
+        (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
+          (cond (and (integer? s) (integer? p) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
                 (integer? s) (recur to-process n)
                 (and (nil? s) (nil? p)) (recur to-process (inc n))
+                (> num-p num-s) (recur to-process n)
                 (and (nil? p) (every? (fn [segm] (and (seqable? segm) (every? #{\?} segm))) (cons s ss))) (recur to-process (inc n))
                 (nil? p) (recur to-process n)
                 (nil? s) (recur to-process n)
-                :else (recur (reduce (fn [acc [drop? re]]
+                :else (recur (reduce (fn [acc [drop? re num-s num-p]]
                                        (conj acc [(if (seq re) (cons re ss) ss)
-                                                  (if drop? ps (cons p ps))]))
+                                                  (if drop? ps (cons p ps))
+                                                  num-s
+                                                  num-p]))
                                      to-process
-                                     (process s p))
+                                     (process s p num-s num-p))
                              n)))))))
 
 (defn part1
@@ -154,7 +157,7 @@
 ;; f34f96b405b4b 12785
 ;; 2eaf511da701b 12674
 ;; 529731677c78f 54177
-349278
+;; b74985f669136 349278
   (lib/timed (benchmark))
 
   )
