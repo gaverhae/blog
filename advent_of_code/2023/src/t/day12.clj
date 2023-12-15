@@ -18,7 +18,16 @@
 
 (defn solve-line
   [symbols pat]
-  (let [mt ^longs (make-array Long/TYPE 0)
+  (let [to-process (doto (Stack.)
+                     (.push [(->> (re-seq #"[?#]+" symbols)
+                                  (map (fn [segm]
+                                         (->> segm
+                                              (map {\? 0, \# 1})
+                                              (into-array Long/TYPE)))))
+                             pat
+                             (count (re-seq #"#|\?" symbols))
+                             (reduce + 0 pat)]))
+        mt ^longs (make-array Long/TYPE 0)
         process (fn ! [^longs segment n diff-s diff-p]
                   (cond (and (> n (alength segment)) (every? zero? segment)) [[false mt (- diff-s (count segment)) diff-p]]
                         (> n (alength segment)) []
@@ -28,33 +37,24 @@
                         (== 0 (aget segment n)) [[true (Arrays/copyOfRange segment (int (inc n)) (alength segment)) (- diff-s (inc n)) (- diff-p n)]]
                         (== 1 (aget segment n)) []
                         :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p]))))))]
-    (loop [to-process (doto (Stack.)
-                        (.push [(->> (re-seq #"[?#]+" symbols)
-                                     (map (fn [segm]
-                                            (->> segm
-                                                 (map {\? 0, \# 1})
-                                                 (into-array Long/TYPE)))))
-                                pat
-                                (count (re-seq #"#|\?" symbols))
-                                (reduce + 0 pat)]))
-           n 0]
+    (loop [n 0]
       (if (.empty to-process)
         n
         (let [[[s & ss] [p & ps] num-s num-p]  (.pop to-process)]
-          (cond (and (nil? s) (nil? p)) (recur to-process (inc n))
-                (> num-p num-s) (recur to-process n)
-                (and (nil? p) (every? (fn [segm] (every? zero? segm)) (cons s ss))) (recur to-process (inc n))
-                (nil? p) (recur to-process n)
-                (nil? s) (recur to-process n)
-                :else (recur (reduce (fn [^Stack acc [drop? re diff-s diff-p]]
-                                       (.push acc [(if (seq re) (cons re ss) ss)
-                                                   (if drop? ps (cons p ps))
-                                                   (+ num-s diff-s)
-                                                   (+ num-p diff-p)])
-                                       acc)
-                                     to-process
-                                     (process s p 0 0))
-                             n)))))))
+          (cond (and (nil? s) (nil? p)) (recur (inc n))
+                (> num-p num-s) (recur n)
+                (and (nil? p) (every? (fn [segm] (every? zero? segm)) (cons s ss))) (recur (inc n))
+                (nil? p) (recur n)
+                (nil? s) (recur n)
+                :else (do (reduce (fn [^Stack acc [drop? re diff-s diff-p]]
+                                    (.push acc [(if (seq re) (cons re ss) ss)
+                                                (if drop? ps (cons p ps))
+                                                (+ num-s diff-s)
+                                                (+ num-p diff-p)])
+                                    acc)
+                                  to-process
+                                  (process s p 0 0))
+                          (recur n))))))))
 
 (defn part1
   [input]
@@ -154,7 +154,8 @@
 ;; fa62a33dc06c8 77723
 ;; e4c3510236acd 46092
 ;; 203c798e7bdcc 45295
+;; b4e0cfc666a37 37906
   (lib/timed (benchmark))
-37906
+36623
 
   )
