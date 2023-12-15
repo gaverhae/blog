@@ -19,40 +19,56 @@
 (defn solve-line
   [symbols pat]
   (let [to-process (doto (Stack.)
-                     (.push [(->> (re-seq #"[?#]+" symbols)
-                                  (map (fn [segm]
-                                         (->> segm
-                                              (map {\? 0, \# 1})
-                                              (into-array Long/TYPE)))))
-                             pat
-                             (count (re-seq #"#|\?" symbols))
-                             (reduce + 0 pat)]))
+                     (.push (object-array [(->> (re-seq #"[?#]+" symbols)
+                                                (map (fn [segm]
+                                                       (->> segm
+                                                            (map {\? 0, \# 1})
+                                                            (into-array Long/TYPE)))))
+                                           pat
+                                           (count (re-seq #"#|\?" symbols))
+                                           (reduce + 0 pat)])))
         all-q? (fn [^longs s]
                  (let [l (alength s)]
                    (loop [idx (int 0)]
                      (cond (== l idx) true
                            (== 1 (aget s idx)) false
                            true (recur (unchecked-inc-int idx))))))
-        mt ^longs (make-array Long/TYPE 0)
+        mt ^objects (make-array Object 4)
         process (fn ! [^longs segment ss p ps num-s num-p]
                   (cond (and (> p (alength segment)) (all-q? segment))
-                        (.push to-process [ss (cons p ps) (- num-s (alength segment)) num-p])
+                        (.push to-process (doto (aclone mt)
+                                            (aset 0 ss)
+                                            (aset 1 (cons p ps))
+                                            (aset 2 (- num-s (alength segment)))
+                                            (aset 3 num-p)))
                         (> p (alength segment))
                         nil
                         (== (aget segment 0) 0)
                         (do (! (doto (Arrays/copyOfRange segment 0 (alength segment)) (aset 0 1)) ss p ps num-s num-p)
                             (! (Arrays/copyOfRange segment 1 (alength segment)) ss p ps (dec num-s) num-p))
                         (== p (alength segment))
-                        (.push to-process [ss ps (- num-s (alength segment)) (- num-p p)])
+                        (.push to-process (doto (aclone mt)
+                                            (aset 0 ss)
+                                            (aset 1 ps)
+                                            (aset 2 (- num-s (alength segment)))
+                                            (aset 3 (- num-p p))))
                         (== 0 (aget segment p))
-                        (.push to-process [(cons (Arrays/copyOfRange segment (int (inc p)) (alength segment)) ss) ps (- num-s (inc p)) (- num-p p)])
+                        (.push to-process (doto (aclone mt)
+                                            (aset 0 (cons (Arrays/copyOfRange segment (int (inc p)) (alength segment)) ss))
+                                            (aset 1 ps)
+                                            (aset 2 (- num-s (inc p)))
+                                            (aset 3 (- num-p p))))
                         (== 1 (aget segment p))
                         nil
                         :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment ss p ps num-s num-p]))))))]
     (loop [n 0]
       (if (.empty to-process)
         n
-        (let [[[s & ss] [p & ps] num-s num-p]  (.pop to-process)]
+        (let [nxt ^objects (.pop to-process)
+              [s & ss] (aget nxt 0)
+              [p & ps] (aget nxt 1)
+              num-s (aget nxt 2)
+              num-p (aget nxt 3)]
           (cond (and (nil? s) (nil? p)) (recur (inc n))
                 (> num-p num-s) (recur n)
                 (and (nil? p) (every? (fn [segm] (all-q? segm)) (cons s ss))) (recur (inc n))
@@ -162,6 +178,7 @@
 ;; b4e0cfc666a37 37906
 ;; df408e6b13b4f 36623
 ;; ddadae4029381 19051
+;; f34f96b405b4b 12785
   (lib/timed (benchmark))
 
   )
