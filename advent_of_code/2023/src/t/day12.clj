@@ -18,18 +18,20 @@
 
 (let [m (atom {})]
   (defn process-segment
-    [segment n ds dp]
-    (if-let [prev (@m [segment n ds dp])]
+    [segment n]
+    (if-let [prev (@m [segment n])]
       prev
-      (let [res (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- ds (count segment)) dp]]
+      (let [res (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- (count segment)) 0]]
                       (> n (count segment)) []
-                      (= (first segment) \?) (concat (process-segment (str \# (subs segment 1)) n ds dp)
-                                                     (process-segment (subs segment 1) n (dec ds) dp))
-                      (= n (count segment)) [[true "" (- ds (count segment)) (- dp n)]]
-                      (= \? (get segment n)) [[true (subs segment (inc n)) (- ds (inc n)) (- dp n)]]
+                      (= (first segment) \?) (let [r1 (process-segment (str \# (subs segment 1)) n)
+                                                   r2 (process-segment (subs segment 1) n)]
+                                               (concat r1
+                                                       (map (fn [[drop? leftover ds dp]] [drop? leftover (dec ds) dp]) r2)))
+                      (= n (count segment)) [[true "" (- (count segment)) (- n)]]
+                      (= \? (get segment n)) [[true (subs segment (inc n)) (- (inc n)) (- n)]]
                       (= \# (get segment n)) []
-                      :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n ds dp])))))]
-        (swap! m assoc [segment n ds dp] res)
+                      :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n])))))]
+        (swap! m assoc [segment n] res)
         res))))
 
 (defn solve-line
@@ -54,7 +56,7 @@
                                                 (+ num-s ds)
                                                 (+ num-p dp)]))
                                    to-process
-                                   (process-segment s p 0 0))
+                                   (process-segment s p))
                            n))))))
 
 (defn part1
@@ -133,9 +135,9 @@
     result))
 
 (lib/check
-  #_#_[part1 sample] 21
-  #_#_[part1 puzzle] 7090
-  #_#_[part2 sample false] 525152
+  [part1 sample] 21
+  [part1 puzzle] 7090
+  [part2 sample false] 525152
   #_#_[part2 puzzle true] 0)
 
 (defn benchmark
@@ -162,7 +164,8 @@
 ;; 2eaf511da701b 12674
 ;; 529731677c78f 54177
 ;; b74985f669136 349278
+;; bfc3032596941 39917
   (lib/timed (benchmark))
-39917
+38719
 
   )
