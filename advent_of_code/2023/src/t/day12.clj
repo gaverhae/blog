@@ -76,7 +76,7 @@
         reader (async/thread
                  (->> input
                       (map-indexed (fn [i line] [i line]))
-                      reverse
+                      shuffle
                       (map (fn [[i line]]
                              (if-let [res (precomputed (inc i))]
                                (async/>!! out [(inc i) res "c" "m"])
@@ -132,7 +132,7 @@
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
-  #_#_[part2 puzzle true] 0)
+  [part2 puzzle true] 0)
 
 (defn benchmark
   []
