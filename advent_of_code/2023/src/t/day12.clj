@@ -22,11 +22,11 @@
         process (fn ! [^longs segment n diff-s diff-p]
                   (cond (and (> n (alength segment)) (every? zero? segment)) [[false mt (- diff-s (count segment)) diff-p]]
                         (> n (alength segment)) []
-                        (= (aget segment 0) 0) (concat (! (doto (Arrays/copyOfRange segment 0 (alength segment)) (aset 0 1)) n diff-s diff-p)
+                        (== (aget segment 0) 0) (concat (! (doto (Arrays/copyOfRange segment 0 (alength segment)) (aset 0 1)) n diff-s diff-p)
                                                        (! (Arrays/copyOfRange segment 1 (alength segment)) n (dec diff-s) diff-p))
-                        (= n (alength segment)) [[true mt (- diff-s (alength segment)) (- diff-p n)]]
-                        (= 0 (aget segment n)) [[true (Arrays/copyOfRange segment (int (inc n)) (alength segment)) (- diff-s (inc n)) (- diff-p n)]]
-                        (= 1 (aget segment n)) []
+                        (== n (alength segment)) [[true mt (- diff-s (alength segment)) (- diff-p n)]]
+                        (== 0 (aget segment n)) [[true (Arrays/copyOfRange segment (int (inc n)) (alength segment)) (- diff-s (inc n)) (- diff-p n)]]
+                        (== 1 (aget segment n)) []
                         :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p]))))))]
     (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
                              (map (fn [segm]
@@ -150,7 +150,8 @@
 ;; 2300260284e5a 51691
 ;; 83517a3cb6d99 50933
 ;; fa62a33dc06c8 77723
+;; e4c3510236acd 46092
   (lib/timed (benchmark))
-46092
+45295
 
   )
