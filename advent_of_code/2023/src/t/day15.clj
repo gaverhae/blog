@@ -34,11 +34,9 @@
   [input]
   (->> input
        (map (fn [word]
-              (let [label (take 2 word)
-                    box (h label)
-                    op (get word 2)
-                    arg (drop 3 word)]
-                (if (= op \=)
+              (let [[_ label op arg] (re-find #"(\w+)(=|-)(\d+)?" word)
+                    box (h label)]
+                (if (= op "=")
                   [:= box (apply str label) (parse-long (apply str arg))]
                   [:- box (apply str label)]))))
        (reduce (fn [acc op]
@@ -71,4 +69,4 @@
   [part1 sample] 1320
   [part1 puzzle] 501680
   [part2 sample] 145
-  [part2 puzzle] 0)
+  [part2 puzzle] 241094)
