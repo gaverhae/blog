@@ -153,10 +153,10 @@
     result))
 
 (lib/check
-  [part1 sample] 21
-  [part1 puzzle] 7090
+  #_#_[part1 sample] 21
+  #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
-  #_#_[part2 puzzle true] 0)
+  [part2 puzzle true] 0)
 
 (defn benchmark
   []
@@ -179,6 +179,7 @@
 ;; df408e6b13b4f 36623
 ;; ddadae4029381 19051
 ;; f34f96b405b4b 12785
+;; 2eaf511da701b 12674
   (lib/timed (benchmark))
 
   )
