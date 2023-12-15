@@ -27,9 +27,15 @@
                              pat
                              (count (re-seq #"#|\?" symbols))
                              (reduce + 0 pat)]))
+        all-q? (fn [^longs s]
+                 (let [l (alength s)]
+                   (loop [idx (int 0)]
+                     (cond (== l idx) true
+                           (== 1 (aget s idx)) false
+                           true (recur (unchecked-inc-int idx))))))
         mt ^longs (make-array Long/TYPE 0)
         process (fn ! [^longs segment ss p ps num-s num-p]
-                  (cond (and (> p (alength segment)) (every? zero? segment))
+                  (cond (and (> p (alength segment)) (all-q? segment))
                         (.push to-process [ss (cons p ps) (- num-s (alength segment)) num-p])
                         (> p (alength segment))
                         nil
@@ -49,7 +55,7 @@
         (let [[[s & ss] [p & ps] num-s num-p]  (.pop to-process)]
           (cond (and (nil? s) (nil? p)) (recur (inc n))
                 (> num-p num-s) (recur n)
-                (and (nil? p) (every? (fn [segm] (every? zero? segm)) (cons s ss))) (recur (inc n))
+                (and (nil? p) (every? (fn [segm] (all-q? segm)) (cons s ss))) (recur (inc n))
                 (nil? p) (recur n)
                 (nil? s) (recur n)
                 :else (do (process s ss p ps num-s num-p)
@@ -155,7 +161,7 @@
 ;; 203c798e7bdcc 45295
 ;; b4e0cfc666a37 37906
 ;; df408e6b13b4f 36623
+;; ddadae4029381 19051
   (lib/timed (benchmark))
-19051
 
   )
