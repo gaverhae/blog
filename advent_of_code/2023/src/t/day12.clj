@@ -18,16 +18,21 @@
 
 (defn solve-line
   [symbols pat]
-  (let [process (fn ! [segment n diff-s diff-p]
-                  (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- diff-s (count segment)) diff-p]]
-                        (> n (count segment)) []
-                        (= (first segment) \?) (concat (! (str \# (subs segment 1)) n diff-s diff-p)
-                                                       (! (subs segment 1) n (dec diff-s) diff-p))
-                        (= n (count segment)) [[true "" (- diff-s (count segment)) (- diff-p n)]]
-                        (= \? (get segment n)) [[true (subs segment (inc n)) (- diff-s (inc n)) (- diff-p n)]]
-                        (= \# (get segment n)) []
+  (let [mt ^longs (make-array Long/TYPE 0)
+        process (fn ! [^longs segment n diff-s diff-p]
+                  (cond (and (> n (alength segment)) (every? zero? segment)) [[false mt (- diff-s (count segment)) diff-p]]
+                        (> n (alength segment)) []
+                        (= (aget segment 0) 0) (concat (! (doto (Arrays/copyOfRange segment 0 (alength segment)) (aset 0 1)) n diff-s diff-p)
+                                                       (! (Arrays/copyOfRange segment 1 (alength segment)) n (dec diff-s) diff-p))
+                        (= n (alength segment)) [[true mt (- diff-s (alength segment)) (- diff-p n)]]
+                        (= 0 (aget segment n)) [[true (Arrays/copyOfRange segment (int (inc n)) (alength segment)) (- diff-s (inc n)) (- diff-p n)]]
+                        (= 1 (aget segment n)) []
                         :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p]))))))]
-    (loop [to-process [[(->> (re-seq #"[?#]+" symbols))
+    (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
+                             (map (fn [segm]
+                                    (->> segm
+                                         (map {\? 0, \# 1})
+                                         (into-array Long/TYPE)))))
                         pat
                         (count (re-seq #"#|\?" symbols))
                         (reduce + 0 pat)]]
@@ -37,7 +42,7 @@
         (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
           (cond (and (nil? s) (nil? p)) (recur to-process (inc n))
                 (> num-p num-s) (recur to-process n)
-                (and (nil? p) (every? (fn [segm] (every? #{\?} segm)) (cons s ss))) (recur to-process (inc n))
+                (and (nil? p) (every? (fn [segm] (every? zero? segm)) (cons s ss))) (recur to-process (inc n))
                 (nil? p) (recur to-process n)
                 (nil? s) (recur to-process n)
                 :else (recur (reduce (fn [acc [drop? re diff-s diff-p]]
@@ -144,7 +149,8 @@
 ;; without memo: 81815
 ;; 2300260284e5a 51691
 ;; 83517a3cb6d99 50933
+;; fa62a33dc06c8 77723
   (lib/timed (benchmark))
-77723
+46092
 
   )
