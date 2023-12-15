@@ -5,7 +5,7 @@
             [clojure.string :as s]
             [instaparse.core :as insta]
             [t.lib :as lib])
-  (:import [java.util Stack Arrays]))
+  (:import [java.util Arrays]))
 
 (defn parse
   [lines]
@@ -18,64 +18,40 @@
 
 (defn solve-line
   [symbols pat]
-  (let [to-process (doto (Stack.)
-                     (.push (object-array [(->> (re-seq #"[?#]+" symbols)
-                                                (map (fn [segm]
-                                                       (->> segm
-                                                            (map {\? 0, \# 1})
-                                                            (into-array Long/TYPE)))))
-                                           pat
-                                           (count (re-seq #"#|\?" symbols))
-                                           (reduce + 0 pat)])))
-        all-q? (fn [^longs s]
-                 (let [l (alength s)]
-                   (loop [idx (int 0)]
-                     (cond (== l idx) true
-                           (== 1 (aget s idx)) false
-                           true (recur (unchecked-inc-int idx))))))
-        mt ^objects (make-array Object 4)
-        process (fn ! [^longs segment ss p ps num-s num-p]
-                  (cond (and (> p (alength segment)) (all-q? segment))
-                        (.push to-process (doto (aclone mt)
-                                            (aset 0 ss)
-                                            (aset 1 (cons p ps))
-                                            (aset 2 (- num-s (alength segment)))
-                                            (aset 3 num-p)))
-                        (> p (alength segment))
-                        nil
-                        (== (aget segment 0) 0)
-                        (do (! (doto (Arrays/copyOfRange segment 0 (alength segment)) (aset 0 1)) ss p ps num-s num-p)
-                            (! (Arrays/copyOfRange segment 1 (alength segment)) ss p ps (dec num-s) num-p))
-                        (== p (alength segment))
-                        (.push to-process (doto (aclone mt)
-                                            (aset 0 ss)
-                                            (aset 1 ps)
-                                            (aset 2 (- num-s (alength segment)))
-                                            (aset 3 (- num-p p))))
-                        (== 0 (aget segment p))
-                        (.push to-process (doto (aclone mt)
-                                            (aset 0 (cons (Arrays/copyOfRange segment (int (inc p)) (alength segment)) ss))
-                                            (aset 1 ps)
-                                            (aset 2 (- num-s (inc p)))
-                                            (aset 3 (- num-p p))))
-                        (== 1 (aget segment p))
-                        nil
-                        :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment ss p ps num-s num-p]))))))]
-    (loop [n 0]
-      (if (.empty to-process)
+  (let [process (fn [process segment n num-s num-p]
+                  (let [process (fn [segment n num-s num-p] (process process segment n num-s num-p))]
+                    (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- num-s (count segment)) num-p]]
+                          (> n (count segment)) []
+                          (= (first segment) \?) (concat (process (str \# (subs segment 1)) n num-s num-p)
+                                                         (process (subs segment 1) n (dec num-s) num-p))
+                          (= n (count segment)) [[true "" (- num-s (count segment)) (- num-p n)]]
+                          (= \? (get segment n)) [[true (subs segment (inc n)) (- num-s (inc n)) (- num-p n)]]
+                          (= \# (get segment n)) []
+                          :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n num-s num-p])))))))
+        process (memoize process)
+        process (partial process process)]
+    (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
+                             (map (fn [s] (if (every? #{\#} s) (count s) s))))
+                        pat (count (re-seq #"#|\?" symbols)) (reduce + 0 pat)]]
+           n 0]
+      (if (empty? to-process)
         n
-        (let [nxt ^objects (.pop to-process)
-              [s & ss] (aget nxt 0)
-              [p & ps] (aget nxt 1)
-              num-s (aget nxt 2)
-              num-p (aget nxt 3)]
-          (cond (and (nil? s) (nil? p)) (recur (inc n))
-                (> num-p num-s) (recur n)
-                (and (nil? p) (every? (fn [segm] (all-q? segm)) (cons s ss))) (recur (inc n))
-                (nil? p) (recur n)
-                (nil? s) (recur n)
-                :else (do (process s ss p ps num-s num-p)
-                          (recur n))))))))
+        (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
+          (cond (and (integer? s) (integer? p) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
+                (integer? s) (recur to-process n)
+                (and (nil? s) (nil? p)) (recur to-process (inc n))
+                (> num-p num-s) (recur to-process n)
+                (and (nil? p) (every? (fn [segm] (and (seqable? segm) (every? #{\?} segm))) (cons s ss))) (recur to-process (inc n))
+                (nil? p) (recur to-process n)
+                (nil? s) (recur to-process n)
+                :else (recur (reduce (fn [acc [drop? re num-s num-p]]
+                                       (conj acc [(if (seq re) (cons re ss) ss)
+                                                  (if drop? ps (cons p ps))
+                                                  num-s
+                                                  num-p]))
+                                     to-process
+                                     (process s p num-s num-p))
+                             n)))))))
 
 (defn part1
   [input]
@@ -156,7 +132,7 @@
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
-  [part2 puzzle true] 0)
+  #_#_[part2 puzzle true] 0)
 
 (defn benchmark
   []
