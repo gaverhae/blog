@@ -28,15 +28,21 @@
                              (count (re-seq #"#|\?" symbols))
                              (reduce + 0 pat)]))
         mt ^longs (make-array Long/TYPE 0)
-        process (fn ! [^longs segment n diff-s diff-p]
-                  (cond (and (> n (alength segment)) (every? zero? segment)) [[false mt (- diff-s (count segment)) diff-p]]
-                        (> n (alength segment)) []
-                        (== (aget segment 0) 0) (concat (! (doto (Arrays/copyOfRange segment 0 (alength segment)) (aset 0 1)) n diff-s diff-p)
-                                                       (! (Arrays/copyOfRange segment 1 (alength segment)) n (dec diff-s) diff-p))
-                        (== n (alength segment)) [[true mt (- diff-s (alength segment)) (- diff-p n)]]
-                        (== 0 (aget segment n)) [[true (Arrays/copyOfRange segment (int (inc n)) (alength segment)) (- diff-s (inc n)) (- diff-p n)]]
-                        (== 1 (aget segment n)) []
-                        :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p]))))))]
+        process (fn ! [^longs segment ss p ps num-s num-p]
+                  (cond (and (> p (alength segment)) (every? zero? segment))
+                        (.push to-process [ss (cons p ps) (- num-s (alength segment)) num-p])
+                        (> p (alength segment))
+                        nil
+                        (== (aget segment 0) 0)
+                        (do (! (doto (Arrays/copyOfRange segment 0 (alength segment)) (aset 0 1)) ss p ps num-s num-p)
+                            (! (Arrays/copyOfRange segment 1 (alength segment)) ss p ps (dec num-s) num-p))
+                        (== p (alength segment))
+                        (.push to-process [ss ps (- num-s (alength segment)) (- num-p p)])
+                        (== 0 (aget segment p))
+                        (.push to-process [(cons (Arrays/copyOfRange segment (int (inc p)) (alength segment)) ss) ps (- num-s (inc p)) (- num-p p)])
+                        (== 1 (aget segment p))
+                        nil
+                        :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment ss p ps num-s num-p]))))))]
     (loop [n 0]
       (if (.empty to-process)
         n
@@ -46,14 +52,7 @@
                 (and (nil? p) (every? (fn [segm] (every? zero? segm)) (cons s ss))) (recur (inc n))
                 (nil? p) (recur n)
                 (nil? s) (recur n)
-                :else (do (reduce (fn [^Stack acc [drop? re diff-s diff-p]]
-                                    (.push acc [(if (seq re) (cons re ss) ss)
-                                                (if drop? ps (cons p ps))
-                                                (+ num-s diff-s)
-                                                (+ num-p diff-p)])
-                                    acc)
-                                  to-process
-                                  (process s p 0 0))
+                :else (do (process s ss p ps num-s num-p)
                           (recur n))))))))
 
 (defn part1
@@ -155,7 +154,8 @@
 ;; e4c3510236acd 46092
 ;; 203c798e7bdcc 45295
 ;; b4e0cfc666a37 37906
+;; df408e6b13b4f 36623
   (lib/timed (benchmark))
-36623
+19051
 
   )
