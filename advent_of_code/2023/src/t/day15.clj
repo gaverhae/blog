@@ -1,4 +1,4 @@
-(ns t.day14
+(ns t.day15
   (:require [clojure.core.async :as async]
             [clojure.math :as math]
             [clojure.set :as set]
@@ -9,11 +9,24 @@
 
 (defn parse
   [lines]
-  lines)
+  (-> lines
+      first
+      (s/split #",")))
 
 (defn part1
   [input]
-  input)
+  (->> input
+       (map (fn [word]
+              (->> word
+                   (map int)
+                   (reduce (fn [acc el]
+                             (-> acc
+                                 (+ el)
+                                 (* 17)
+                                 (rem 256)))
+                           0))))
+       (reduce + 0)))
+
 
 
 (defn part2
@@ -21,7 +34,8 @@
   input)
 
 (lib/check
-  #_#_[part1 sample] 0
-  #_#_[part1 puzzle] 0
+  [part1 sample1] 52
+  [part1 sample] 1320
+  [part1 puzzle] 501680
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
