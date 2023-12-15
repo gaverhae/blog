@@ -18,16 +18,16 @@
 
 (defn solve-line
   [symbols pat]
-  (let [process (fn [process segment n num-s num-p]
-                  (let [process (fn [segment n num-s num-p] (process process segment n num-s num-p))]
-                    (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- num-s (count segment)) num-p]]
+  (let [process (fn [process segment n diff-s diff-p]
+                  (let [process (fn [segment n diff-s diff-p] (process process segment n diff-s diff-p))]
+                    (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- diff-s (count segment)) diff-p]]
                           (> n (count segment)) []
-                          (= (first segment) \?) (concat (process (str \# (subs segment 1)) n num-s num-p)
-                                                         (process (subs segment 1) n (dec num-s) num-p))
-                          (= n (count segment)) [[true "" (- num-s (count segment)) (- num-p n)]]
-                          (= \? (get segment n)) [[true (subs segment (inc n)) (- num-s (inc n)) (- num-p n)]]
+                          (= (first segment) \?) (concat (process (str \# (subs segment 1)) n diff-s diff-p)
+                                                         (process (subs segment 1) n (dec diff-s) diff-p))
+                          (= n (count segment)) [[true "" (- diff-s (count segment)) (- diff-p n)]]
+                          (= \? (get segment n)) [[true (subs segment (inc n)) (- diff-s (inc n)) (- diff-p n)]]
                           (= \# (get segment n)) []
-                          :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n num-s num-p])))))))
+                          :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p])))))))
         process (memoize process)
         process (partial process process)]
     (loop [to-process [[(->> (re-seq #"[?#]+" symbols))
@@ -43,13 +43,13 @@
                 (and (nil? p) (every? (fn [segm] (every? #{\?} segm)) (cons s ss))) (recur to-process (inc n))
                 (nil? p) (recur to-process n)
                 (nil? s) (recur to-process n)
-                :else (recur (reduce (fn [acc [drop? re num-s num-p]]
+                :else (recur (reduce (fn [acc [drop? re diff-s diff-p]]
                                        (conj acc [(if (seq re) (cons re ss) ss)
                                                   (if drop? ps (cons p ps))
-                                                  num-s
-                                                  num-p]))
+                                                  (+ num-s diff-s)
+                                                  (+ num-p diff-p)]))
                                      to-process
-                                     (process s p num-s num-p))
+                                     (process s p 0 0))
                              n)))))))
 
 (defn part1
@@ -145,6 +145,8 @@
 
 ;; 500d98820b7f5 50058
 ;; without memo: 81815
+;; 2300260284e5a 51691
   (lib/timed (benchmark))
+50933
 
   )
