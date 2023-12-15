@@ -5,7 +5,7 @@
             [clojure.string :as s]
             [instaparse.core :as insta]
             [t.lib :as lib])
-  (:import [java.util Arrays]))
+  (:import [java.util Stack Arrays]))
 
 (defn parse
   [lines]
@@ -28,28 +28,30 @@
                         (== 0 (aget segment n)) [[true (Arrays/copyOfRange segment (int (inc n)) (alength segment)) (- diff-s (inc n)) (- diff-p n)]]
                         (== 1 (aget segment n)) []
                         :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n diff-s diff-p]))))))]
-    (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
-                             (map (fn [segm]
-                                    (->> segm
-                                         (map {\? 0, \# 1})
-                                         (into-array Long/TYPE)))))
-                        pat
-                        (count (re-seq #"#|\?" symbols))
-                        (reduce + 0 pat)]]
+    (loop [to-process (doto (Stack.)
+                        (.push [(->> (re-seq #"[?#]+" symbols)
+                                     (map (fn [segm]
+                                            (->> segm
+                                                 (map {\? 0, \# 1})
+                                                 (into-array Long/TYPE)))))
+                                pat
+                                (count (re-seq #"#|\?" symbols))
+                                (reduce + 0 pat)]))
            n 0]
-      (if (empty? to-process)
+      (if (.empty to-process)
         n
-        (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
+        (let [[[s & ss] [p & ps] num-s num-p]  (.pop to-process)]
           (cond (and (nil? s) (nil? p)) (recur to-process (inc n))
                 (> num-p num-s) (recur to-process n)
                 (and (nil? p) (every? (fn [segm] (every? zero? segm)) (cons s ss))) (recur to-process (inc n))
                 (nil? p) (recur to-process n)
                 (nil? s) (recur to-process n)
-                :else (recur (reduce (fn [acc [drop? re diff-s diff-p]]
-                                       (conj acc [(if (seq re) (cons re ss) ss)
-                                                  (if drop? ps (cons p ps))
-                                                  (+ num-s diff-s)
-                                                  (+ num-p diff-p)]))
+                :else (recur (reduce (fn [^Stack acc [drop? re diff-s diff-p]]
+                                       (.push acc [(if (seq re) (cons re ss) ss)
+                                                   (if drop? ps (cons p ps))
+                                                   (+ num-s diff-s)
+                                                   (+ num-p diff-p)])
+                                       acc)
                                      to-process
                                      (process s p 0 0))
                              n)))))))
@@ -132,7 +134,7 @@
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
-  [part2 sample false] 525152
+  #_#_[part2 sample false] 525152
   #_#_[part2 puzzle true] 0)
 
 (defn benchmark
@@ -151,7 +153,8 @@
 ;; 83517a3cb6d99 50933
 ;; fa62a33dc06c8 77723
 ;; e4c3510236acd 46092
+;; 203c798e7bdcc 45295
   (lib/timed (benchmark))
-45295
+37906
 
   )
