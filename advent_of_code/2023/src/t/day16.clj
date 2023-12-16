@@ -41,15 +41,18 @@
   (loop [ps [[[0 0] [0 1]]]
          energized #{[0 0]}
          seen? #{}]
+    (print (str (char 27) "[2J")) ; clear screen
+    (print (str (char 27) "[;H")) ; move cursor to the top left corner of the screen
     (->> input
          (map-indexed
            (fn [y line]
              (->> line
                   (map-indexed
                     (fn [x ch]
-                      (cond (= (ffirst ps) [y x]) \#
-                            (some (fn [[p _]] (= p [y x])) ps) \?
-                            (energized [y x]) \•
+                      (cond (= (ffirst ps) [y x]) "\033[31m#\033[0m"
+                            (some (fn [[p _]] (= p [y x])) ps) (str "\033[32m" ch "\033[0m")
+                            (and (= ch \.) (energized [y x])) "\033[33m•\033[0m"
+                            (energized [y x]) (str "\033[33m" ch "\033[0m")
                             (= ch \.) \space
                             :else ch)))
                   (apply str)
