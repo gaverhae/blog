@@ -36,9 +36,9 @@
            [down \-] [left right]}]
     (get m [[dy dx] c])))
 
-(defn part1
-  [input]
-  (loop [ps [[[0 -1] [0 1]]]
+(defn solve
+  [input start]
+  (loop [ps [start]
          energized #{}
          seen? #{}]
     (cond (empty? ps) (count energized)
@@ -52,12 +52,23 @@
                            (conj energized nxt) seen?)
                     (recur ps energized seen?))))))
 
+(defn part1
+  [input]
+  (solve input [[0 -1] [0 1]]))
+
 (defn part2
   [input]
-  (->> input))
+  (let [h (count input)
+        w (count (first input))]
+    (->> (concat (->> (range h) (map (fn [y] [[ y -1] [ 0  1]])))  ;; from the left
+                 (->> (range h) (map (fn [y] [[ y  w] [ 0 -1]])))  ;; from the right
+                 (->> (range w) (map (fn [x] [[-1  x] [ 1  0]])))  ;; from the top
+                 (->> (range w) (map (fn [x] [[ h  x] [-1  0]])))) ;; from the bottom
+         (map (fn [start] (solve input start)))
+         (reduce max))))
 
 (lib/check
-  #_#_[part1 sample] 46
+  [part1 sample] 46
   [part1 puzzle] 7951
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  [part2 sample] 51
+  [part2 puzzle] 8148)
