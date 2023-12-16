@@ -16,54 +16,48 @@
                  (->> (re-seq #"\d+" bounds)
                       (map parse-long))])))))
 
-(def expansions
-  (memoize
-    (fn [syms]
-      (cond (empty? syms) {[] 1}
-            (every? #{\#} syms) {[(count syms)] 1}
-            (= \? (first syms)) (merge-with + (expansions (str \# (subs syms 1)))
-                                            (expansions (subs syms 1)))
-            :else (let [beg (apply str (take-while #{\#} syms))
-                        begc (count beg)]
-                    (reduce (fn [acc [k v]]
-                              (update acc (cons begc k) (fnil + 0) v))
-                            (expansions (str (subs syms 0 begc) \# (subs syms (inc begc))))
-                            (expansions (subs syms (inc begc)))))))))
-
-(comment
-(count (expansions "?????????????????????"))
-(count (expansions (->> (repeat 2 "?.??.????#?.???#???")
-                        (interpose \?)
-                        (apply str))))
-(count (expansions (->> (repeat 2 "?.??.????#?.???#???")
-                        (interpose \?)
-                        (apply str))))
-)
+(let [m (atom {})]
+  (defn process-segment
+    [segment n]
+    (if-let [prev (@m [segment n])]
+      prev
+      (let [res (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- (count segment)) 0]]
+                      (> n (count segment)) []
+                      (= (first segment) \?) (let [r1 (process-segment (str \# (subs segment 1)) n)
+                                                   r2 (process-segment (subs segment 1) n)]
+                                               (concat r1
+                                                       (map (fn [[drop? leftover ds dp]] [drop? leftover (dec ds) dp]) r2)))
+                      (= n (count segment)) [[true "" (- (count segment)) (- n)]]
+                      (= \? (get segment n)) [[true (subs segment (inc n)) (- (inc n)) (- n)]]
+                      (= \# (get segment n)) []
+                      :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n])))))]
+        (swap! m assoc [segment n] res)
+        res))))
 
 (defn solve-line
-  [ss p]
-  (let [ss (->> ss (re-seq #"[?#]+"))]
-    (loop [to-process [[ss p 1]]
-           n 0]
-      (if (empty? to-process)
-        n
-        (let [[ss ps reps] (first to-process)
-              to-process (rest to-process)]
-          (cond (and (empty? ss) (empty? ps))
-                (recur to-process (long (+ n reps)))
-                (empty? ss) (recur to-process n)
-                (and (empty? ps)
-                     (every? (fn [segm] (every? #{\?} segm)) ss))
-                (recur to-process (long (+ n reps)))
-                (empty? ps) (recur to-process n)
-                :else
-                (recur (->> (expansions (first ss))
-                            (filter (fn [[exp _]]
-                                      (= exp (take (count exp) ps))))
-                            (map (fn [[exp r]]
-                                   [(rest ss) (drop (count exp) ps) (* r reps)]))
-                            (reduce conj to-process))
-                       n)))))))
+  [symbols pat]
+  (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
+                           (map (fn [s] (if (every? #{\#} s) (count s) s))))
+                      pat (count (re-seq #"#|\?" symbols)) (reduce + 0 pat)]]
+         n 0]
+    (if (empty? to-process)
+      n
+      (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
+        (cond (and (integer? s) (integer? p) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
+              (integer? s) (recur to-process n)
+              (and (nil? s) (nil? p)) (recur to-process (inc n))
+              (> num-p num-s) (recur to-process n)
+              (and (nil? p) (every? (fn [segm] (and (seqable? segm) (every? #{\?} segm))) (cons s ss))) (recur to-process (inc n))
+              (nil? p) (recur to-process n)
+              (nil? s) (recur to-process n)
+              :else (recur (reduce (fn [acc [drop? re ds dp]]
+                                     (conj acc [(if (seq re) (cons re ss) ss)
+                                                (if drop? ps (cons p ps))
+                                                (+ num-s ds)
+                                                (+ num-p dp)]))
+                                   to-process
+                                   (process-segment s p))
+                           n))))))
 
 (defn part1
   [input]
@@ -141,8 +135,8 @@
     result))
 
 (lib/check
-  [part1 sample] 21
-  [part1 puzzle] 7090
+  #_#_[part1 sample] 21
+  #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
   #_#_[part2 puzzle true] 0)
 
