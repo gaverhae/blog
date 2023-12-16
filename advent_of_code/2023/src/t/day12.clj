@@ -34,6 +34,18 @@
         (swap! m assoc [segment n] res)
         res))))
 
+(defn expansions
+  [syms]
+  (cond (empty? syms) #{[]}
+        (every? #{\#} syms) #{[(count syms)]}
+        (= \? (first syms)) (concat (expansions (str \# (subs syms 1)))
+                                    (expansions (subs syms 1)))
+        :else (let [beg (apply str (take-while #{\#} syms))
+                    begc (count beg)]
+                (concat (->> (expansions (subs syms (inc begc)))
+                             (map (fn [e] (cons begc e))))
+                        (expansions (str (subs syms 0 begc) \# (subs syms (inc begc))))))))
+
 (defn solve-line
   [symbols pat]
   (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
@@ -62,7 +74,29 @@
 (defn part1
   [input]
   (->> input
-       (map (fn [[s p]] (solve-line s p)))
+       (map (fn [[s p]]
+              (let [ss (->> s (re-seq #"[?#]+"))]
+                (loop [to-process [[ss p]]
+                       n 0]
+                  (if (empty? to-process)
+                    n
+                    (let [[ss ps] (first to-process)
+                          to-process (rest to-process)]
+                      (cond (and (empty? ss) (empty? ps))
+                            (recur to-process (inc n))
+                            (empty? ss) (recur to-process n)
+                            (and (empty? ps)
+                                 (every? (fn [segm] (every? #{\?} segm)) ss))
+                            (recur to-process (inc n))
+                            (empty? ps) (recur to-process n)
+                            :else
+                            (recur (->> (expansions (first ss))
+                                        (filter (fn [exp]
+                                                  (= exp (take (count exp) ps))))
+                                        (map (fn [exp]
+                                               [(rest ss) (drop (count exp) ps)]))
+                                        (reduce conj to-process))
+                                   n))))))))
        (reduce + 0)))
 
 (defn part2
@@ -135,7 +169,7 @@
     result))
 
 (lib/check
-  #_#_[part1 sample] 21
+  [part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
   #_#_[part2 puzzle true] 0)

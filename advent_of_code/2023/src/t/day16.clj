@@ -68,7 +68,7 @@
          (reduce max))))
 
 (lib/check
-  [part1 sample] 46
-  [part1 puzzle] 7951
-  [part2 sample] 51
-  [part2 puzzle] 8148)
+  #_#_[part1 sample] 46
+  #_#_[part1 puzzle] 7951
+  #_#_[part2 sample] 51
+  #_#_[part2 puzzle] 8148)
