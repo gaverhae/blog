@@ -41,6 +41,21 @@
   (loop [ps [[[0 0] [0 1]]]
          energized #{[0 0]}
          seen? #{}]
+    (->> input
+         (map-indexed
+           (fn [y line]
+             (->> line
+                  (map-indexed
+                    (fn [x ch]
+                      (cond (= (ffirst ps) [y x]) \#
+                            (some (fn [[p _]] (= p [y x])) ps) \?
+                            (energized [y x]) \•
+                            (= ch \.) \space
+                            :else ch)))
+                  (apply str)
+                  println)))
+         doall)
+    (read-line)
     (cond (empty? ps) (count energized)
           (seen? (first ps)) (recur (rest ps) energized seen?)
           :else (let [p (first ps), ps (rest ps)
@@ -57,7 +72,7 @@
   (->> input))
 
 (lib/check
-  [part1 sample] 46
-  #_#_[part1 puzzle] 0
+  #_#_[part1 sample] 46
+  [part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
