@@ -30,6 +30,16 @@
                             (expansions (str (subs syms 0 begc) \# (subs syms (inc begc))))
                             (expansions (subs syms (inc begc)))))))))
 
+(comment
+(count (expansions "?????????????????????"))
+(count (expansions (->> (repeat 2 "?.??.????#?.???#???")
+                        (interpose \?)
+                        (apply str))))
+(count (expansions (->> (repeat 2 "?.??.????#?.???#???")
+                        (interpose \?)
+                        (apply str))))
+)
+
 (defn solve-line
   [ss p]
   (let [ss (->> ss (re-seq #"[?#]+"))]
