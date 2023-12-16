@@ -71,7 +71,7 @@
   (let [ins (async/chan)
         out (async/chan)
         final (async/chan)
-        num-workers 7
+        num-workers 26
         precomputed (if use-file?
                       (->> (slurp "day12")
                            s/split-lines
@@ -138,7 +138,7 @@
   #_#_[part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
-  #_#_[part2 puzzle true] 0)
+  [part2 puzzle true] 0)
 
 (defn benchmark
   []
