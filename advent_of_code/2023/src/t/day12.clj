@@ -16,18 +16,19 @@
                  (->> (re-seq #"\d+" bounds)
                       (map parse-long))])))))
 
-(defn expansions
-  [syms]
-  (cond (empty? syms) {[] 1}
-        (every? #{\#} syms) {[(count syms)] 1}
-        (= \? (first syms)) (merge-with + (expansions (str \# (subs syms 1)))
-                                          (expansions (subs syms 1)))
-        :else (let [beg (apply str (take-while #{\#} syms))
-                    begc (count beg)]
-                (reduce (fn [acc [k v]]
-                          (update acc (cons begc k) (fnil + 0) v))
-                        (expansions (str (subs syms 0 begc) \# (subs syms (inc begc))))
-                        (expansions (subs syms (inc begc)))))))
+(def expansions
+  (memoize
+    (fn [syms]
+      (cond (empty? syms) {[] 1}
+            (every? #{\#} syms) {[(count syms)] 1}
+            (= \? (first syms)) (merge-with + (expansions (str \# (subs syms 1)))
+                                            (expansions (subs syms 1)))
+            :else (let [beg (apply str (take-while #{\#} syms))
+                        begc (count beg)]
+                    (reduce (fn [acc [k v]]
+                              (update acc (cons begc k) (fnil + 0) v))
+                            (expansions (str (subs syms 0 begc) \# (subs syms (inc begc))))
+                            (expansions (subs syms (inc begc)))))))))
 
 (defn solve-line
   [ss p]
