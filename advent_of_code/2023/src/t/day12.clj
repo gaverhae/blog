@@ -18,38 +18,39 @@
 
 (defn expansions
   [syms]
-  (cond (empty? syms) #{[]}
-        (every? #{\#} syms) #{[(count syms)]}
-        (= \? (first syms)) (concat (expansions (str \# (subs syms 1)))
-                                    (expansions (subs syms 1)))
+  (cond (empty? syms) {[] 1}
+        (every? #{\#} syms) {[(count syms)] 1}
+        (= \? (first syms)) (merge-with + (expansions (str \# (subs syms 1)))
+                                          (expansions (subs syms 1)))
         :else (let [beg (apply str (take-while #{\#} syms))
                     begc (count beg)]
-                (concat (->> (expansions (subs syms (inc begc)))
-                             (map (fn [e] (cons begc e))))
-                        (expansions (str (subs syms 0 begc) \# (subs syms (inc begc))))))))
+                (reduce (fn [acc [k v]]
+                          (update acc (cons begc k) (fnil + 0) v))
+                        (expansions (str (subs syms 0 begc) \# (subs syms (inc begc))))
+                        (expansions (subs syms (inc begc)))))))
 
 (defn solve-line
   [ss p]
   (let [ss (->> ss (re-seq #"[?#]+"))]
-    (loop [to-process [[ss p]]
+    (loop [to-process [[ss p 1]]
            n 0]
       (if (empty? to-process)
         n
-        (let [[ss ps] (first to-process)
+        (let [[ss ps reps] (first to-process)
               to-process (rest to-process)]
           (cond (and (empty? ss) (empty? ps))
-                (recur to-process (inc n))
+                (recur to-process (long (+ n reps)))
                 (empty? ss) (recur to-process n)
                 (and (empty? ps)
                      (every? (fn [segm] (every? #{\?} segm)) ss))
-                (recur to-process (inc n))
+                (recur to-process (long (+ n reps)))
                 (empty? ps) (recur to-process n)
                 :else
                 (recur (->> (expansions (first ss))
-                            (filter (fn [exp]
+                            (filter (fn [[exp _]]
                                       (= exp (take (count exp) ps))))
-                            (map (fn [exp]
-                                   [(rest ss) (drop (count exp) ps)]))
+                            (map (fn [[exp r]]
+                                   [(rest ss) (drop (count exp) ps) (* r reps)]))
                             (reduce conj to-process))
                        n)))))))
 
