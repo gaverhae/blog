@@ -38,8 +38,8 @@
 
 (defn part1
   [input]
-  (loop [ps [[[0 0] [0 1]]]
-         energized #{[0 0]}
+  (loop [ps [[[0 -1] [0 1]]]
+         energized #{}
          seen? #{}]
     (print (str (char 27) "[2J")) ; clear screen
     (print (str (char 27) "[;H")) ; move cursor to the top left corner of the screen
