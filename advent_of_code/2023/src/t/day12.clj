@@ -18,7 +18,6 @@
 
 (defn solve-line
   [symbols numbers]
-  (prn [:solve-line symbols numbers])
   (cond (and (empty? numbers) (or (empty? symbols) (every? #{\. \?} symbols))) 1
         (empty? numbers) 0
         (empty? symbols) 0
@@ -36,7 +35,6 @@
                     pat-before (take max-idx numbers)
                     pat-after (drop (inc max-idx) numbers)
                     len (count symbols)
-                    _ (prn [:len len :max-n max-n :max-idx max-idx])
                     res (->> symbols
                              (keep-indexed (fn [idx _]
                                              (when (>= len (+ max-n idx))
@@ -49,56 +47,10 @@
                              (map (fn [[a b c]] [(if (empty? a) a (subs a 0 (dec (count a))))
                                                  (if (empty? c) c (subs c 1))]))
                              (map (fn [[syms-before syms-after]]
-                                    (prn [:recur [syms-before pat-before] [syms-after pat-after]])
                                     (* (solve-line syms-before pat-before)
                                        (solve-line syms-after pat-after))))
                              (reduce + 0))]
                 res)))
-
-
-
-#_(let [m (atom {})]
-  (defn process-segment
-    [segment n]
-    (if-let [prev (@m [segment n])]
-      prev
-      (let [res (cond (and (> n (count segment)) (every? #{\?} segment)) [[false "" (- (count segment)) 0]]
-                      (> n (count segment)) []
-                      (= (first segment) \?) (let [r1 (process-segment (str \# (subs segment 1)) n)
-                                                   r2 (process-segment (subs segment 1) n)]
-                                               (concat r1
-                                                       (map (fn [[drop? leftover ds dp]] [drop? leftover (dec ds) dp]) r2)))
-                      (= n (count segment)) [[true "" (- (count segment)) (- n)]]
-                      (= \? (get segment n)) [[true (subs segment (inc n)) (- (inc n)) (- n)]]
-                      (= \# (get segment n)) []
-                      :else (throw (RuntimeException. (str "Unhandled: " (pr-str [segment n])))))]
-        (swap! m assoc [segment n] res)
-        res))))
-
-#_(defn solve-line
-  [symbols pat]
-  (loop [to-process [[(->> (re-seq #"[?#]+" symbols)
-                           (map (fn [s] (if (every? #{\#} s) (count s) s))))
-                      pat (count (re-seq #"#|\?" symbols)) (reduce + 0 pat)]]
-         n 0]
-    (if (empty? to-process)
-      n
-      (let [[[[s & ss] [p & ps] num-s num-p] to-process] ((juxt peek pop) to-process)]
-        (cond (and (integer? s) (integer? p) (== s p)) (recur (conj to-process [ss ps (- num-s s) (- num-p p)]) n)
-              (integer? s) (recur to-process n)
-              (and (nil? s) (nil? p)) (recur to-process (inc n))
-              (> num-p num-s) (recur to-process n)
-              (and (nil? p) (every? (fn [segm] (and (seqable? segm) (every? #{\?} segm))) (cons s ss))) (recur to-process (inc n))
-              (nil? p) (recur to-process n)
-              (nil? s) (recur to-process n)
-              :else (recur (reduce (fn [acc [drop? re ds dp]]
-                                     (conj acc [(if (seq re) (cons re ss) ss)
-                                                (if drop? ps (cons p ps))
-                                                (+ num-s ds)
-                                                (+ num-p dp)]))
-                                   to-process
-                                   (process-segment s p))
-                           n))))))
 
 (defn part1
   [input]
@@ -177,7 +129,7 @@
 
 (lib/check
   [part1 sample] 21
-  #_#_[part1 puzzle] 7090
+  [part1 puzzle] 7090
   #_#_[part2 sample false] 525152
   #_#_[part2 puzzle true] 0)
 
