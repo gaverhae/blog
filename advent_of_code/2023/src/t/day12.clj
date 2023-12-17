@@ -132,7 +132,7 @@
   [part1 sample] 21
   [part1 puzzle] 7090
   [part2 sample false] 525152
-  [part2 puzzle true] 6792010726878)
+  [part2 puzzle false] 6792010726878)
 
 (defn benchmark
   []
