@@ -73,6 +73,6 @@
 (lib/check
   #_#_[part1 sample] 102
   #_#_[part1 puzzle] 758
-  [part2 sample] 94
-  [part2 sample1] 71
-  [part2 puzzle] 0)
+  #_#_[part2 sample] 94
+  #_#_[part2 sample1] 71
+  #_#_[part2 puzzle] 892)
