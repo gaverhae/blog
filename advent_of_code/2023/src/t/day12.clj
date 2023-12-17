@@ -130,7 +130,7 @@
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
-  #_#_[part2 sample false] 525152
+  [part2 sample false] 525152
   #_#_[part2 puzzle true] 0)
 
 (defn benchmark
