@@ -60,27 +60,15 @@
        (reduce + 0)))
 
 (defn part2
-  [input use-file?]
+  [input]
   (println (format "%s" (str (java.time.LocalDateTime/now))))
   (let [ins (async/chan)
         out (async/chan)
         final (async/chan)
         num-workers 7
-        precomputed (if use-file?
-                      (->> (slurp "day12")
-                           s/split-lines
-                           (map (fn [line] (s/split line #" ")))
-                           (map (fn [line] (mapv parse-long line)))
-                           (into {}))
-                      {})
         reader (async/thread
                  (->> input
-                      (map-indexed (fn [i line] [i line]))
-                      shuffle
-                      (map (fn [[i line]]
-                             (if-let [res (precomputed (inc i))]
-                               (async/>!! out [(inc i) res "c" "m"])
-                               (async/>!! ins [(inc i) line]))))
+                      (map-indexed (fn [i line] (async/>!! ins [(inc i) line])))
                       doall)
                  (async/close! ins))
         output (async/thread
@@ -101,8 +89,6 @@
                                             c
                                             method
                                             w))
-                           (when (and use-file? (not= method "c"))
-                             (spit "day12" (str n " " c "\n") :append true))
                            (recur (async/<!! out) (long (+ total c)) (inc idx) workers-done)))))
         workers (->> (range num-workers)
                      (map (fn [i]
@@ -131,8 +117,8 @@
 (lib/check
   [part1 sample] 21
   [part1 puzzle] 7090
-  [part2 sample false] 525152
-  [part2 puzzle false] 6792010726878)
+  [part2 sample] 525152
+  [part2 puzzle] 6792010726878)
 
 (defn benchmark
   []
