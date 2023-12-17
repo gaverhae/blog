@@ -132,7 +132,7 @@
   [part1 sample] 21
   [part1 puzzle] 7090
   [part2 sample false] 525152
-  #_#_[part2 puzzle true] 0)
+  [part2 puzzle true] 0)
 
 (defn benchmark
   []
@@ -161,7 +161,7 @@
 ;; bfc3032596941 39917
 ;; b3a6ced2b5409 38719
 ;; 965fc59d69828 112644
+;; 0968534d264db 239
   (lib/timed (benchmark))
-239
 
   )
