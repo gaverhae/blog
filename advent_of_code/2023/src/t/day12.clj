@@ -135,7 +135,7 @@
     result))
 
 (lib/check
-  #_#_[part1 sample] 21
+  [part1 sample] 21
   #_#_[part1 puzzle] 7090
   #_#_[part2 sample false] 525152
   #_#_[part2 puzzle true] 0)
