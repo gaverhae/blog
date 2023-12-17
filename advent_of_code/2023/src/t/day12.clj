@@ -71,7 +71,7 @@
   (let [ins (async/chan)
         out (async/chan)
         final (async/chan)
-        num-workers 26
+        num-workers 7
         precomputed (if use-file?
                       (->> (slurp "day12")
                            s/split-lines
