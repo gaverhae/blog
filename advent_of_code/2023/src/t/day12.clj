@@ -16,41 +16,42 @@
                  (->> (re-seq #"\d+" bounds)
                       (map parse-long))])))))
 
-(defn solve-line
-  [symbols numbers]
-  (cond (and (empty? numbers) (or (empty? symbols) (every? #{\. \?} symbols))) 1
-        (empty? numbers) 0
-        (empty? symbols) 0
-        :else (let [[max-n max-idx] (loop [[cur-n cur-idx] [(first numbers) 0]
-                                           numbers (rest numbers)
-                                           idx 1]
-                                      (if (empty? numbers)
-                                        [cur-n cur-idx]
-                                        (let [[n & numbers] numbers]
-                                          (recur (if (> n cur-n)
-                                                   [n idx]
-                                                   [cur-n cur-idx])
-                                                 numbers
-                                                 (inc idx)))))
-                    pat-before (take max-idx numbers)
-                    pat-after (drop (inc max-idx) numbers)
-                    len (count symbols)
-                    res (->> symbols
-                             (keep-indexed (fn [idx _]
-                                             (when (>= len (+ max-n idx))
-                                               [(subs symbols 0 idx)
-                                                (subs symbols idx (+ max-n idx))
-                                                (subs symbols (+ max-n idx))])))
-                             (filter (fn [[a b c]] (and (re-matches #"[#?]+" b)
-                                                        (or (empty? a) (#{\. \?} (last a)))
-                                                        (or (empty? c) (#{\. \?} (first c))))))
-                             (map (fn [[a b c]] [(if (empty? a) a (subs a 0 (dec (count a))))
-                                                 (if (empty? c) c (subs c 1))]))
-                             (map (fn [[syms-before syms-after]]
-                                    (* (solve-line syms-before pat-before)
-                                       (solve-line syms-after pat-after))))
-                             (reduce + 0))]
-                res)))
+(def solve-line
+  (memoize
+    (fn [symbols numbers]
+      (cond (and (empty? numbers) (or (empty? symbols) (every? #{\. \?} symbols))) 1
+            (empty? numbers) 0
+            (empty? symbols) 0
+            :else (let [[max-n max-idx] (loop [[cur-n cur-idx] [(first numbers) 0]
+                                               numbers (rest numbers)
+                                               idx 1]
+                                          (if (empty? numbers)
+                                            [cur-n cur-idx]
+                                            (let [[n & numbers] numbers]
+                                              (recur (if (> n cur-n)
+                                                       [n idx]
+                                                       [cur-n cur-idx])
+                                                     numbers
+                                                     (inc idx)))))
+                        pat-before (take max-idx numbers)
+                        pat-after (drop (inc max-idx) numbers)
+                        len (count symbols)
+                        res (->> symbols
+                                 (keep-indexed (fn [idx _]
+                                                 (when (>= len (+ max-n idx))
+                                                   [(subs symbols 0 idx)
+                                                    (subs symbols idx (+ max-n idx))
+                                                    (subs symbols (+ max-n idx))])))
+                                 (filter (fn [[a b c]] (and (re-matches #"[#?]+" b)
+                                                            (or (empty? a) (#{\. \?} (last a)))
+                                                            (or (empty? c) (#{\. \?} (first c))))))
+                                 (map (fn [[a b c]] [(if (empty? a) a (subs a 0 (dec (count a))))
+                                                     (if (empty? c) c (subs c 1))]))
+                                 (map (fn [[syms-before syms-after]]
+                                        (* (solve-line syms-before pat-before)
+                                           (solve-line syms-after pat-after))))
+                                 (reduce + 0))]
+                    res)))))
 
 (defn part1
   [input]
@@ -159,6 +160,8 @@
 ;; b74985f669136 349278
 ;; bfc3032596941 39917
 ;; b3a6ced2b5409 38719
+;; 965fc59d69828 112644
   (lib/timed (benchmark))
+239
 
   )
