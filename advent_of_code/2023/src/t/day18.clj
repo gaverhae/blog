@@ -48,7 +48,10 @@
                          (map (fn [[y x0 x1]]
                                 (if (< x0 x1)
                                   [y x0 x1]
-                                  [y x1 x0]))))
+                                  [y x1 x0])))
+                         (reduce (fn [acc [y x0 x1]]
+                                   (update acc y (fnil conj #{}) [x0 x1]))
+                                 {}))
         interesting-ys (->> verticals
                             (mapcat (fn [[_ y0 y1 _]] [y0 (inc y0) y1 (inc y1)]))
                             set
@@ -96,6 +99,17 @@
                                      (rest xs))]))
                    (map (fn [[y xs]]
                           [y (->> xs (map first) (partition 2))]))
+                   (map (fn [[y xs]]
+                          [y (loop [todo (rest xs)
+                                    cur (first xs)
+                                    done []]
+                               (if (empty? todo)
+                                 (conj done cur)
+                                 (let [[x0 x1] cur
+                                       [[x2 x3] & todo] todo]
+                                   (if (get-in horizontals [y [x1 x2]])
+                                     (recur todo [x0 x3] done)
+                                     (recur todo [x2 x3] (conj done cur))))))]))
                    (partition 2 1)
                    (mapcat (fn [[[y0 xs] [y1 _]]]
                              (let [height (- y1 y0)]
