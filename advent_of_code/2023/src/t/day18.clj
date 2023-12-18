@@ -20,11 +20,17 @@
                                           (get color 5))
                                 dist2 (Long/parseLong (subs color 0 5) 16)]
                             [dir dist [dir2 dist2]]))))]
-    {:part1 (->> lines (map (fn [line] (->> line (map (fn [[dir dist _]] [dir dist]))))))
-     :part2 (->> lines (map (fn [line] (->> line (map (fn [[_ _ [dir dist]]] [dir dist]))))))}))
+    {:part1 (->> lines (map (fn [[dir dist _]] [dir dist])))
+     :part2 (->> lines (map (fn [[_ _ [dir dist]]] [dir dist])))}))
 
 (defn solve
-  [lines])
+  [lines]
+  (let [verticals (reduce (fn [acc [dir dist]]
+                            acc)
+                          [[0 0] []]
+                          lines)]
+    verticals))
+
 
 (defn part1
   [input]
@@ -35,7 +41,7 @@
   (solve (:part2 input)))
 
 (lib/check
-  #_#_[part1 sample] 62
+  [part1 sample] 62
   #_#_[part1 puzzle] 48503
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
