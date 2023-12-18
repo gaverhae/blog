@@ -147,6 +147,17 @@
                            (rest xs))]))
          (map (fn [[y xs]]
                 [y (->> xs (map first) (partition 2))]))
+         (map (fn [[y xs]]
+                [y (loop [todo (rest xs)
+                          cur (first xs)
+                          done []]
+                     (if (empty? todo)
+                       (conj done cur)
+                       (let [[x0 x1] cur
+                             [[x2 x3] & todo] todo]
+                         (if (get-in horizontals [y [x1 x2]])
+                           (recur todo [x0 x3] done)
+                           (recur todo [x2 x3] (conj done cur))))))]))
          (partition 2 1)
          (map (fn [[[y-start xs] [y-end _]]]
                 (let [height (- y-end y-start)]
