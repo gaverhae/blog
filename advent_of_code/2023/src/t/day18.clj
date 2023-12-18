@@ -19,23 +19,20 @@
 
 (defn part1
   [input]
-  (let [dug? (loop [to-dig input
-                    pos [0 0]
-                    dug [[0 0]]]
+  (let [left [0 -1], right [0 1], up [-1 0], down [1 0]
+        dug? (loop [to-dig (->> input
+                                (mapcat (fn [[dir dist _]] (repeat dist dir))))
+                    [y x] [0 0]
+                    dug? {}]
                (if (empty? to-dig)
-                 (set dug)
-                 (let [[[dir dist] & to-dig] to-dig]
+                 (assoc dug? [y x] up)
+                 (let [[[dy dx] & to-dig] to-dig]
                    (recur to-dig
-                          (mapv (fn [c d] (+ c (* d dist))) pos dir)
-                          (reduce (fn [acc dist]
-                                    (conj acc
-                                          (mapv (fn [c d] (+ c (* d dist)))
-                                                pos dir)))
-                                  dug
-                                  (range 1 (inc dist)))))))
-        h (->> dug? (map first) (reduce max) inc)
-        w (->> dug? (map second) (reduce max) inc)
-        excavated (->> (range h)
+                          [(+ y dy) (+ x dx)]
+                          (assoc dug? [y x] [dy dx])))))
+        h (->> dug? keys (map first) (reduce max) inc)
+        w (->> dug? keys (map second) (reduce max) inc)
+        #_#_excavated (->> (range h)
                        (mapcat (fn [y]
                                  (->> (range w)
                                       (reduce (fn [[state dug] x]
@@ -50,7 +47,20 @@
                                                   [:trench-out t] [:trench-out (conj dug [y x])]))
                                               [:out []])
                                       second))))]
-    (count excavated)))
+    (->> (range h)
+         (map (fn [y]
+                (->> (range w)
+                     (map (fn [x]
+                            (condp = (dug? [y x])
+                              nil \.
+                              left \<
+                              right \>
+                              up \^
+                              down \v)))
+                     (apply str)
+                     println)))
+         doall)
+    #_(count excavated)))
 
 (defn part2
   [input]
