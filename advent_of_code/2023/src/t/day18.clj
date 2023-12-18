@@ -45,47 +45,26 @@
         min-y (->> dug? keys (map first) (reduce min))
         max-y (->> dug? keys (map first) (reduce max) inc)
         min-x (->> dug? keys (map second) (reduce min))
-        max-x (->> dug? keys (map second) (reduce max) inc)
-        drawing (->> (range min-y max-y)
-                     (map (fn [y]
-                            (->> (range min-x max-x)
-                                 (map (fn [x] (dug? [y x] \space)))
-                                 (apply str)))))
-        excavated (->> (range min-y max-y)
-                       (mapcat (fn [y]
-                                 (->> (range min-x max-x)
-                                      (reduce (fn [[state dug] x]
-                                                (match [state (dug? [y x])]
-                                                  [[:out] nil] [[:out] dug]
-                                                  [[:out] dir] [[:trench-in dir] (conj dug [y x])]
-                                                  [[:trench-in _] nil] [[:in] (conj dug [y x])]
-                                                  [[:trench-in [-1 0]] [-1 0]] [[:in] (conj dug [y x])]
-                                                  [[:trench-in [-1 0]] [1 0]] [[:out] (conj dug [y x])]
-                                                  [[:trench-in [1 0]] [1 0]] [[:in] (conj dug [y x])]
-                                                  [[:trench-in [1 0]] [-1 0]] [[:out] (conj dug [y x])]
-                                                  [[:trench-in dir] _] [[:trench-in dir] (conj dug [y x])]
-                                                  [[:in] nil] [[:in] (conj dug [y x])]
-                                                  [[:in] dir] [[:trench-out dir] (conj dug [y x])]
-                                                  [[:trench-out _] nil] [[:out] dug]
-                                                  [[:trench-out [-1 0]] [-1 0]] [[:out] (conj dug [y x])]
-                                                  [[:trench-out [-1 0]] [1 0]] [[:in] (conj dug [y x])]
-                                                  [[:trench-out [1 0]] [-1 0]] [[:in] (conj dug [y x])]
-                                                  [[:trench-out [1 0]] [1 0]] [[:out] (conj dug [y x])]
-                                                  [[:trench-out dir] _] [[:trench-out dir] (conj dug [y x])]))
-                                              [[:out] []])
-                                      second)))
-                       set)]
-    (->> drawing (map println) doall)
+        max-x (->> dug? keys (map second) (reduce max) inc)]
     (->> (range min-y max-y)
          (map (fn [y]
                 (->> (range min-x max-x)
-                     (map (fn [x]
-                            (if (excavated [y x])
-                              \# \space)))
-                     (apply str)
-                     println)))
-         doall)
-    (count excavated)))
+                     (map (fn [x] (dug? [y x] \space)))
+                     (apply str))))
+         (map (fn [line]
+                (->> line
+                     (re-seq #" +|\||F-*7|F-*J|L-*J|L-*7")
+                     (reduce (fn [[in? so-far] el]
+                               (condp re-find el
+                                 #" +" [in? (if in? (+ so-far (count el)) so-far)]
+                                 #"\|" [(not in?) (inc so-far)]
+                                 #"F-*7" [in? (+ so-far (count el))]
+                                 #"F-*J" [(not in?) (+ so-far (count el))]
+                                 #"L-*J" [in? (+ so-far (count el))]
+                                 #"L-*7" [(not in?) (+ so-far (count el))]))
+                             [false 0])
+                     second)))
+         (reduce + 0))))
 
 (defn part2
   [input]
