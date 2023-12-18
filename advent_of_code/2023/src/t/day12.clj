@@ -61,7 +61,7 @@
 
 (defn part2
   [input]
-  (println (format "%s" (str (java.time.LocalDateTime/now))))
+  #_(println (format "%s" (str (java.time.LocalDateTime/now))))
   (let [ins (async/chan)
         out (async/chan)
         final (async/chan)
@@ -82,7 +82,7 @@
                          (recur (async/<!! out) total idx (inc workers-done))
                          :else
                          (let [[n c method w] msg]
-                           (println (format "%s: %4d[%4d]: %10d %s %s"
+                           #_(println (format "%s: %4d[%4d]: %10d %s %s"
                                             (subs (str (java.time.LocalDateTime/now)) 0 19)
                                             (inc idx)
                                             n
