@@ -1,5 +1,6 @@
 (ns t.day18
   (:require [clojure.core.async :as async]
+            [clojure.core.match :refer [match]]
             [clojure.math :as math]
             [clojure.set :as set]
             [clojure.string :as s]
@@ -37,14 +38,17 @@
         excavated (->> (range h)
                        (mapcat (fn [y]
                                  (->> (range w)
-                                      (reduce (fn [[dig? dug] x]
-                                                (if (dug? [y x])
-                                                  [(not dig?)
-                                                   (conj dug [y x])]
-                                                  [dig? (if dig?
-                                                          (conj dug [y x])
-                                                          dug)]))
-                                              [false []])
+                                      (reduce (fn [[state dug] x]
+                                                (match [state (dug? [y x])]
+                                                  [:out nil] [:out dug]
+                                                  [:out t] [:trench-in (conj dug [y x])]
+                                                  [:trench-in nil] [:in (conj dug [y x])]
+                                                  [:trench-in t] [:trench-in (conj dug [y x])]
+                                                  [:in nil] [:in (conj dug [y x])]
+                                                  [:in t] [:trench-out (conj dug [y x])]
+                                                  [:trench-out nil] [:out dug]
+                                                  [:trench-out t] [:trench-out (conj dug [y x])]))
+                                              [:out []])
                                       second))))]
     (count excavated)))
 
