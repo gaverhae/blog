@@ -25,47 +25,56 @@
 
 (defn solve
   [lines]
-  (let [verticals (->> lines
-                       (reduce (fn [[y0 x0 verts] [[dy dx] dist]]
-                                 (let [y1 (+ y0 (* dy dist))
-                                       x1 (+ x0 (* dx dist))]
-                                   [y1 x1 (if (zero? dx)
-                                            (conj verts [x0 y0 y1])
-                                            verts)]))
-                               [0 0 []])
-                       (drop 2)
+  (let [path (->> lines
+                  (reduce (fn [[y0 x0 vs hs] [[dy dx] dist]]
+                            (let [y1 (+ y0 (* dy dist))
+                                  x1 (+ x0 (* dx dist))]
+                              [y1
+                               x1
+                               (if (zero? dx) (conj vs [x0 y0 y1]) vs)
+                               (if (zero? dy) (conj hs [y0 x0 x1]) hs)]))
+                          [0 0 [] []])
+                  (drop 2))
+        verticals (->> path
                        first
                        sort
                        (map (fn [[x y0 y1]]
                               (if (< y0 y1)
                                 [x y0 y1 false]
                                 [x y1 y0 true]))))
+        horizontals (->> path
+                         second
+                         sort
+                         (map (fn [[y x0 x1]]
+                                (if (< x0 x1)
+                                  [y x0 x1]
+                                  [y x1 x0]))))
         interesting-ys (->> verticals
                             (mapcat (fn [[_ y0 y1 _]] [y0 (inc y0) y1 (inc y1)]))
                             set
                             sort)]
     (let [trench (loop [to-dig (->> lines
-                                  (mapcat (fn [[dir dist]] (repeat dist dir))))
-                      [y x] [0 0]
-                      [py px] [0 1]
-                      trench {[0 0] \F}]
-                 (if (empty? to-dig)
-                   (assoc trench [y x] \F)
-                   (let [[[dy dx] & to-dig] to-dig]
-                     (recur to-dig
-                            [(+ y dy) (+ x dx)]
-                            [y x]
-                            (assoc trench [y x] (match [(- y py) (- x px) dy dx]
-                                                [ 0  1  1  0] \7
-                                                [-1  0  0 -1] \7
-                                                [-1  0  0  1] \F
-                                                [ 0 -1  1  0] \F
-                                                [ _  0  _  0] \|
-                                                [ 0  _  0  _] \-
-                                                [ 1  0  0  1] \L
-                                                [ 0 -1 -1  0] \L
-                                                [ 0  1 -1  0] \J
-                                                [ 1  0  0 -1] \J))))))
+                                    (mapcat (fn [[dir dist]] (repeat dist dir))))
+                        [y x] [0 0]
+                        [py px] [0 1]
+                        trench {[0 0] \F}]
+                   (if (empty? to-dig)
+                     (assoc trench [y x] \F)
+                     (let [[[dy dx] & to-dig] to-dig]
+                       (recur to-dig
+                              [(+ y dy) (+ x dx)]
+                              [y x]
+                              (assoc trench [y x] (match [(- y py) (- x px) dy dx]
+                                                    [ 0  1  1  0] \7
+                                                    [-1  0  0 -1] \7
+                                                    [-1  0  0  1] \F
+                                                    [ 0 -1  1  0] \F
+                                                    [ _  0  _  0] \|
+                                                    [ 0  _  0  _] \-
+                                                    [ 1  0  0  1] \L
+                                                    [ 0 -1 -1  0] \L
+                                                    [ 0  1 -1  0] \J
+                                                    [ 1  0  0 -1] \J))))))
           min-y (->> trench keys (map first) (reduce min))
           max-y (->> trench keys (map first) (reduce max) inc)
           min-x (->> trench keys (map second) (reduce min))
