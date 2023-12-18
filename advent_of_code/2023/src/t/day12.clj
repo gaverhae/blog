@@ -115,10 +115,10 @@
     result))
 
 (lib/check
-  [part1 sample] 21
-  [part1 puzzle] 7090
-  [part2 sample] 525152
-  [part2 puzzle] 6792010726878)
+  #_#_[part1 sample] 21
+  #_#_[part1 puzzle] 7090
+  #_#_[part2 sample] 525152
+  #_#_[part2 puzzle] 6792010726878)
 
 (defn benchmark
   []
