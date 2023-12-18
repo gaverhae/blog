@@ -97,19 +97,15 @@
                                                              (->> (range (inc (- x1 x0)))
                                                                   (map (fn [dx] [(+ y0 dy) (+ x0 dx)]))))))))))))
                    (into #{}))
-          draw-trench (->> (range min-y max-y)
+          drawing (->> (range min-y max-y)
                        (map (fn [y]
                               (->> (range min-x max-x)
-                                   (map (fn [x] (trench [y x] \space)))
-                                   (apply str)))))
-          draw-dug (->> (range min-y max-y)
-                        (map (fn [y]
-                               (->> (range min-x max-x)
-                                    (map (fn [x] (if (dug [y x]) \# \space)))
-                                    (apply str)))))]
+                                   (map (fn [x]
+                                          (let [c (trench [y x] \space)]
+                                            (if (dug [y x]) (lib/bg-color :cyan c) c))))
+                                   (apply str)))))]
       (println)
-      (->> draw-trench (map println) doall)
-      (->> draw-dug (map println) doall)
+      (->> drawing (map println) doall)
       (println))
     (->> interesting-ys
          (map (fn [y]
