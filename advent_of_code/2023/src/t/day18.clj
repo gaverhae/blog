@@ -40,48 +40,34 @@
                               (if (< y0 y1)
                                 [x y0 y1 false]
                                 [x y1 y0 true]))))
-        entering (->> verticals (filter #(get % 3)))
-        exiting (->> verticals (remove #(get % 3)))]
-    (loop [entering entering
-           p []
-           cells 0]
-      (if (empty? entering)
-        [cells p]
-        (let [[[x y0 y1] & entering] entering
-              exits (->> exiting
-                         (filter (fn [[e-x e-y0 e-y1]]
-                                   (and (> e-x x)
-                                        (or (<= e-y0 y0 e-y1 y1)
-                                            (<= y0 e-y0 e-y1 y1)
-                                            (<= e-y0 y0 y1 e-y1)
-                                            (<= y0 e-y0 y1 e-y1)))))
-                         (map (fn [[e-x e-y0 e-y1]]
-                                [e-x (max e-y0 y0) (min e-y1 y1)])))
-              ys (->> exits
-                      (mapcat (fn [[e-x e-y0 e-y1]] [e-y0 e-y1]))
-                      set sort)
-              intervals (reduce (fn [acc el]
-                                  (prn [:acc acc :el el])
-                                  (conj acc [(inc (second (last acc))) el]))
-                                [(vec (take 2 ys))]
-                                (drop 2 ys))
-              new-cells (->> intervals
-                             (map (fn [[i-y0 i-y1]]
-                                    (let [x-end (->> exits
-                                                     (filter (fn [[e-x e-y0 e-y1]]
-                                                               (or (<= e-y0 i-y0 e-y1 i-y1)
-                                                                   (<= i-y0 e-y0 e-y1 i-y1)
-                                                                   (<= e-y0 i-y0 i-y1 e-y1)
-                                                                   (<= i-y0 e-y0 i-y1 e-y1))))
-                                                     first first)
-                                          width (inc (- x-end x))
-                                          height (inc (- i-y1 i-y0))]
-                                      (* width height))))
-                             (reduce +))]
-          (recur entering
-                 (conj p [[x y0 y1 new-cells]])
-                 0))))))
-
+        interesting-ys (->> verticals
+                            (mapcat (fn [[_ y0 y1 _]] [y0 (inc y0) y1 (inc y1)]))
+                            set
+                            sort)]
+    (->> interesting-ys
+         (map (fn [y]
+                [y (->> verticals
+                        (filter (fn [[_ y0 y1 _]] (<= y0 y y1)))
+                        (map (fn [[x _ _ in?]] [x in?])))]))
+         (map (fn [[y xs]]
+                [y (reduce (fn [acc el]
+                             (let [done (vec (butlast acc))
+                                   [x0 in0] (last acc)
+                                   [x1 in1] el]
+                               (cond (= in0 in1 true) (conj done [x0 true])
+                                     (= in0 in1 false) (conj done [x1 false])
+                                     :else (conj done [x0 in0] [x1 in1]))))
+                           [(first xs)]
+                           (rest xs))]))
+         (map (fn [[y xs]]
+                [y (->> xs (map first) (partition 2))]))
+         (partition 2 1)
+         (map (fn [[[y-start xs] [y-end _]]]
+                (let [height (- y-end y-start)]
+                  (->> xs
+                       (map (fn [[x0 x1]] (* (inc (- x1 x0)) height)))
+                       (reduce + 0)))))
+         (reduce + 0))))
 
 (defn part1
   [input]
