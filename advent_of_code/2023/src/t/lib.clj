@@ -56,6 +56,28 @@
   [a b]
   (quot (* a b) (gcd a b)))
 
+(defn clear-screen
+  []
+  (print (str (char 27) "[2J")) ; clear screen
+  (print (str (char 27) "[;H"))); move cursor to the top left corner of the screen
+
+(let [color->code (->> (map vector [:grey :red :green :yellow :blue :magenta :cyan :white]
+                                   (range 30 38))
+                       (into {}))]
+  (defn- color-text
+    [col s offset]
+    (if-let [code (color->code col)]
+      (str "\033[" (+ offset code) "m" s "\033[0m")
+      (throw (IllegalArgumentException. (str "Unknown color: '" (pr-str col) "'."))))))
+
+(defn color
+  [col s]
+  (color-text col s 0))
+
+(defn bg-color
+  [col s]
+  (color-text col s 10))
+
 (defmacro check
   [& specs]
   `(do
