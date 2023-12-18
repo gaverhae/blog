@@ -19,20 +19,38 @@
 
 (defn part1
   [input]
-  (let [dug? (loop [to-dig (->> input
+  (let [left [0 -1], right [0 1], up [-1 0], down [1 0]
+        dug? (loop [to-dig (->> input
                                 (mapcat (fn [[dir dist _]] (repeat dist dir))))
                     [y x] [0 0]
-                    dug? {}]
+                    [py px] [0 1]
+                    dug? {[0 0] \F}]
                (if (empty? to-dig)
-                 (assoc dug? [y x] [-1 0])
+                 (assoc dug? [y x] \F)
                  (let [[[dy dx] & to-dig] to-dig]
                    (recur to-dig
                           [(+ y dy) (+ x dx)]
-                          (assoc dug? [y x] [dy dx])))))
+                          [y x]
+                          (assoc dug? [y x] (match [(- y py) (- x px) dy dx]
+                                              [ 0  1  1  0] \7
+                                              [-1  0  0 -1] \7
+                                              [-1  0  0  1] \F
+                                              [ 0 -1  1  0] \F
+                                              [ _  0  _  0] \|
+                                              [ 0  _  0  _] \-
+                                              [ 1  0  0  1] \L
+                                              [ 0 -1 -1  0] \L
+                                              [ 0  1 -1  0] \J
+                                              [ 1  0  0 -1] \J))))))
         min-y (->> dug? keys (map first) (reduce min))
         max-y (->> dug? keys (map first) (reduce max) inc)
         min-x (->> dug? keys (map second) (reduce min))
         max-x (->> dug? keys (map second) (reduce max) inc)
+        drawing (->> (range min-y max-y)
+                     (map (fn [y]
+                            (->> (range min-x max-x)
+                                 (map (fn [x] (dug? [y x] \space)))
+                                 (apply str)))))
         excavated (->> (range min-y max-y)
                        (mapcat (fn [y]
                                  (->> (range min-x max-x)
@@ -57,19 +75,7 @@
                                               [[:out] []])
                                       second)))
                        set)]
-    (->> (range min-y max-y)
-         (map (fn [y]
-                (->> (range min-x max-x)
-                     (map (fn [x]
-                            (condp = (dug? [y x])
-                              nil \space
-                              [0 -1] \<
-                              [0 1] \>
-                              [-1 0] \^
-                              [1 0] \v)))
-                     (apply str)
-                     println)))
-         doall)
+    (->> drawing (map println) doall)
     (->> (range min-y max-y)
          (map (fn [y]
                 (->> (range min-x max-x)
