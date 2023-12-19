@@ -119,4 +119,4 @@
   [part1 sample] 19114
   [part1 puzzle] 402185
   [part2 sample] 167409079868000
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle] 130291480568730)
