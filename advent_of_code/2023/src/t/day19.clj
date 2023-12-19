@@ -74,11 +74,49 @@
        (reduce + 0)))
 
 (defn part2
-  [input]
-  input)
+  [[workflows _]]
+  (loop [states [{:parts {:x [1 4000], :m [1 4000], :a [1 4000], :s [1 4000]}
+                  :workflow :in}]
+         counted 0]
+    (if (empty? states)
+      counted
+      (let [[{:keys [parts workflow]} & states] states]
+        (case workflow
+          :A (recur states (+ counted
+                              (->> parts
+                                   vals
+                                   (map (fn [[from to]] (inc (- to from))))
+                                   (reduce * 1))))
+          :R (recur states counted)
+          (recur (reduce conj
+                         states
+                         (loop [rules (get workflows workflow)
+                                parts parts
+                                new-states []]
+                           (if (nil? parts)
+                             new-states
+                             (match (first rules)
+                               [:> a v r] (let [[from-a to-a] (get parts a)]
+                                            (cond (< v from-a)(recur () nil (conj new-states {:parts parts, :workflow r}))
+                                                  (< to-a v) (recur (rest rules) parts new-states)
+                                                  (<= from-a v to-a)
+                                                  (recur (rest rules)
+                                                         (assoc parts a [from-a v])
+                                                         (conj new-states {:parts (assoc parts a [(inc v) to-a])
+                                                                           :workflow r}))))
+                               [:< a v r] (let [[from-a to-a] (get parts a)]
+                                            (cond (< v from-a) (recur (rest rules) parts new-states)
+                                                  (< to-a v) (recur () nil (conj new-states {:parts parts, :workflow r}))
+                                                  (<= from-a v to-a)
+                                                  (recur (rest rules)
+                                                         (assoc parts a [v to-a])
+                                                         (conj new-states {:parts (assoc parts a [from-a (dec v)])
+                                                                           :workflow r}))))
+                               [:ref r] (recur nil nil (conj new-states {:parts parts, :workflow r}))))))
+                 counted))))))
 
 (lib/check
   [part1 sample] 19114
   [part1 puzzle] 402185
-  #_#_[part2 sample] 0
+  [part2 sample] 167409079868000
   #_#_[part2 puzzle] 0)
