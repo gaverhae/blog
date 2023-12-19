@@ -37,14 +37,11 @@
                        (map (fn [rule]
                               (case (first rule)
                                 :compare (let [[_ a c v r] rule]
-                                           `(fn [part#]
-                                              (when (~(case c "<" < ">" >)
-                                                            (~(keyword a) part#)
-                                                            ~(parse-long v))
-                                                ~(keyword r))))
-                                :ref `(fn [part#] ~(keyword (second rule)))))))]))
-          #_(map (fn [[k vs]]
-                 [k (->> vs (map eval))]))
+                                           [(keyword c)
+                                            (keyword a)
+                                            (parse-long v)
+                                            (keyword r)])
+                                :ref [:ref (keyword (second rule))]))))]))
           (into {}))
      (->> parts
           (map part-parser)
@@ -62,7 +59,10 @@
               (loop [workflow :in]
                 (let [r (loop [rules (get rules workflow)]
                           (let [rule (first rules)
-                                res ((eval rule) part)]
+                                res (case (first rule)
+                                      :> (let [[_ a v r] rule] (when (> (get part a) v) r))
+                                      :< (let [[_ a v r] rule] (when (< (get part a) v) r))
+                                      :ref (let [[_ r] rule] r))]
                             (case res
                               :A (->> part vals (reduce + 0))
                               :R 0
