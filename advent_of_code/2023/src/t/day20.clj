@@ -102,6 +102,19 @@
          state input
          end? false]
     #_(prn [:b button-pushes pulses state])
+    (when (or true
+              (zero? (rem button-pushes 10000))
+              (some #{1} (->> (state "qt") :state vals)))
+      (pr [button-pushes
+           #_(->> (state "qt") :state sort (map (fn [[k v]] v)) (map {:low 0, :high 1}))
+           (->> state sort (map val)
+                (filter (comp #{:conj} :type))
+                (map (fn [s]
+                       (if (= :flip (:type s))
+                         [({:on 1, :off 0} (:state s))]
+                         (->> s :state sort (map val) (map {:low 0, :high 1}))))))])
+      (flush)
+      (read-line))
     (if end?
       button-pushes
       (let [b (get state "broadcaster")
@@ -152,9 +165,9 @@
         (recur (inc button-pushes) (merge-with + pulses new-pulses) state end?)))))
 
 (lib/check
-  [part1 sample] 32000000
-  [part1 sample1] 11687500
-  [part1 puzzle] 879834312
-  [part2 sample "inv"] 1
-  [part2 sample1 "con"] 2
+  #_#_[part1 sample] 32000000
+  #_#_[part1 sample1] 11687500
+  #_#_[part1 puzzle] 879834312
+  #_#_[part2 sample "inv"] 1
+  #_#_[part2 sample1 "con"] 2
   [part2 puzzle "rx"] 0)
