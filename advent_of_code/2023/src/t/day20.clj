@@ -19,16 +19,41 @@
 
 (defn parse
   [lines]
-  (->> lines
-       (map parser)
-       (map (fn [[[_ t] n & outs]]
-              {:type ({"&" :conj, "%" :flip, nil :b} t)
-               :name n
-               :outputs outs}))))
+  (let [m (->> lines
+               (map parser)
+               (map (fn [[[_ t] n & outs]]
+                      [n {:type ({"&" :conj, "%" :flip, nil :b} t)
+                          :outputs outs}]))
+               (into {}))
+        inputs (->> m
+                    (mapcat (fn [[k v]]
+                              (map (fn [o] [o k])
+                                   (:outputs v))))
+                    (reduce (fn [acc [k v]]
+                              (update acc k (fnil conj []) v))
+                            {}))]
+    (->> m
+         (map (fn [[n s]]
+                [n (if (= :flip (:type s))
+                     (assoc s :state :off)
+                     s)]))
+         (map (fn [[n s]]
+                [n (if (= :conj (:type s))
+                     (assoc s :state (->> (get inputs n)
+                                          (map (fn [o] [o :low]))
+                                          (into {})))
+                     s)])))))
 
 (defn part1
   [input]
-  input)
+  input
+  #_(loop [button-pushes 0
+         pulses 0
+         state input]
+    (if (= 1000 button-pushes)
+      pulses
+      (let [b (get state "broadcast")]))))
+
 
 (defn part2
   [input]
