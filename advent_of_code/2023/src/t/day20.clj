@@ -8,9 +8,23 @@
             [t.lib :as lib])
   (:import [java.util Arrays]))
 
+(def parser
+  (insta/parser
+    "
+    <S> = type name <' -> '> output
+    type = '&' | '%' | ''
+    <name> = #'[a-z]+'
+    <output> = name (<', '> name)*
+    "))
+
 (defn parse
   [lines]
-  lines)
+  (->> lines
+       (map parser)
+       (map (fn [[[_ t] n & outs]]
+              {:type ({"&" :conj, "%" :flip, nil :b} t)
+               :name n
+               :outputs outs}))))
 
 (defn part1
   [input]
@@ -21,7 +35,8 @@
   input)
 
 (lib/check
-  [part1 sample] 0
+  [part1 sample] 32000000
+  [part1 sample1] 11687500
   #_#_[part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
