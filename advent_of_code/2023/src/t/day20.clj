@@ -43,6 +43,12 @@
                                           (map (fn [o] [o :low]))
                                           (into {})))
                      s)]))
+         (map (fn [[n s]] [n (assoc s :inputs (get inputs n))]))
+         ((fn [m] (reduce (fn [acc [k v]] (if (contains? acc k)
+                                            acc
+                                            (assoc acc k {:inputs v})))
+                          (into {} m)
+                          inputs)))
          (into {}))))
 
 (defn part1
@@ -104,9 +110,10 @@
          pulses {:low 0, :high 0}
          state input
          end? false]
-    (swap! c conj (->> (map state ["mr" "kk" "gl" "bb"])
-                       (map :state)))
-    (if (= 10 button-pushes)
+    (swap! c conj (->> (map state ["nl" "vj" "cr" "jx"])
+                       (map :state)
+                       (map (fn [s] (->> s sort vals (map {:low 0, :high 1}))))))
+    (if (= 100 button-pushes)
       :end
       (let [b (get state "broadcaster")
             [new-pulses state end?]
