@@ -52,13 +52,13 @@
          pulses {:low 0, :high 0}
          state input]
     (prn [:b button-pushes pulses state])
-    (if (= 1 button-pushes)
+    (if (= 1000 button-pushes)
       (* (:low pulses) (:high pulses))
       (let [b (get state "broadcaster")
             [new-pulses state]
             (loop [todo (conj clojure.lang.PersistentQueue/EMPTY [:low "broadcaster" "button"])
                    state state
-                   pulses {:low 0, :high 0}]
+                   pulses {:low 1, :high 0}]
               (prn [:p (peek todo) (seq todo) state pulses])
               (if (empty? todo)
                 [pulses state]
@@ -67,7 +67,7 @@
                       m (get state target)]
                   (case (:type m)
                     :b (recur (->> (:outputs m)
-                                   (map (fn [o] [level o (:name m)]))
+                                   (map (fn [o] [level o target]))
                                    (reduce conj todo))
                               state
                               (update pulses level + (count (:outputs m))))
@@ -75,21 +75,21 @@
                             :high (recur todo state pulses)
                             :low (case (:state m)
                                    :on (recur (->> (:outputs m)
-                                                   (map (fn [o] [:low o (:name m)]))
+                                                   (map (fn [o] [:low o target]))
                                                    (reduce conj todo))
-                                              (assoc-in state [(:name m) :state] :off)
+                                              (assoc-in state [target :state] :off)
                                               (update pulses :low + (count (:outputs m))))
                                    :off (recur (->> (:outputs m)
-                                                    (map (fn [o] [:high o (:name m)]))
+                                                    (map (fn [o] [:high o target]))
                                                     (reduce conj todo))
-                                               (assoc-in state [(:name m) :state] :on)
+                                               (assoc-in state [target :state] :on)
                                                (update pulses :high + (count (:outputs m))))))
                     :conj (let [new-m (assoc-in m [:state origin] level)
                                 level (if (every? #{:high} (vals (:state new-m))) :low :high)]
                             (recur (->> (:outputs m)
-                                        (map (fn [o] [level o (:name m)]))
+                                        (map (fn [o] [level o target]))
                                         (reduce conj todo))
-                                   (assoc state (:name m) new-m)
+                                   (assoc state target new-m)
                                    (update pulses level + (count (:outputs m)))))))))]
         (recur (inc button-pushes) (merge-with + pulses new-pulses) state)))))
 
