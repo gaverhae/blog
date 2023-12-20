@@ -173,6 +173,33 @@
                     :untyped (recur todo state pulses changes end?)))))]
         (recur (inc button-pushes) (merge-with + pulses new-pulses) state changes end?))))
   )
+
+(comment
+
+  (defn f [x] (iterate (fn [[n high?]] [(+ n x) (- 1 high?)]) [0 0]))
+
+  (take 3 (f 3907))
+([0 0] [3907 1] [7814 0])
+
+  (take 3 (f 3989))
+([0 0] [3989 1] [7978 0])
+
+  (take 3 (f 3967))
+([0 0] [3967 1] [7934 0])
+
+  (take 3 (f 3931))
+([0 0] [3931 1] [7862 0])
+
+(reduce lib/lcm [3907 3931 3939 3967])
+; 239990823701421 --> too low!
+
+
+(loop [mr (f 3907)
+       kk (f 3931)
+       gl (f 3939)
+       bb (f 3967)]
+)
+
   )
 
 (lib/check
