@@ -105,30 +105,19 @@
          pulses {:low 0, :high 0}
          state input
          first-high (->> state
-                        keys
-                        (map (fn [k] [k nil]))
-                        (into {}))
+                         keys
+                         (map (fn [k] [k nil]))
+                         (into {}))
          end? true]
-    (prn [(->> (get state "broadcaster")
-               :outputs
-               sort
-               (map (fn [m] (get-in state [m :state])))
-               (map {:off 0, :on 1}))
-          (->> (get state "broadcaster")
-               :outputs
-               (mapcat (fn [m] (get-in state [m :outputs])))
-               set
-               sort
-               (map (fn [m] (get state m)))
-               (map (fn [m] (case (:type m)
-                              :conj (->> m :state sort (map val) (map {:high 1, :low 0}))
-                              :flip (-> m :state ({:on 1, :off 0}))))))])
-    (prn [:fo (->> first-high sort (map val))])
-    #_(prn [:b button-pushes pulses state])
     (if #_end?
-      (= 1000 button-pushes)
+      (= 10241 button-pushes)
       (do
-        (prn [:fo (sort first-high)])
+        (->> first-high sort (map (fn [[k v]]
+                                    (let [t (format "%s: %s" k v)]
+                                      (println (if (nil? v)
+                                                 (lib/bg-color :red t)
+                                                 t)))))
+             doall)
         :end)
       #_[button-pushes state]
       (let [b (get state "broadcaster")
@@ -138,14 +127,11 @@
                    pulses {:low 1, :high 0}
                    first-high first-high
                    end? end?]
-              #_(prn [:p (peek todo) (seq todo) state pulses])
               (if (empty? todo)
                 [pulses state first-high end?]
                 (let [[level target origin] (peek todo)
                       todo (pop todo)
                       m (get state target)
-                      _ (prn [:pulse level :from origin :to target])
-                      _ (prn [:fh-debug level origin (= level :high) (nil? (first-high origin)) (first-high origin)])
                       first-high (if (and (= level :high)
                                           (nil? (first-high origin)))
                                    (assoc first-high origin (inc button-pushes))
@@ -188,7 +174,7 @@
                                    end?))
                     :untyped (recur todo state pulses first-high end?)))))]
         (recur (inc button-pushes) (merge-with + pulses new-pulses) state first-high end?))))
-      )
+  )
 
 (lib/check
   #_#_[part1 sample] 32000000
