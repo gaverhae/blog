@@ -136,6 +136,8 @@
                                 changes)
                       end? (and (#{"gl" "bb" "mr" "kk"} target)
                                 (= level :high))]
+                  (when (= target "qt")
+                    (prn [:pulse button-pushes origin level]))
                   (case (:type m)
                     :b (recur (->> (:outputs m)
                                    (map (fn [o] [level o target]))
@@ -176,29 +178,44 @@
 
 (comment
 
-  (defn f [x] (iterate (fn [[n high?]] [(+ n x) (- 1 high?)]) [0 0]))
+  (defn f [x] (->> (iterate (fn [[n high?]] [(+ n x) (- 1 high?)]) [0 0])
+                   (partition 2 1)
+                   (map (fn [[[start v] [end _]]]
+                          [start (dec end) v]))
+                   (filter (fn [[start end v]] (= 1 v)))
+                   (map (fn [[start end]] [start end]))))
 
   (take 3 (f 3907))
-([0 0] [3907 1] [7814 0])
+([3907 7813] [11721 15627] [19535 23441])
 
   (take 3 (f 3989))
-([0 0] [3989 1] [7978 0])
+([3989 7977] [11967 15955] [19945 23933])
 
   (take 3 (f 3967))
-([0 0] [3967 1] [7934 0])
+([3967 7933] [11901 15867] [19835 23801])
 
   (take 3 (f 3931))
-([0 0] [3931 1] [7862 0])
+([3931 7861] [11793 15723] [19655 23585])
 
-(reduce lib/lcm [3907 3931 3939 3967])
 ; 239990823701421 --> too low!
 
 
 (loop [mr (f 3907)
        kk (f 3931)
        gl (f 3939)
-       bb (f 3967)]
-)
+       bb (f 3967)
+       k 0]
+  (let [[mr0 mr1] mr
+        [kk0 kk1] kk
+        [gl0 gl1] gl
+        [bb0 bb1] bb
+        m (min mr0 kk0 gl0 bb0)]
+    (if (< k m)
+      (recur (mr kk gl bb m))
+      )))
+
+
+
 
   )
 
