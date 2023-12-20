@@ -51,7 +51,7 @@
   (loop [button-pushes 0
          pulses {:low 0, :high 0}
          state input]
-    (prn [:b button-pushes pulses state])
+    #_(prn [:b button-pushes pulses state])
     (if (= 1000 button-pushes)
       (* (:low pulses) (:high pulses))
       (let [b (get state "broadcaster")
@@ -59,7 +59,7 @@
             (loop [todo (conj clojure.lang.PersistentQueue/EMPTY [:low "broadcaster" "button"])
                    state state
                    pulses {:low 1, :high 0}]
-              (prn [:p (peek todo) (seq todo) state pulses])
+              #_(prn [:p (peek todo) (seq todo) state pulses])
               (if (empty? todo)
                 [pulses state]
                 (let [[level target origin] (peek todo)
@@ -99,8 +99,8 @@
   input)
 
 (lib/check
-  #_#_[part1 sample] 32000000
+  [part1 sample] 32000000
   [part1 sample1] 11687500
-  #_#_[part1 puzzle] 0
+  [part1 puzzle] 879834312
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
