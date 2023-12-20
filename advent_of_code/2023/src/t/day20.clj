@@ -51,53 +51,66 @@
                           inputs)))
          (into {}))))
 
-(defn part1
-  [input]
+(defn run-machine
+  [machine n-pushes]
   (loop [button-pushes 0
          pulses {:low 0, :high 0}
-         state input]
-    #_(prn [:b button-pushes pulses state])
-    (if (= 1000 button-pushes)
-      (* (:low pulses) (:high pulses))
+         state machine
+         first-high {}]
+    (if (= n-pushes button-pushes)
+      {:signals (* (:low pulses) (:high pulses))
+       :first-high first-high}
       (let [b (get state "broadcaster")
-            [new-pulses state]
+            [new-pulses state first-high]
             (loop [todo (conj clojure.lang.PersistentQueue/EMPTY [:low "broadcaster" "button"])
                    state state
-                   pulses {:low 1, :high 0}]
-              #_(prn [:p (peek todo) (seq todo) state pulses])
+                   pulses {:low 1, :high 0}
+                   first-high first-high]
               (if (empty? todo)
-                [pulses state]
+                [pulses state first-high]
                 (let [[level target origin] (peek todo)
                       todo (pop todo)
-                      m (get state target)]
+                      m (get state target)
+                      first-high (if (and (= :high level)
+                                          (nil? (first-high origin)))
+                                   (assoc first-high origin (inc button-pushes))
+                                   first-high)]
                   (case (:type m)
                     :b (recur (->> (:outputs m)
                                    (map (fn [o] [level o target]))
                                    (reduce conj todo))
                               state
-                              (update pulses level + (count (:outputs m))))
+                              (update pulses level + (count (:outputs m)))
+                              first-high)
                     :flip (case level
-                            :high (recur todo state pulses)
+                            :high (recur todo state pulses first-high)
                             :low (case (:state m)
                                    :on (recur (->> (:outputs m)
                                                    (map (fn [o] [:low o target]))
                                                    (reduce conj todo))
                                               (assoc-in state [target :state] :off)
-                                              (update pulses :low + (count (:outputs m))))
+                                              (update pulses :low + (count (:outputs m)))
+                                              first-high)
                                    :off (recur (->> (:outputs m)
                                                     (map (fn [o] [:high o target]))
                                                     (reduce conj todo))
                                                (assoc-in state [target :state] :on)
-                                               (update pulses :high + (count (:outputs m))))))
+                                               (update pulses :high + (count (:outputs m)))
+                                               first-high)))
                     :conj (let [new-m (assoc-in m [:state origin] level)
                                 level (if (every? #{:high} (vals (:state new-m))) :low :high)]
                             (recur (->> (:outputs m)
                                         (map (fn [o] [level o target]))
                                         (reduce conj todo))
                                    (assoc state target new-m)
-                                   (update pulses level + (count (:outputs m)))))
-                    :untyped (recur todo state pulses)))))]
-        (recur (inc button-pushes) (merge-with + pulses new-pulses) state)))))
+                                   (update pulses level + (count (:outputs m)))
+                                   first-high))
+                    :untyped (recur todo state pulses first-high)))))]
+        (recur (inc button-pushes) (merge-with + pulses new-pulses) state first-high)))))
+
+(defn part1
+  [input]
+  (:signals (run-machine input 1000)))
 
 (defn part2
   [input stop-m]
@@ -176,56 +189,10 @@
         (recur (inc button-pushes) (merge-with + pulses new-pulses) state changes end?))))
   )
 
-(comment
-
-  (defn f [x] (->> (iterate (fn [[n high?]] [(+ n x) (- 1 high?)]) [0 0])
-                   (partition 2 1)
-                   (map (fn [[[start v] [end _]]]
-                          [start (dec end) v]))
-                   (filter (fn [[start end v]] (= 1 v)))
-                   (map (fn [[start end]] [start end]))))
-
-  (take 3 (f 3907))
-([3907 7813] [11721 15627] [19535 23441])
-
-  (take 3 (f 3989))
-([3989 7977] [11967 15955] [19945 23933])
-
-  (take 3 (f 3967))
-([3967 7933] [11901 15867] [19835 23801])
-
-  (take 3 (f 3931))
-([3931 7861] [11793 15723] [19655 23585])
-
-(reduce lib/lcm [ 3967 3989 3931 3907])
-  243037165713371
-  243037165713371
-
-; 239990823701421 --> too low!
-
-(loop [mr (f 3907)
-       kk (f 3931)
-       gl (f 3939)
-       bb (f 3967)
-       k 0]
-  (let [[mr0 mr1] mr
-        [kk0 kk1] kk
-        [gl0 gl1] gl
-        [bb0 bb1] bb
-        m (min mr0 kk0 gl0 bb0)]
-    (if (< k m)
-      (recur (mr kk gl bb m))
-      )))
-
-
-
-
-  )
-
 (lib/check
-  #_#_[part1 sample] 32000000
-  #_#_[part1 sample1] 11687500
-  #_#_[part1 puzzle] 879834312
+  [part1 sample] 32000000
+  [part1 sample1] 11687500
+  [part1 puzzle] 879834312
   #_#_[part2 sample "inv"] 1
   #_#_[part2 sample1 "con"] 2
-  [part2 puzzle "rx"] 0)
+  #_#_[part2 puzzle "rx"] 243037165713371)
