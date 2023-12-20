@@ -94,36 +94,26 @@
                     (recur todo state pulses)))))]
         (recur (inc button-pushes) (merge-with + pulses new-pulses) state)))))
 
+(def c (atom {}))
+
 (defn part2
   [input stop-m]
   input
+  (reset! c [])
   (loop [button-pushes 0
          pulses {:low 0, :high 0}
          state input
          end? false]
-    #_(prn [:b button-pushes pulses state])
-    (when (or true
-              (zero? (rem button-pushes 10000))
-              (some #{1} (->> (state "qt") :state vals)))
-      (pr [button-pushes
-           #_(->> (state "qt") :state sort (map (fn [[k v]] v)) (map {:low 0, :high 1}))
-           (->> state sort (map val)
-                (filter (comp #{:conj} :type))
-                (map (fn [s]
-                       (if (= :flip (:type s))
-                         [({:on 1, :off 0} (:state s))]
-                         (->> s :state sort (map val) (map {:low 0, :high 1}))))))])
-      (flush)
-      (read-line))
-    (if end?
-      button-pushes
+    (swap! c conj (->> (map state ["mr" "kk" "gl" "bb"])
+                       (map :state)))
+    (if (= 10 button-pushes)
+      :end
       (let [b (get state "broadcaster")
             [new-pulses state end?]
             (loop [todo (conj clojure.lang.PersistentQueue/EMPTY [:low "broadcaster" "button"])
                    state state
                    pulses {:low 1, :high 0}
                    end? end?]
-              #_(prn [:p (peek todo) (seq todo) state pulses])
               (if (empty? todo)
                 [pulses state end?]
                 (let [[level target origin] (peek todo)
