@@ -90,18 +90,17 @@
                                         (map (fn [o] [level o target]))
                                         (reduce conj todo))
                                    (assoc state target new-m)
-                                   (update pulses level + (count (:outputs m)))))))))]
+                                   (update pulses level + (count (:outputs m)))))
+                    (recur todo state pulses)))))]
         (recur (inc button-pushes) (merge-with + pulses new-pulses) state)))))
-
-
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  [part1 sample] 32000000
-  #_#_[part1 sample1] 11687500
+  #_#_[part1 sample] 32000000
+  [part1 sample1] 11687500
   #_#_[part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
