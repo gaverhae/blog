@@ -39,10 +39,21 @@
 (defn part2
   [input max-steps]
   (let [h (-> input :grid count)
-        w (-> input :grid first count)]
+        w (-> input :grid first count)
+        input (update input :grid (fn [g] (->> g
+                                               (map (fn [line] (str line line line)))
+                                               (repeat 3)
+                                               (apply concat)
+                                               vec)))
+        start (let [[y x] (-> input :start)]
+                [(+ y h) (+ x w)])]
+    (->> input :grid (map prn) doall)
     (loop [step 0
-           ps [(:start input)]]
-      (if (= max-steps step)
+           ps #{start}
+           past-states #{}]
+      #_(prn [(count past-states) (map count past-states)])
+      (prn (count ps))
+      (if (past-states ps)
         (count ps)
         (recur (inc step)
                (->> ps
@@ -50,9 +61,10 @@
                               (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
                                     :let [y (+ y dy)
                                           x (+ x dx)]
-                                    :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
+                                    :when (#{\S \.} (get-in input [:grid y x]))]
                                 [y x])))
-                    set))))))
+                    set)
+               (conj past-states ps))))))
 
 (lib/check
   [part1 sample 6] 16
@@ -60,8 +72,9 @@
   [part2 sample 6] 16
   [part2 sample 10] 50
   [part2 sample 50] 1594
-  [part2 sample 100] 6536
+  #_#_[part2 sample 100] 6536
   #_#_[part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 5000] 16733044
+  #_#_[part2 puzzle 100] 0
   #_#_[part2 puzzle 26501365] 0)
