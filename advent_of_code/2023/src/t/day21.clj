@@ -37,11 +37,31 @@
                   set)))))
 
 (defn part2
-  [input]
-  input)
+  [input max-steps]
+  (let [h (-> input :grid count)
+        w (-> input :grid first count)]
+    (loop [step 0
+           ps [(:start input)]]
+      (if (= max-steps step)
+        (count ps)
+        (recur (inc step)
+               (->> ps
+                    (mapcat (fn [[y x]]
+                              (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
+                                    :let [y (+ y dy)
+                                          x (+ x dx)]
+                                    :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
+                                [y x])))
+                    set))))))
 
 (lib/check
   [part1 sample 6] 16
   [part1 puzzle 64] 3639
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  [part2 sample 6] 16
+  [part2 sample 10] 50
+  [part2 sample 50] 1594
+  [part2 sample 100] 6536
+  #_#_[part2 sample 500] 167004
+  #_#_[part2 sample 1000] 668697
+  #_#_[part2 sample 5000] 16733044
+  #_#_[part2 puzzle 26501365] 0)
