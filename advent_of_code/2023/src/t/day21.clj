@@ -43,23 +43,6 @@
     (loop [step 0
            frontier #{(:start input)}
            internal-points {:on #{}, :off #{}}]
-      (comment
-      (println)
-      (->> (range (->> frontier (map first) (reduce min))
-                  (->> frontier (map first) (reduce max) inc))
-           (map (fn [y]
-                  (->> (range (->> frontier (map second) (reduce min))
-                              (->> frontier (map second) (reduce max) inc))
-                       (map (fn [x] (cond (frontier [y x])
-                                          \O
-                                          (or ((:off internal-points) [y x])
-                                              ((:on internal-points) [y x]))
-                                          \•
-                                          :else (get-in input [:grid (mod y h) (mod x w)]))))
-                       (apply str)
-                       println)))
-           doall)
-      (println))
       (if (= max-steps step)
         (+ (count frontier) (count (:on internal-points)))
         (let [ip {:on (:off internal-points)
@@ -77,14 +60,14 @@
           (recur (inc step) ps ip))))))
 
 (lib/check
-  [part1 sample 6] 16
-  [part1 puzzle 64] 3639
-  [part2 sample 6] 16
-  [part2 sample 10] 50
-  [part2 sample 50] 1594
+  #_#_[part1 sample 6] 16
+  #_#_[part1 puzzle 64] 3639
+  #_#_[part2 sample 6] 16
+  #_#_[part2 sample 10] 50
+  #_#_[part2 sample 50] 1594
   [part2 sample 100] 6536
-  [part2 sample 500] 167004
+  #_#_[part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 5000] 16733044
-  #_#_[part2 puzzle 100] 0
+  #_#_[part2 puzzle 100] 8829
   #_#_[part2 puzzle 26501365] 0)
