@@ -39,7 +39,17 @@
 (defn part2
   [input max-steps]
   (let [h (-> input :grid count)
-        w (-> input :grid first count)]
+        w (-> input :grid first count)
+        ->neighs (->> (range h)
+                      (mapcat (fn [y]
+                                (->> (range w)
+                                     (map (fn [x]
+                                            [[y x] (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
+                                                         :let [y (+ y dy)
+                                                               x (+ x dx)]
+                                                         :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
+                                                     [dy dx])])))))
+                      (into {}))]
     (loop [step 0
            frontier #{(:start input)}
            internal-points {:on #{}, :off #{}}]
@@ -50,11 +60,8 @@
                                   frontier)}
               ps (->> frontier
                       (mapcat (fn [[y x]]
-                                (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
-                                      :let [y (+ y dy)
-                                            x (+ x dx)]
-                                      :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
-                                  [y x])))
+                                (->> (->neighs [(mod y h) (mod x w)])
+                                     (map (fn [[dy dx]] [(+ y dy) (+ x dx)])))))
                       (remove (set/union (:on ip) (:off ip)))
                       set)]
           (recur (inc step) ps ip))))))
@@ -66,7 +73,7 @@
   #_#_[part2 sample 10] 50
   #_#_[part2 sample 50] 1594
   [part2 sample 100] 6536
-  #_#_[part2 sample 500] 167004
+  [part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 5000] 16733044
   #_#_[part2 puzzle 100] 8829
