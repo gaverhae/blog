@@ -41,29 +41,39 @@
   (let [h (-> input :grid count)
         w (-> input :grid first count)]
     (loop [step 0
-           ps #{(:start input)}]
+           frontier #{(:start input)}
+           internal-points {:on #{}, :off #{}}]
       (println)
-      (->> (range (->> ps (map first) (reduce min))
-                  (->> ps (map first) (reduce max) inc))
+      (->> (range (->> frontier (map first) (reduce min))
+                  (->> frontier (map first) (reduce max) inc))
            (map (fn [y]
-                  (->> (range (->> ps (map second) (reduce min))
-                              (->> ps (map second) (reduce max) inc))
-                       (map (fn [x] (if (ps [y x]) \O (get-in input [:grid (mod y h) (mod x w)]))))
+                  (->> (range (->> frontier (map second) (reduce min))
+                              (->> frontier (map second) (reduce max) inc))
+                       (map (fn [x] (cond (frontier [y x])
+                                          \O
+                                          (or ((:off internal-points) [y x])
+                                              ((:on internal-points) [y x]))
+                                          \•
+                                          :else (get-in input [:grid (mod y h) (mod x w)]))))
                        (apply str)
                        println)))
            doall)
       (println)
       (if (= max-steps step)
-        (count ps)
-        (recur (inc step)
-               (->> ps
-                    (mapcat (fn [[y x]]
-                              (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
-                                    :let [y (+ y dy)
-                                          x (+ x dx)]
-                                    :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
-                                [y x])))
-                    set))))))
+        (+ (count frontier) (count (:on internal-points)))
+        (let [ip {:on (:off internal-points)
+                  :off (set/union (:on internal-points)
+                                  frontier)}
+              ps (->> frontier
+                      (mapcat (fn [[y x]]
+                                (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
+                                      :let [y (+ y dy)
+                                            x (+ x dx)]
+                                      :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
+                                  [y x])))
+                      (remove (set/union (:on ip) (:off ip)))
+                      set)]
+          (recur (inc step) ps ip))))))
 
 (lib/check
   [part1 sample 6] 16
