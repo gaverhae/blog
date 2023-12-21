@@ -43,6 +43,7 @@
     (loop [step 0
            frontier #{(:start input)}
            internal-points {:on #{}, :off #{}}]
+      (comment
       (println)
       (->> (range (->> frontier (map first) (reduce min))
                   (->> frontier (map first) (reduce max) inc))
@@ -58,7 +59,7 @@
                        (apply str)
                        println)))
            doall)
-      (println)
+      (println))
       (if (= max-steps step)
         (+ (count frontier) (count (:on internal-points)))
         (let [ip {:on (:off internal-points)
@@ -82,7 +83,7 @@
   [part2 sample 10] 50
   [part2 sample 50] 1594
   [part2 sample 100] 6536
-  #_#_[part2 sample 500] 167004
+  [part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 5000] 16733044
   #_#_[part2 puzzle 100] 0
