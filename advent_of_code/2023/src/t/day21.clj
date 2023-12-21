@@ -24,7 +24,6 @@
   [input max-steps]
   (loop [step 0
          ps [(:start input)]]
-    (println ps)
     (if (= max-steps step)
       (count ps)
       (recur (inc step)
@@ -43,6 +42,6 @@
 
 (lib/check
   [part1 sample 6] 16
-  #_#_[part1 puzzle] 0
+  [part1 puzzle 64] 3639
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
