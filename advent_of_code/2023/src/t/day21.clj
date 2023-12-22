@@ -41,35 +41,37 @@
 
 (defn walk-one-map
   [grid]
-  (fn [start-pos]
-    (loop [step 0
-           filled? {}
-           exits {}
-           cur [start-pos]
-           prev #{}]
-      (if (empty? cur)
-        [filled? exits]
-        (let [t (->> cur
-                     (mapcat (fn [[y x]]
-                               (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
-                                     :let [y (+ y dy)
-                                           x (+ x dx)
-                                           dst (get-in grid [y x] :out)]
-                                     :when (and (#{\. :out} dst)
-                                                (not (prev [y x])))]
-                                 [dst [y x] [dy dx]]))))
-              nxt (->> t
-                       (filter (comp #{\.} first))
-                       (map second))
-              exits (->> t
-                         (filter (comp #{:out} first))
-                         (reduce (fn [acc [_ x d]]
-                                   (if (acc d)
-                                     acc
-                                     (assoc acc d [(inc step) x])))
-                                 exits))
-              filled? (reduce #(assoc %1 %2 step) filled? cur)]
-          (recur (inc step) filled?  exits nxt (set cur)))))))
+  (let [h (-> grid count)
+        w (-> grid first count)]
+    (fn [start-pos]
+      (loop [step 0
+             filled? {}
+             exits {}
+             cur [start-pos]
+             prev #{}]
+        (if (empty? cur)
+          [filled? exits]
+          (let [t (->> cur
+                       (mapcat (fn [[y x]]
+                                 (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
+                                       :let [y (+ y dy)
+                                             x (+ x dx)
+                                             dst (get-in grid [y x] :out)]
+                                       :when (and (#{\. :out} dst)
+                                                  (not (prev [y x])))]
+                                   [dst [y x] [dy dx]]))))
+                nxt (->> t
+                         (filter (comp #{\.} first))
+                         (map second))
+                exits (->> t
+                           (filter (comp #{:out} first))
+                           (reduce (fn [acc [_ [y x] d]]
+                                     (if (acc d)
+                                       acc
+                                       (assoc acc d [(inc step) [(mod y h) (mod x w)]])))
+                                   exits))
+                filled? (reduce #(assoc %1 %2 step) filled? cur)]
+            (recur (inc step) filled?  exits nxt (set cur))))))))
 
 (defn part2
   [input max-steps]
