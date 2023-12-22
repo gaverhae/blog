@@ -108,12 +108,11 @@
         (let [[[steps-so-far [gy gx :as grid] entry-point] & todo] todo]
           (when (zero? (mod n 10000))
             (let [now (System/currentTimeMillis)
-                  d (- now start-time)
-                  millis java.util.concurrent.TimeUnit/MILLISECONDS]
+                  d (- now start-time)]
               (println (format "%02d:%02d:%02d[%10d]: %s"
-                               (.toHours millis d)
-                               (mod (.toMinutes millis d) 60)
-                               (mod (.toSeconds millis d) 60)
+                               (-> d (quot 1000) (quot 60) (quot 24) (mod 60))
+                               (-> d (quot 1000) (quot 60) (mod 60))
+                               (-> d (quot 1000) (mod 60))
                                steps-so-far
                                [:todo (count todo) :done? (count done?) :memo (count @memo) :counter @counter]))))
           (if (done? grid)
