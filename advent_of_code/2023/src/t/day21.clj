@@ -31,7 +31,6 @@
   (let [h (-> grid count)
         w (-> grid first count)
         helper (fn [start-ps]
-                 #_(prn [:start-ps start-ps])
                  (if-let [res (@memo start-ps)]
                    (do (swap! counter update :mem inc)
                        res)
@@ -40,7 +39,6 @@
                                     exits {}
                                     cur (get start-ps step)
                                     prev #{}]
-                               #_(prn [:cur cur])
                                (if (empty? cur)
                                  [filled? exits]
                                  (let [t (->> cur
@@ -52,7 +50,6 @@
                                                               :when (and (#{\. :out} dst)
                                                                          (not (prev [y x])))]
                                                           [dst [y x] [dy dx]]))))
-                                       #_#__ (prn [:t t])
                                        nxt (->> t
                                                 (filter (comp #{\.} first))
                                                 (map second)
@@ -91,7 +88,6 @@
   [input max-steps]
   (let [f (walk-one-map (:grid input))
         [filled? _] (f 0 {0 #{(:start input)}})]
-    #_(prn [:filled? filled?])
     (->> filled?
          (map (fn [[_ step]] step))
          (filter (fn [step] (and (<= step max-steps)
@@ -100,14 +96,6 @@
 
 (defn part2
   [input max-steps]
-  #_(let [[filled? exits] ((walk-one-map (:grid input)) (:start input))]
-    (doseq [y (range 0 11)]
-      (doseq [x (range 0 11)]
-        (print (format " %s" (if-let [n (filled? [y x])]
-                                (format "%2d" n)
-                                "##"))))
-      (println))
-    (prn exits))
   (let [f (walk-one-map (:grid input))
         _ (println (format "Starting at: %s" (subs (str (java.time.LocalDateTime/now)) 0 19)))
         start-time (System/currentTimeMillis)]
@@ -115,8 +103,6 @@
            filled [0 0]
            done? #{}
            n 0]
-      #_(prn :filled filled)
-      #_(prn [:nxt (first todo)])
       (if (empty? todo)
         (filled (mod max-steps 2))
         (let [[[steps-so-far [gy gx :as grid] entry-point] & todo] todo]
@@ -133,11 +119,8 @@
           (if (done? grid)
             (recur todo filled done? (inc n))
             (let [[grid-filled grid-exits] (f steps-so-far entry-point)]
-              #_(prn [:rem steps-so-far])
-              #_(prn [:grid-exits grid-exits])
               (recur (->> grid-exits
                           (map (fn [[[dy dx] m]]
-                                 #_(prn [:m m])
                                  (let [s (->> m keys (reduce min))]
                                    [s [(+ gy dy) (+ gx dx)] m])))
                           (remove (fn [[_ grid _]] (done? grid)))
