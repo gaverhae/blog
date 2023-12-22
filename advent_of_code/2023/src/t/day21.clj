@@ -10,7 +10,10 @@
 
 (defn parse
   [lines]
-  {:grid lines
+  {:grid (->> lines
+              (map (fn [line]
+                     (s/replace line \S \.)))
+              vec)
    :start (->> lines
                (map-indexed (fn [y line]
                               (->> line
@@ -32,7 +35,7 @@
                             (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
                                   :let [y (+ y dy)
                                         x (+ x dx)]
-                                  :when (#{\S \.} (get-in input [:grid y x]))]
+                                  :when (= \. (get-in input [:grid y x]))]
                               [y x])))
                   set)))))
 
@@ -47,7 +50,7 @@
                                             [[y x] (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
                                                          :let [y (+ y dy)
                                                                x (+ x dx)]
-                                                         :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
+                                                         :when (= \. (get-in input [:grid (mod y h) (mod x w)]))]
                                                      [dy dx])])))))
                       (into {}))]
     (loop [step 0
@@ -93,7 +96,7 @@
 (defn benchmark
   []
   (doseq [data [#'sample #'puzzle]
-          n [100 300 1000 3000]]
+          n [100 300 1000 3000 10000]]
     (let [start (System/currentTimeMillis)
           _ (part2 @@data n)
           end (System/currentTimeMillis)]
