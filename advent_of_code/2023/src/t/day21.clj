@@ -39,8 +39,34 @@
                               [y x])))
                   set)))))
 
+(defn walk-one-map
+  [grid]
+  (fn [start-pos]
+    (loop [step 0
+           filled? {}
+           exits {}
+           todo [start-pos]]
+      (if (empty? todo)
+        [step filled? exits todo]
+        (let [[[y x] & todo] todo
+              [nxt exits] (->> [[-1 0] [1 0] [0 1] [0 -1]]
+                               (reduce (fn [[nxt exits] [dy dx]]
+                                         (let [x (+ x dx)
+                                               y (+ y dy)
+                                               c (get-in grid [y x] :out)]
+                                           (cond
+                                             (and (= \. c) (not (filled? [y x]))) [(conj nxt [y x]) exits]
+                                             (and (= c :out) (not (exits [dy dx]))) [nxt (assoc exits [dy dx] [y x step])]
+                                             :else [nxt exits])))
+                                       [[] exits]))]
+          (recur (inc step)
+                 (assoc filled? [y x] step)
+                 exits
+                 (reduce conj todo nxt)))))))
+
 (defn part2
   [input max-steps]
+  (prn ((walk-one-map (:grid input)) (:start input)))
   (let [h (-> input :grid count)
         w (-> input :grid first count)
         ->neighs (->> (range h)
@@ -73,22 +99,22 @@
 (lib/check
   #_#_[part1 sample 6] 16
   #_#_[part1 puzzle 64] 3639
-  [part2 sample 6] 16
-  [part2 sample 10] 50
-  [part2 sample 50] 1594
-  [part2 sample 1] 2
-  [part2 sample 10] 50
-  [part2 sample 100] 6536
-  [part2 sample 200] 26538
-  [part2 sample 300] 59895
-  [part2 sample 400] 106776
+  #_#_[part2 sample 6] 16
+  #_#_[part2 sample 10] 50
+  #_#_[part2 sample 50] 1594
+  #_#_[part2 sample 1] 2
+  #_#_[part2 sample 10] 50
+  #_#_[part2 sample 100] 6536
+  #_#_[part2 sample 200] 26538
+  #_#_[part2 sample 300] 59895
+  #_#_[part2 sample 400] 106776
   [part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 2000] 2677337
   #_#_[part2 sample 5000] 16733044
-  [part2 puzzle 100] 8829
-  [part2 puzzle 200] 34889
-  [part2 puzzle 400] 138314
+  #_#_[part2 puzzle 100] 8829
+  #_#_[part2 puzzle 200] 34889
+  #_#_[part2 puzzle 400] 138314
   #_#_[part2 puzzle 1000] 862969
   #_#_[part2 puzzle 2000] 862969
   #_#_[part2 puzzle 26501365] 0)
