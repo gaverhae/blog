@@ -27,13 +27,14 @@
   [grid]
   (let [h (-> grid count)
         w (-> grid first count)]
-    (fn [start-pos]
-      #_(prn [:wom start-pos])
-      (loop [step 0
+    (fn [step start-ps]
+      #_(prn [:wom start-ps])
+      (loop [step step
              filled? {}
              exits {}
-             cur #{start-pos}
+             cur (get start-ps step)
              prev #{}]
+        #_(prn [:cur cur])
         (if (empty? cur)
           [filled? exits]
           (let [t (->> cur
@@ -48,21 +49,23 @@
                 nxt (->> t
                          (filter (comp #{\.} first))
                          (map second)
+                         (concat (get start-ps (inc step)))
                          set)
                 exits (->> t
                            (filter (comp #{:out} first))
                            (reduce (fn [acc [_ [y x] d]]
-                                     (if (acc d)
-                                       acc
-                                       (assoc acc d [(inc step) [(mod y h) (mod x w)]])))
+                                     (update-in acc
+                                                [d (inc step)]
+                                                (fnil conj #{})
+                                                [(mod y h) (mod x w)]))
                                    exits))
                 filled? (reduce #(assoc %1 %2 step) filled? cur)]
-            (recur (inc step) filled?  exits nxt cur)))))))
+            (recur (inc step) filled? exits nxt cur)))))))
 
 (defn part1
   [input max-steps]
   (let [f (walk-one-map (:grid input))
-        [filled? _] (f (:start input))]
+        [filled? _] (f 0 {0 #{(:start input)}})]
     (->> filled?
          (map (fn [[_ step]] step))
          (filter (fn [step] (and (<= step max-steps)
@@ -80,22 +83,29 @@
       (println))
     (prn exits))
   (let [f (walk-one-map (:grid input))]
-    (loop [todo [[[0 0] (:start input) max-steps]]
+    (loop [todo [[0 [0 0] {0 #{(:start input)}}]]
            filled [0 0]
            done? #{}]
+      #_(prn :filled filled)
+      #_(prn [:nxt (first todo)])
       (if (empty? todo)
         (filled (mod max-steps 2))
-        (let [[[[gy gx :as grid] entry-point steps-remaining] & todo] todo]
+        (let [[[steps-so-far [gy gx :as grid] entry-point] & todo] todo]
           (if (done? grid)
             (recur todo filled done?)
-            (let [[grid-filled grid-exits] (f entry-point)]
+            (let [[grid-filled grid-exits] (f steps-so-far entry-point)]
+              #_(prn [:rem steps-so-far])
               #_(prn [:grid-exits grid-exits])
               (recur (->> grid-exits
-                          (map (fn [[[dy dx] [s p]]] [[(+ gy dy) (+ gx dx)] p (- steps-remaining s)]))
-                          (filter (fn [[_ _ s]] (>= s 0)))
-                          (reduce conj todo))
+                          (map (fn [[[dy dx] m]]
+                                 #_(prn [:m m])
+                                 (let [s (->> m keys (reduce min))]
+                                   [s [(+ gy dy) (+ gx dx)] m])))
+                          (filter (fn [[s _ _]] (<= s max-steps)))
+                          (reduce conj todo)
+                          (sort-by first))
                      (reduce (fn [acc [_ s]]
-                               (if (<= s steps-remaining)
+                               (if (<= s max-steps)
                                  (update acc (mod s 2) inc)
                                  acc))
                              filled
@@ -105,13 +115,13 @@
 (lib/check
   [part1 sample 6] 16
   [part1 puzzle 64] 3639
-  #_#_[part2 sample 6] 16
-  #_#_[part2 sample 10] 50
-  #_#_[part2 sample 50] 1594
-  #_#_[part2 sample 1] 2
-  #_#_[part2 sample 10] 50
-  #_#_[part2 sample 100] 6536
-  #_#_[part2 sample 200] 26538
+  [part2 sample 6] 16
+  [part2 sample 10] 50
+  [part2 sample 50] 1594
+  [part2 sample 1] 2
+  [part2 sample 10] 50
+  [part2 sample 100] 6536
+  [part2 sample 200] 26538
   #_#_[part2 sample 300] 59895
   #_#_[part2 sample 400] 106776
   #_#_[part2 sample 500] 167004
