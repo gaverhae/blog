@@ -31,7 +31,7 @@
       (loop [step 0
              filled? {}
              exits {}
-             cur [start-pos]
+             cur #{start-pos}
              prev #{}]
         (if (empty? cur)
           [filled? exits]
@@ -46,7 +46,8 @@
                                    [dst [y x] [dy dx]]))))
                 nxt (->> t
                          (filter (comp #{\.} first))
-                         (map second))
+                         (map second)
+                         set)
                 exits (->> t
                            (filter (comp #{:out} first))
                            (reduce (fn [acc [_ [y x] d]]
@@ -55,7 +56,7 @@
                                        (assoc acc d [(inc step) [(mod y h) (mod x w)]])))
                                    exits))
                 filled? (reduce #(assoc %1 %2 step) filled? cur)]
-            (recur (inc step) filled?  exits nxt (set cur))))))))
+            (recur (inc step) filled?  exits nxt cur)))))))
 
 (defn part1
   [input max-steps]
@@ -109,7 +110,7 @@
 
 (lib/check
   [part1 sample 6] 16
-  #_#_[part1 puzzle 64] 3639
+  [part1 puzzle 64] 3639
   #_#_[part2 sample 6] 16
   #_#_[part2 sample 10] 50
   #_#_[part2 sample 50] 1594
