@@ -23,22 +23,6 @@
                (apply concat)
                first)})
 
-(defn part1
-  [input max-steps]
-  (loop [step 0
-         ps [(:start input)]]
-    (if (= max-steps step)
-      (count ps)
-      (recur (inc step)
-             (->> ps
-                  (mapcat (fn [[y x]]
-                            (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
-                                  :let [y (+ y dy)
-                                        x (+ x dx)]
-                                  :when (= \. (get-in input [:grid y x]))]
-                              [y x])))
-                  set)))))
-
 (defn walk-one-map
   [grid]
   (let [h (-> grid count)
@@ -72,6 +56,16 @@
                                    exits))
                 filled? (reduce #(assoc %1 %2 step) filled? cur)]
             (recur (inc step) filled?  exits nxt (set cur))))))))
+
+(defn part1
+  [input max-steps]
+  (let [f (walk-one-map (:grid input))
+        [filled? _] (f (:start input))]
+    (->> filled?
+         (map (fn [[_ step]] step))
+         (filter (fn [step] (and (<= step max-steps)
+                                 (= (mod step 2) (mod max-steps 2)))))
+         count)))
 
 (defn part2
   [input max-steps]
@@ -114,7 +108,7 @@
                  (update internal (rem step 2) + (count cur))))))))
 
 (lib/check
-  #_#_[part1 sample 6] 16
+  [part1 sample 6] 16
   #_#_[part1 puzzle 64] 3639
   #_#_[part2 sample 6] 16
   #_#_[part2 sample 10] 50
@@ -125,7 +119,7 @@
   #_#_[part2 sample 200] 26538
   #_#_[part2 sample 300] 59895
   #_#_[part2 sample 400] 106776
-  [part2 sample 500] 167004
+  #_#_[part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 2000] 2677337
   #_#_[part2 sample 5000] 16733044
