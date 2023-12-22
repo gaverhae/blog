@@ -48,7 +48,7 @@
     (->> fallen-bricks
          (filter (fn [b]
                    (let [other-bricks (->> fallen-bricks (remove #{b}))]
-                     (= other-bricks (fall other-bricks)))))
+                     (= (set other-bricks) (set (fall other-bricks))))))
          count)))
 
 (defn part2
