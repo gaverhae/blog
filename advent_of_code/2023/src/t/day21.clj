@@ -51,25 +51,26 @@
                                                      [dy dx])])))))
                       (into {}))]
     (loop [step 0
-           frontier #{(:start input)}
+           cur #{(:start input)}
+           prev #{}
            internal-points {:on #{}, :off #{}}
            internal [0 0]]
       (if (= max-steps step)
-        (+ (count frontier) (get internal (rem step 2)))
+        (+ (count cur) (get internal (rem step 2)))
         (let [ip {:on (:off internal-points)
                   :off (set/union (:on internal-points)
-                                  frontier)}
-              ps (->> frontier
-                      (mapcat (fn [[y x]]
-                                (->> (->neighs [(mod y h) (mod x w)])
-                                     (map (fn [[dy dx]] [(+ y dy) (+ x dx)])))))
-                      (remove (:on ip))
-                      (remove (:off ip))
-                      set)]
+                                  cur)}
+              nxt (->> cur
+                       (mapcat (fn [[y x]]
+                                 (->> (->neighs [(mod y h) (mod x w)])
+                                      (map (fn [[dy dx]] [(+ y dy) (+ x dx)])))))
+                       (remove prev)
+                       set)]
           (recur (inc step)
-                 ps
+                 nxt
+                 cur
                  ip
-                 (update internal (rem step 2) + (count frontier))))))))
+                 (update internal (rem step 2) + (count cur))))))))
 
 (lib/check
   #_#_[part1 sample 6] 16
