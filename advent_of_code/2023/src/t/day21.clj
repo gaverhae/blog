@@ -53,14 +53,10 @@
     (loop [step 0
            cur #{(:start input)}
            prev #{}
-           internal-points {:on #{}, :off #{}}
            internal [0 0]]
       (if (= max-steps step)
         (+ (count cur) (get internal (rem step 2)))
-        (let [ip {:on (:off internal-points)
-                  :off (set/union (:on internal-points)
-                                  cur)}
-              nxt (->> cur
+        (let [nxt (->> cur
                        (mapcat (fn [[y x]]
                                  (->> (->neighs [(mod y h) (mod x w)])
                                       (map (fn [[dy dx]] [(+ y dy) (+ x dx)])))))
@@ -69,7 +65,6 @@
           (recur (inc step)
                  nxt
                  cur
-                 ip
                  (update internal (rem step 2) + (count cur))))))))
 
 (lib/check
