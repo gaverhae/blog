@@ -53,9 +53,10 @@
     (loop [step 0
            frontier #{(:start input)}
            frontiers []
-           internal-points {:on #{}, :off #{}}]
+           internal-points {:on #{}, :off #{}}
+           internal [0 0]]
       (if (= max-steps step)
-        (+ (count frontier) (count (:on internal-points)))
+        (+ (count frontier) (get internal (rem step 2)))
         (let [ip {:on (:off internal-points)
                   :off (set/union (:on internal-points)
                                   frontier)}
@@ -66,14 +67,18 @@
                       (remove (:on ip))
                       (remove (:off ip))
                       set)]
-          (recur (inc step) ps (conj frontiers (+ (count ps) (count (:on ip)))) ip))))))
+          (recur (inc step)
+                 ps
+                 (conj frontiers (+ (count ps) (count (:on ip))))
+                 ip
+                 (update internal (rem step 2) + (count frontier))))))))
 
 (lib/check
   #_#_[part1 sample 6] 16
   #_#_[part1 puzzle 64] 3639
-  #_#_[part2 sample 6] 16
-  #_#_[part2 sample 10] 50
-  #_#_[part2 sample 50] 1594
+  [part2 sample 6] 16
+  [part2 sample 10] 50
+  [part2 sample 50] 1594
   [part2 sample 1] 2
   [part2 sample 10] 50
   [part2 sample 100] 6536
@@ -82,8 +87,13 @@
   [part2 sample 400] 106776
   [part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
+  #_#_[part2 sample 2000] 2677337
   #_#_[part2 sample 5000] 16733044
   [part2 puzzle 100] 8829
+  [part2 puzzle 200] 34889
+  [part2 puzzle 400] 138314
+  #_#_[part2 puzzle 1000] 862969
+  #_#_[part2 puzzle 2000] 862969
   #_#_[part2 puzzle 26501365] 0)
 
 (defn benchmark
