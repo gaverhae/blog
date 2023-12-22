@@ -52,7 +52,6 @@
                       (into {}))]
     (loop [step 0
            frontier #{(:start input)}
-           frontiers []
            internal-points {:on #{}, :off #{}}
            internal [0 0]]
       (if (= max-steps step)
@@ -69,7 +68,6 @@
                       set)]
           (recur (inc step)
                  ps
-                 (conj frontiers (+ (count ps) (count (:on ip))))
                  ip
                  (update internal (rem step 2) + (count frontier))))))))
 
