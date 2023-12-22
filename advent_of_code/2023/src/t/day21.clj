@@ -52,10 +52,10 @@
                       (into {}))]
     (loop [step 0
            frontier #{(:start input)}
+           frontiers []
            internal-points {:on #{}, :off #{}}]
       (if (= max-steps step)
-        (do
-          (+ (count frontier) (count (:on internal-points))))
+        (+ (count frontier) (count (:on internal-points)))
         (let [ip {:on (:off internal-points)
                   :off (set/union (:on internal-points)
                                   frontier)}
@@ -63,9 +63,10 @@
                       (mapcat (fn [[y x]]
                                 (->> (->neighs [(mod y h) (mod x w)])
                                      (map (fn [[dy dx]] [(+ y dy) (+ x dx)])))))
-                      (remove (set/union (:on ip) (:off ip)))
+                      (remove (:on ip))
+                      (remove (:off ip))
                       set)]
-          (recur (inc step) ps ip))))))
+          (recur (inc step) ps (conj frontiers (+ (count ps) (count (:on ip)))) ip))))))
 
 (lib/check
   #_#_[part1 sample 6] 16
@@ -73,9 +74,14 @@
   #_#_[part2 sample 6] 16
   #_#_[part2 sample 10] 50
   #_#_[part2 sample 50] 1594
+  [part2 sample 1] 2
+  [part2 sample 10] 50
   [part2 sample 100] 6536
+  [part2 sample 200] 26538
+  [part2 sample 300] 59895
+  [part2 sample 400] 106776
   [part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 5000] 16733044
-  #_#_[part2 puzzle 100] 8829
+  [part2 puzzle 100] 8829
   #_#_[part2 puzzle 26501365] 0)
