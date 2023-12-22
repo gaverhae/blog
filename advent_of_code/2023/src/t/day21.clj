@@ -23,49 +23,75 @@
                (apply concat)
                first)})
 
+(def memo (atom {}))
+(def counter (atom {:mem 0, :cpu 0}))
+
 (defn walk-one-map
   [grid]
   (let [h (-> grid count)
-        w (-> grid first count)]
+        w (-> grid first count)
+        helper (fn [start-ps]
+                 #_(prn [:start-ps start-ps])
+                 (if-let [res (@memo start-ps)]
+                   (do (swap! counter update :mem inc)
+                       res)
+                   (let [res (loop [step 0
+                                    filled? {}
+                                    exits {}
+                                    cur (get start-ps step)
+                                    prev #{}]
+                               #_(prn [:cur cur])
+                               (if (empty? cur)
+                                 [filled? exits]
+                                 (let [t (->> cur
+                                              (mapcat (fn [[y x]]
+                                                        (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
+                                                              :let [y (+ y dy)
+                                                                    x (+ x dx)
+                                                                    dst (get-in grid [y x] :out)]
+                                                              :when (and (#{\. :out} dst)
+                                                                         (not (prev [y x])))]
+                                                          [dst [y x] [dy dx]]))))
+                                       #_#__ (prn [:t t])
+                                       nxt (->> t
+                                                (filter (comp #{\.} first))
+                                                (map second)
+                                                (concat (get start-ps (inc step)))
+                                                set)
+                                       exits (->> t
+                                                  (filter (comp #{:out} first))
+                                                  (reduce (fn [acc [_ [y x] d]]
+                                                            (update-in acc
+                                                                       [d (inc step)]
+                                                                       (fnil conj #{})
+                                                                       [(mod y h) (mod x w)]))
+                                                          exits))
+                                       filled? (reduce #(assoc %1 %2 step) filled? cur)]
+                                   (recur (inc step) filled? exits nxt cur))))]
+                     (swap! memo assoc start-ps res)
+                     (swap! counter update :cpu inc)
+                     res)))]
     (fn [step start-ps]
-      #_(prn [:wom start-ps])
-      (loop [step step
-             filled? {}
-             exits {}
-             cur (get start-ps step)
-             prev #{}]
-        #_(prn [:cur cur])
-        (if (empty? cur)
-          [filled? exits]
-          (let [t (->> cur
-                       (mapcat (fn [[y x]]
-                                 (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
-                                       :let [y (+ y dy)
-                                             x (+ x dx)
-                                             dst (get-in grid [y x] :out)]
-                                       :when (and (#{\. :out} dst)
-                                                  (not (prev [y x])))]
-                                   [dst [y x] [dy dx]]))))
-                nxt (->> t
-                         (filter (comp #{\.} first))
-                         (map second)
-                         (concat (get start-ps (inc step)))
-                         set)
-                exits (->> t
-                           (filter (comp #{:out} first))
-                           (reduce (fn [acc [_ [y x] d]]
-                                     (update-in acc
-                                                [d (inc step)]
-                                                (fnil conj #{})
-                                                [(mod y h) (mod x w)]))
-                                   exits))
-                filled? (reduce #(assoc %1 %2 step) filled? cur)]
-            (recur (inc step) filled? exits nxt cur)))))))
+      (let [ps (->> start-ps
+                    (map (fn [[k v]] [(- k step) v]))
+                    (into {}))
+            [filled? exits] (helper ps)]
+        [(->> filled?
+              (map (fn [[k v]] [k (+ v step)]))
+              (into {}))
+         (->> exits
+              (map (fn [[direction m]]
+                     [direction (->> m
+                                     (map (fn [[s positions]]
+                                            [(+ step s) positions]))
+                                     (into {}))]))
+              (into {}))]))))
 
 (defn part1
   [input max-steps]
   (let [f (walk-one-map (:grid input))
         [filled? _] (f 0 {0 #{(:start input)}})]
+    #_(prn [:filled? filled?])
     (->> filled?
          (map (fn [[_ step]] step))
          (filter (fn [step] (and (<= step max-steps)
@@ -82,17 +108,30 @@
                                 "##"))))
       (println))
     (prn exits))
-  (let [f (walk-one-map (:grid input))]
+  (let [f (walk-one-map (:grid input))
+        _ (println (format "Starting at: %s" (subs (str (java.time.LocalDateTime/now)) 0 19)))
+        start-time (System/currentTimeMillis)]
     (loop [todo [[0 [0 0] {0 #{(:start input)}}]]
            filled [0 0]
-           done? #{}]
+           done? #{}
+           n 0]
       #_(prn :filled filled)
       #_(prn [:nxt (first todo)])
       (if (empty? todo)
         (filled (mod max-steps 2))
         (let [[[steps-so-far [gy gx :as grid] entry-point] & todo] todo]
+          (when (zero? (mod n 10000))
+            (let [now (System/currentTimeMillis)
+                  d (- now start-time)
+                  millis java.util.concurrent.TimeUnit/MILLISECONDS]
+              (println (format "%02d:%02d:%02d[%10d]: %s"
+                               (.toHours millis d)
+                               (mod (.toMinutes millis d) 60)
+                               (mod (.toSeconds millis d) 60)
+                               steps-so-far
+                               [:todo (count todo) :done? (count done?) :memo (count @memo) :counter @counter]))))
           (if (done? grid)
-            (recur todo filled done?)
+            (recur todo filled done? (inc n))
             (let [[grid-filled grid-exits] (f steps-so-far entry-point)]
               #_(prn [:rem steps-so-far])
               #_(prn [:grid-exits grid-exits])
@@ -101,6 +140,7 @@
                                  #_(prn [:m m])
                                  (let [s (->> m keys (reduce min))]
                                    [s [(+ gy dy) (+ gx dx)] m])))
+                          (remove (fn [[_ grid _]] (done? grid)))
                           (filter (fn [[s _ _]] (<= s max-steps)))
                           (reduce conj todo)
                           (sort-by first))
@@ -110,18 +150,19 @@
                                  acc))
                              filled
                              grid-filled)
-                     (conj done? grid)))))))))
+                     (conj done? grid)
+                     (inc n)))))))))
 
 (lib/check
-  [part1 sample 6] 16
-  [part1 puzzle 64] 3639
-  [part2 sample 6] 16
-  [part2 sample 10] 50
-  [part2 sample 50] 1594
-  [part2 sample 1] 2
-  [part2 sample 10] 50
-  [part2 sample 100] 6536
-  [part2 sample 200] 26538
+  #_#_[part1 sample 6] 16
+  #_#_[part1 puzzle 64] 3639
+  #_#_[part2 sample 6] 16
+  #_#_[part2 sample 10] 50
+  #_#_[part2 sample 50] 1594
+  #_#_[part2 sample 1] 2
+  #_#_[part2 sample 10] 50
+  #_#_[part2 sample 100] 6536
+  #_#_[part2 sample 200] 26538
   #_#_[part2 sample 300] 59895
   #_#_[part2 sample 400] 106776
   #_#_[part2 sample 500] 167004
@@ -132,13 +173,13 @@
   #_#_[part2 puzzle 200] 34889
   #_#_[part2 puzzle 400] 138314
   #_#_[part2 puzzle 1000] 862969
-  #_#_[part2 puzzle 2000] 862969
-  #_#_[part2 puzzle 26501365] 0)
+  #_#_[part2 puzzle 2000] 3445428
+  [part2 puzzle 26501365] 0)
 
 (defn benchmark
   []
   (doseq [data [#'sample #'puzzle]
-          n [100 300 1000 3000 10000]]
+          n [100 300 1000 3000 10000 30000]]
     (let [start (System/currentTimeMillis)
           _ (part2 @@data n)
           end (System/currentTimeMillis)]
