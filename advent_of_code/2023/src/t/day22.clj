@@ -53,10 +53,15 @@
 
 (defn part2
   [input]
-  input)
+  (let [fallen-bricks (fall input)]
+    (->> fallen-bricks
+         (map (fn [b]
+                (let [other-bricks (->> fallen-bricks (remove #{b}))]
+                  (count (set/difference (set other-bricks) (set (fall other-bricks)))))))
+         (reduce + 0))))
 
 (lib/check
-  [part1 sample] 5
-  [part1 puzzle] 0
-  #_#_[part2 sample] 0
-  #_#_[part2 puzzle] 0)
+  #_#_[part1 sample] 5
+  #_#_[part1 puzzle] 468
+  [part2 sample] 7
+  [part2 puzzle] 0)
