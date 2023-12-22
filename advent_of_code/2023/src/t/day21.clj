@@ -28,6 +28,7 @@
   (let [h (-> grid count)
         w (-> grid first count)]
     (fn [start-pos]
+      #_(prn [:wom start-pos])
       (loop [step 0
              filled? {}
              exits {}
@@ -70,7 +71,7 @@
 
 (defn part2
   [input max-steps]
-  (let [[filled? exits] ((walk-one-map (:grid input)) (:start input))]
+  #_(let [[filled? exits] ((walk-one-map (:grid input)) (:start input))]
     (doseq [y (range 0 11)]
       (doseq [x (range 0 11)]
         (print (format " %s" (if-let [n (filled? [y x])]
@@ -78,35 +79,28 @@
                                 "##"))))
       (println))
     (prn exits))
-
-  (let [h (-> input :grid count)
-        w (-> input :grid first count)
-        ->neighs (->> (range h)
-                      (mapcat (fn [y]
-                                (->> (range w)
-                                     (map (fn [x]
-                                            [[y x] (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
-                                                         :let [y (+ y dy)
-                                                               x (+ x dx)]
-                                                         :when (= \. (get-in input [:grid (mod y h) (mod x w)]))]
-                                                     [dy dx])])))))
-                      (into {}))]
-    (loop [step 0
-           cur #{(:start input)}
-           prev #{}
-           internal [0 0]]
-      (if (= max-steps step)
-        (+ (count cur) (get internal (rem step 2)))
-        (let [nxt (->> cur
-                       (mapcat (fn [[y x]]
-                                 (->> (->neighs [(mod y h) (mod x w)])
-                                      (map (fn [[dy dx]] [(+ y dy) (+ x dx)])))))
-                       (remove prev)
-                       set)]
-          (recur (inc step)
-                 nxt
-                 cur
-                 (update internal (rem step 2) + (count cur))))))))
+  (let [f (walk-one-map (:grid input))]
+    (loop [todo [[[0 0] (:start input) max-steps]]
+           filled [0 0]
+           done? #{}]
+      (if (empty? todo)
+        (filled (mod max-steps 2))
+        (let [[[[gy gx :as grid] entry-point steps-remaining] & todo] todo]
+          (if (done? grid)
+            (recur todo filled done?)
+            (let [[grid-filled grid-exits] (f entry-point)]
+              #_(prn [:grid-exits grid-exits])
+              (recur (->> grid-exits
+                          (map (fn [[[dy dx] [s p]]] [[(+ gy dy) (+ gx dx)] p (- steps-remaining s)]))
+                          (filter (fn [[_ _ s]] (>= s 0)))
+                          (reduce conj todo))
+                     (reduce (fn [acc [_ s]]
+                               (if (<= s steps-remaining)
+                                 (update acc (mod s 2) inc)
+                                 acc))
+                             filled
+                             grid-filled)
+                     (conj done? grid)))))))))
 
 (lib/check
   [part1 sample 6] 16
