@@ -85,3 +85,15 @@
   #_#_[part2 sample 5000] 16733044
   [part2 puzzle 100] 8829
   #_#_[part2 puzzle 26501365] 0)
+
+(defn benchmark
+  []
+  (doseq [data [#'sample #'puzzle]
+          n [100 300 1000 3000]]
+    (let [start (System/currentTimeMillis)
+          _ (part2 @@data n)
+          end (System/currentTimeMillis)]
+      (println (format "%10s %4s: %6.2fs"
+                       (-> data meta :name)
+                       n
+                       (/ (- end start) 1000.0))))))
