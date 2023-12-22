@@ -49,29 +49,7 @@
                                                                x (+ x dx)]
                                                          :when (#{\S \.} (get-in input [:grid (mod y h) (mod x w)]))]
                                                      [dy dx])])))))
-                      (into {}))
-        dijk-fr (let [to-visit (java.util.PriorityQueue. 100 (fn [x y] (compare (first x) (first y))))]
-                  (.add to-visit [0 (:start input)])
-                  (loop [visited #{}
-                         frontier #{}]
-                    (if (.isEmpty to-visit)
-                      frontier
-                      (let [p (.poll to-visit)
-                            [cost [y x]] p]
-                        (when (and (not (visited [y x]))
-                                   (< cost max-steps))
-                          (doseq [[nxt-cost nxt-state] (->> (->neighs [(mod y h) (mod x w)])
-                                                            (map (fn [[dy dx]] [(inc cost) [(+ y dy) (+ x dx)]])))]
-                            (when (not (visited nxt-state))
-                              (.add to-visit [nxt-cost nxt-state]))))
-                        (recur (conj visited [y x])
-                               (cond-> frontier (= cost max-steps) (conj [y x])))))))
-        dijk-fr (->> dijk-fr
-                     (reduce (fn [acc [y x]]
-                               (update acc y (fnil conj []) x))
-                             {})
-                     (map (fn [[y xs]] [y (sort xs)]))
-                     (into {}))]
+                      (into {}))]
     (loop [step 0
            frontier #{(:start input)}
            internal-points {:on #{}, :off #{}}]
@@ -96,7 +74,7 @@
   #_#_[part2 sample 10] 50
   #_#_[part2 sample 50] 1594
   [part2 sample 100] 6536
-  #_#_[part2 sample 500] 167004
+  [part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 5000] 16733044
   #_#_[part2 puzzle 100] 8829
