@@ -45,28 +45,43 @@
     (loop [step 0
            filled? {}
            exits {}
-           todo [start-pos]]
-      (if (empty? todo)
-        [step filled? exits todo]
-        (let [[[y x] & todo] todo
-              [nxt exits] (->> [[-1 0] [1 0] [0 1] [0 -1]]
-                               (reduce (fn [[nxt exits] [dy dx]]
-                                         (let [x (+ x dx)
-                                               y (+ y dy)
-                                               c (get-in grid [y x] :out)]
-                                           (cond
-                                             (and (= \. c) (not (filled? [y x]))) [(conj nxt [y x]) exits]
-                                             (and (= c :out) (not (exits [dy dx]))) [nxt (assoc exits [dy dx] [y x step])]
-                                             :else [nxt exits])))
-                                       [[] exits]))]
-          (recur (inc step)
-                 (assoc filled? [y x] step)
-                 exits
-                 (reduce conj todo nxt)))))))
+           cur [start-pos]
+           prev #{}]
+      (if (empty? cur)
+        [filled? exits]
+        (let [t (->> cur
+                     (mapcat (fn [[y x]]
+                               (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
+                                     :let [y (+ y dy)
+                                           x (+ x dx)
+                                           dst (get-in grid [y x] :out)]
+                                     :when (and (#{\. :out} dst)
+                                                (not (prev [y x])))]
+                                 [dst [y x] [dy dx]]))))
+              nxt (->> t
+                       (filter (comp #{\.} first))
+                       (map second))
+              exits (->> t
+                         (filter (comp #{:out} first))
+                         (reduce (fn [acc [_ x d]]
+                                   (if (acc d)
+                                     acc
+                                     (assoc acc d [(inc step) x])))
+                                 exits))
+              filled? (reduce #(assoc %1 %2 step) filled? cur)]
+          (recur (inc step) filled?  exits nxt (set cur)))))))
 
 (defn part2
   [input max-steps]
-  (prn ((walk-one-map (:grid input)) (:start input)))
+  (let [[filled? exits] ((walk-one-map (:grid input)) (:start input))]
+    (doseq [y (range 0 11)]
+      (doseq [x (range 0 11)]
+        (print (format " %s" (if-let [n (filled? [y x])]
+                                (format "%2d" n)
+                                "##"))))
+      (println))
+    (prn exits))
+
   (let [h (-> input :grid count)
         w (-> input :grid first count)
         ->neighs (->> (range h)
