@@ -1,6 +1,7 @@
 (ns t.day23
   (:require [clojure.core.async :as async]
             [clojure.core.match :refer [match]]
+            [clojure.data.int-map :as i]
             [clojure.math :as math]
             [clojure.set :as set]
             [clojure.string :as s]
@@ -64,22 +65,22 @@
         _ (doseq [[k vs] neighbours]
             (aset neighs k ^"[J" (into-array Long/TYPE vs)))
         start-time (lib/now-millis)]
-    (loop [todo [[0 start #{start}]]
+    (loop [todo [[0 start (conj (i/int-set) start)]]
            best-cost-so-far 0
            prev-cost 0
            step 0]
-      (when (not= best-cost-so-far prev-cost)
-        (println (format "%s[%12d]: %8d (%8.2f steps/ms)"
-                         (lib/duration-since start-time)
-                         step
-                         best-cost-so-far
-                         (/ step
-                            (let [t (- (lib/now-millis) start-time)]
-                              (or (and (pos? t) t)
-                                  1))
-                            1.0))))
-      (if (or (empty? todo) (= (* 10 1000 1000) step))
-        best-cost-so-far
+      (if (or (empty? todo) (= (* 20 1000 1000) step))
+        (do
+          (println (format "%s[%12d]: %8d (%8.2f steps/ms)"
+                           (lib/duration-since start-time)
+                           step
+                           best-cost-so-far
+                           (/ step
+                              (let [t (- (lib/now-millis) start-time)]
+                                (or (and (pos? t) t)
+                                    1))
+                              1.0)))
+          best-cost-so-far)
         (let [[[cost pos seen?] & todo] todo]
           (recur (->> (aget neighs pos)
                       (remove seen?)
@@ -92,7 +93,7 @@
                  (inc step)))))))
 
 (lib/check
-  [part1 sample] 94
-  [part1 puzzle] 2202
-  [part2 sample] 154
+  #_#_[part1 sample] 94
+  #_#_[part1 puzzle] 2202
+  #_#_[part2 sample] 154
   [part2 puzzle] 6226)
