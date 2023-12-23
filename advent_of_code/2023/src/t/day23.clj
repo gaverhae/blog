@@ -42,17 +42,18 @@
 (defn part2
   [input]
   (let [{:keys [start end grid]} input
-        start-time (lib/now-millis)
         neighbours (->> grid
                         (map-indexed
                           (fn [y line]
                             (->> line
                                  (map-indexed (fn [x c]
-                                                (->> [[0 1] [0 -1] [1 0] [-1 0]]
-                                                     (map (fn [[dy dx]] [(+ y dy) (+ x dx)]))
-                                                     (remove (fn [p] (= \# (get-in grid p \#)))))))
-                                 vec)))
-                        vec)]
+                                                [[y x] (->> [[0 1] [0 -1] [1 0] [-1 0]]
+                                                            (map (fn [[dy dx]] [(+ y dy) (+ x dx)]))
+                                                            (remove (fn [p] (= \# (get-in grid p \#))))
+                                                            vec)])))))
+                        (apply concat)
+                        (into {}))
+        start-time (lib/now-millis)]
     (loop [todo [[0 start #{start}]]
            best-cost-so-far 0
            prev-cost 0
@@ -66,7 +67,7 @@
       (if (empty? todo)
         best-cost-so-far
         (let [[[cost [y x :as pos] seen?] & todo] todo]
-          (recur (->> (get-in neighbours pos)
+          (recur (->> (get neighbours pos)
                       (remove seen?)
                       (map (fn [p] [(inc cost) p (conj seen? p)]))
                       (reduce conj todo))
