@@ -35,9 +35,9 @@
                       (concat todo)
                       (sort-by first)
                       reverse)
-                 (cond-> best-cost-so-far
-                   (= end pos)
-                   (max cost))))))))
+                 (long (cond-> best-cost-so-far
+                         (= end pos)
+                         (max cost)))))))))
 
 (defn part2
   [input]
@@ -70,9 +70,9 @@
                       (remove seen?)
                       (map (fn [p] [(inc cost) p (conj seen? p)]))
                       (reduce conj todo))
-                 (cond-> best-cost-so-far
-                   (= end pos)
-                   (max cost))
+                 (long (cond-> best-cost-so-far
+                         (= end pos)
+                         (max cost)))
                  best-cost-so-far
                  (inc step)))))))
 
