@@ -156,7 +156,7 @@
   #_#_[part2 puzzle 400] 138314
   #_#_[part2 puzzle 1000] 862969
   #_#_[part2 puzzle 2000] 3445428
-  [part2 puzzle 26501365] 0)
+  #_#_[part2 puzzle 26501365] 0)
 
 (defn benchmark
   []
