@@ -86,7 +86,8 @@
                               (->> parts
                                    vals
                                    (map (fn [[from to]] (inc (- to from))))
-                                   (reduce * 1))))
+                                   (reduce * 1)
+                                   long)))
           :R (recur states counted)
           (recur (reduce conj
                          states
