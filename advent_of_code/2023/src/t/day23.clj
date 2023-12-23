@@ -41,9 +41,18 @@
 
 (defn part2
   [input]
-  (let [{:keys [start end grid]} input]
+  (let [{:keys [start end grid]} input
+        start-time (lib/now-millis)]
     (loop [todo [[0 start #{start}]]
-           best-cost-so-far 0]
+           best-cost-so-far 0
+           prev-cost 0
+           step 0]
+      (when (not= best-cost-so-far prev-cost)
+        (println (format "%s[%12d]: %8d (%8.2f steps/ms)"
+                         (lib/duration-since start-time)
+                         step
+                         best-cost-so-far
+                         (/ step (- (lib/now-millis) start-time) 1.0))))
       (if (empty? todo)
         best-cost-so-far
         (let [[[cost [y x :as pos] seen?] & todo] todo]
@@ -57,7 +66,9 @@
                       reverse)
                  (cond-> best-cost-so-far
                    (= end pos)
-                   (max cost))))))))
+                   (max cost))
+                 best-cost-so-far
+                 (inc step)))))))
 
 (lib/check
   [part1 sample] 94
