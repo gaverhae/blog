@@ -61,9 +61,7 @@
                       (remove seen?)
                       (remove (fn [p] (= \# (get-in grid p \#))))
                       (map (fn [p] [(inc cost) p (conj seen? p)]))
-                      (concat todo)
-                      (sort-by first)
-                      reverse)
+                      (reduce conj todo))
                  (cond-> best-cost-so-far
                    (= end pos)
                    (max cost))
