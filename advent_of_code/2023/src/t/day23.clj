@@ -42,15 +42,22 @@
 (defn part2
   [input]
   (let [{:keys [start end grid]} input
+        h (count grid)
+        w (count (first grid))
+        to-int (fn [[y x]] (+ (* w y) x))
+        end (to-int end)
+        start (to-int start)
         neighbours (->> grid
                         (map-indexed
                           (fn [y line]
                             (->> line
                                  (map-indexed (fn [x c]
-                                                [[y x] (->> [[0 1] [0 -1] [1 0] [-1 0]]
-                                                            (map (fn [[dy dx]] [(+ y dy) (+ x dx)]))
-                                                            (remove (fn [p] (= \# (get-in grid p \#))))
-                                                            vec)])))))
+                                                [(to-int [y x])
+                                                 (->> [[0 1] [0 -1] [1 0] [-1 0]]
+                                                      (map (fn [[dy dx]] [(+ y dy) (+ x dx)]))
+                                                      (remove (fn [p] (= \# (get-in grid p \#))))
+                                                      (map to-int)
+                                                      vec)])))))
                         (apply concat)
                         (into {}))
         start-time (lib/now-millis)]
@@ -63,10 +70,14 @@
                          (lib/duration-since start-time)
                          step
                          best-cost-so-far
-                         (/ step (- (lib/now-millis) start-time) 1.0))))
+                         (/ step
+                            (let [t (- (lib/now-millis) start-time)]
+                              (or (and (pos? t) t)
+                                  1))
+                            1.0))))
       (if (or (empty? todo) (= (* 10 1000 1000) step))
         best-cost-so-far
-        (let [[[cost [y x :as pos] seen?] & todo] todo]
+        (let [[[cost pos seen?] & todo] todo]
           (recur (->> (get neighbours pos)
                       (remove seen?)
                       (map (fn [p] [(inc cost) p (conj seen? p)]))
