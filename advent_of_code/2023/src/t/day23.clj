@@ -64,7 +64,7 @@
                          step
                          best-cost-so-far
                          (/ step (- (lib/now-millis) start-time) 1.0))))
-      (if (empty? todo)
+      (if (or (empty? todo) (= (* 10 1000 1000) step))
         best-cost-so-far
         (let [[[cost [y x :as pos] seen?] & todo] todo]
           (recur (->> (get neighbours pos)
