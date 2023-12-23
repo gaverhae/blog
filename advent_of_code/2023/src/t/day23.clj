@@ -60,6 +60,9 @@
                                                       vec)])))))
                         (apply concat)
                         (into {}))
+        neighs ^"[[J" (make-array Long/TYPE (* h w) 0)
+        _ (doseq [[k vs] neighbours]
+            (aset neighs k ^"[J" (into-array Long/TYPE vs)))
         start-time (lib/now-millis)]
     (loop [todo [[0 start #{start}]]
            best-cost-so-far 0
@@ -78,7 +81,7 @@
       (if (or (empty? todo) (= (* 10 1000 1000) step))
         best-cost-so-far
         (let [[[cost pos seen?] & todo] todo]
-          (recur (->> (get neighbours pos)
+          (recur (->> (aget neighs pos)
                       (remove seen?)
                       (map (fn [p] [(inc cost) p (conj seen? p)]))
                       (reduce conj todo))
