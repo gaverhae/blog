@@ -80,4 +80,4 @@
   [part1 sample] 94
   [part1 puzzle] 2202
   [part2 sample] 154
-  [part2 puzzle] 0)
+  [part2 puzzle] 6226)
