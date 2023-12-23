@@ -126,3 +126,19 @@
   `(let [start# (System/currentTimeMillis)
          _# (do ~@exprs)]
      (- (System/currentTimeMillis) start#)))
+
+(defn now
+  []
+  (subs (str (java.time.LocalDateTime/now)) 0 19))
+
+(defn now-millis
+  []
+  (System/currentTimeMillis))
+
+(defn duration-since
+  [start]
+  (let [d (- (now-millis) start)]
+    (format "%4d:%02d:%02d"
+            (-> d (quot 1000) (quot 60) (quot 24) (mod 60))
+            (-> d (quot 1000) (quot 60) (mod 60))
+            (-> d (quot 1000) (mod 60)))))
