@@ -15,7 +15,7 @@
   (->> lines
        (map (fn [line]
               (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
-                (->> (mapv (comp bigint parse-long) [x y z dx dy dz])
+                (->> (mapv parse-long [x y z dx dy dz])
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
@@ -118,18 +118,19 @@
 (defn gen-search
   [lines seed]
   (let [rng (java.util.Random. seed)
-        rand-int (fn [m] (bigint (* m (.nextDouble rng))))
+        rand-big (fn [m] (bigint (* m (.nextDouble rng))))
+        rand-int (fn [m] (long (* m (.nextDouble rng))))
         carousel (fn [p] (let [maxi (reduce max (map first p))
                                inverted (map (fn [[f i]] [(- maxi f) f i]) p)
                                total (reduce + (map first inverted))
-                               roll (rand-int total)]
+                               roll (rand-big total)]
                            (loop [r roll
                                   [[f' f s] & p] inverted]
                              (if (<= r f')
                                [f s]
                                (recur (- r f') p)))))
         num-lines (count lines)
-        max-time (bigint Long/MAX_VALUE)
+        max-time (long Integer/MAX_VALUE)
         make-solution (fn []
                         (vec (repeatedly num-lines #(rand-int max-time))))
         fitness (fn [ts]
@@ -143,8 +144,8 @@
                        (partition 2 1)
                        (map (fn [[[_ x1 y1 z1] [x2 y2 z2]]]
                               (let [dx (- x1 x2), dy (- y1 y2), dz (- z1 z2)]
-                                (+ (* dx dx) (* dy dy) (* dz dz)))))
-                       (reduce + 0)))
+                                (+ (* 1N dx dx) (* 1N dy dy) (* 1N dz dz)))))
+                       (reduce + 0N)))
         mutate (fn [ts]
                  (assoc ts (rand-int num-lines) (rand-int max-time)))
         crossover (fn [t1 t2]
