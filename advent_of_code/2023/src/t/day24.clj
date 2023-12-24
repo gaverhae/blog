@@ -147,7 +147,14 @@
                                 (+ (* 1N dx dx) (* 1N dy dy) (* 1N dz dz)))))
                        (reduce + 0N)))
         mutate (fn [ts]
-                 (assoc ts (rand-int num-lines) (rand-int max-time)))
+                 (let [r (rand-int 10)]
+                   (if (zero? r)
+                     (->> ts
+                          (map (fn [t] [(rand-int max-time) t]))
+                          sort
+                          (map second)
+                          vec)
+                     (assoc ts (rand-int num-lines) (rand-int max-time)))))
         crossover (fn [t1 t2]
                     (case (int (rand-int 2))
                       0 (let [cut (rand-int num-lines)]
