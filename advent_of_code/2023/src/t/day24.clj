@@ -18,7 +18,7 @@
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
-(defn intersection
+(defn line-intersection
   [l1 l2]
   ;; DOES NOT COVER ALL CASES
   ;; Input never has 0 as a direction (=> (not= c1 0))
@@ -46,18 +46,112 @@
                    (->> ls
                         (map (fn [l2] [l1 l2])))))
          (keep (fn [[l1 l2]]
-                (intersection l1 l2)))
+                (line-intersection l1 l2)))
          (filter (fn [[x y]]
                    (and (<= min-c x max-c)
                         (<= min-c y max-c))))
          count)))
 
+(defn cross-product
+  [[a1 a2 a3] [b1 b2 b3]]
+  [(- (* a2 b3) (* a3 b2))
+   (- (* a3 b1) (* a1 b3))
+   (- (* a1 b2) (* a2 b1))])
+
+(defn dot-product
+  [[a1 a2 a3] [b1 b2 b3]]
+  (+ (* a1 b1) (* a2 b2) (* a3 b3)))
+
+(defn vector-minus
+  [[a1 a2 a3] [b1 b2 b3]]
+  [(- a1 b1) (- a2 b2) (- a3 b3)])
+
+(defn vector-plus
+  [[a1 a2 a3] [b1 b2 b3]]
+  [(+ a1 b1) (+ a2 b2) (+ a3 b3)])
+
+(defn scalar-mult
+  [scalar [a1 a2 a3]]
+  [(* scalar a1) (* scalar a2) (* scalar a3)])
+
+(defn plane-from-three-points
+  [p1 p2 p3]
+  (let [n (cross-product (vector-minus p2 p1)
+                         (vector-minus p3 p1))]
+    [p1 n]))
+
+(defn plane-line-intersection
+  [line plane]
+  (let [[l0 l] line
+        [p0 n] plane
+        denom (dot-product l n)
+        nom (dot-product (vector-minus p0 l0)
+                         n)]
+    (if (zero? denom)
+      (if (zero? nom)
+        [:line line]
+        [:none])
+      [:point (vector-plus l0 (scalar-mult (/ nom denom) l))])))
+
+(defn line-from-two-points
+  [[a1 a2 a3] [b1 b2 b3]]
+  [[a1 a2 a3] [(- b1 a1) (- b2 a2) (- b3 a3)]])
+
+(defn is-point-on-line?
+  [[[a1 a2 a3] [d1 d2 d3]] [p1 p2 p3]]
+  (let [c (/ (- p1 a1) d1)]
+    (and (= (+ a1 (* c d1)) p1)
+         (= (+ a2 (* c d2)) p2)
+         (= (+ a3 (* c d3)) p3))))
+
 (defn part2
   [input]
-  input)
+  (let [plane (->> ;; we start by taking all pairs of lines
+                   (map vector input (iterate rest (rest input)))
+                   (mapcat (fn [[l1 ls]]
+                             (->> ls
+                                  (map (fn [l2] [l1 l2])))))
+                   ;; then, for each pair, we make a plane by assuming (for
+                   ;; now) that the stone hits the first of the two hails at
+                   ;; t = 0; we do not know when the stone will cut through
+                   ;; the second hail so we form a plane with the first hail
+                   ;; at t=0 (so just its position) and the second hail's
+                   ;; trajectory (any two points)
+                   (map (fn [[[x _] [y d]]]
+                          (plane-from-three-points x y (vector-plus y d))))
+                   ;; we keep the planes that intersect all the lines
+                   (filter (fn [plane]
+                             (->> input
+                                  (every? (fn [line] (not= [:none] (plane-line-intersection line plane)))))))
+                   ;; for each plane, we keep all the intersections
+                   (map (fn [plane]
+                          (->> input (map (fn [line] (plane-line-intersection line plane))))))
+                   ;; for a single candidate plane, all the points must form a line
+                   (filter (fn [inters]
+                             (let [points (->> inters (filter (fn [[t _]] (= t :point))) (map second))]
+                               (if (= 2 (count points))
+                                 ;; two points always form a line
+                                 true
+                                 (let [[p1 p2 & ps] points
+                                       line (line-from-two-points p1 p2)]
+                                   (->> ps (every? #(is-point-on-line? line %))))))))
+                   ;; we replace all the points with a single line
+                   (map (fn [inters]
+                          (cons
+                            (->> inters
+                                 (remove (fn [[t _]] (= t :line)))
+                                 (map (fn [[_ p]] p))
+                                 (take 2)
+                                 (apply line-from-two-points))
+                            (->> inters
+                                 (filter (fn [[t _]] (= t :line)))
+                                 (map (fn [[_ line]] line))))))
+
+                   )]
+    [(count plane) plane]))
 
 (lib/check
   [part1 sample 7 27] 2
   [part1 puzzle 200000000000000 400000000000000] 20336
-  #_#_[part2 sample] 0
+  [part2 sample] 47
   #_#_[part2 puzzle] 0)
