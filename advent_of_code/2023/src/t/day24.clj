@@ -14,7 +14,7 @@
   (->> lines
        (map (fn [line]
               (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
-                (->> (mapv (comp bigint parse-long) [x y z dx dy dz])
+                (->> (mapv parse-long [x y z dx dy dz])
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
@@ -105,9 +105,43 @@
          (= (+ a2 (* c d2)) p2)
          (= (+ a3 (* c d3)) p3))))
 
+(defn vector-length
+  [[x y z]]
+  (Math/sqrt (+ (* 1.0 x x) (* 1.0 y y) (* 1.0 z z))))
+
 (defn part2
   [input]
-  (let [start-time (lib/now-millis)
+  (let [[[l1-p l1-d] [l2-p l2-d] [l3-p l3-d]] (take 3 input)
+        rng-1 [670000000000 690000000000]
+        rng-2 [604000000000 624000000000]
+        rng-3 [660000000000 680000000000]
+        steps 100]
+    (->> (for [t1 (let [step (/ (- (get rng-1 1) (get rng-1 0)) steps)]
+                    (range (get rng-1 0)
+                           (get rng-1 1)
+                           step))
+               t2 (let [step (/ (- (get rng-1 1) (get rng-1 0)) steps)]
+                    (range (get rng-1 0)
+                           (get rng-1 1)
+                           step))
+               t3 (let [step (/ (- (get rng-1 1) (get rng-1 0)) steps)]
+                    (range (get rng-1 0)
+                           (get rng-1 1)
+                           step))
+               :let [p1 (vector-plus l1-p (scalar-mult t1 l1-d))
+                     p2 (vector-plus l2-p (scalar-mult t2 l2-d))
+                     p3 (vector-plus l3-p (scalar-mult t3 l3-d))
+                     a (vector-length (vector-minus p1 p2))
+                     b (vector-length (vector-minus p2 p3))
+                     c (vector-length (vector-minus p3 p1))
+                     s (/ (+ a b c) 2)]]
+           [(Math/sqrt (* s (- s a) (- s b) (- s c))) [t1 t2 t3]])
+         sort first))
+
+
+
+
+  #_(let [start-time (lib/now-millis)
         plane (->> ;; we start by taking all pairs of lines
                    (map vector input (iterate rest (rest input)))
                    (mapcat (fn [[l1 ls]]
@@ -185,7 +219,7 @@
     [(count plane) plane]))
 
 (lib/check
-  [part1 sample 7 27] 2
-  [part1 puzzle 200000000000000 400000000000000] 20336
-  [part2 sample] 47
+  #_#_[part1 sample 7 27] 2
+  #_#_[part1 puzzle 200000000000000 400000000000000] 20336
+  #_#_[part2 sample] 47
   [part2 puzzle] 0)

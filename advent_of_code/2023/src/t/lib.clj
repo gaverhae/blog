@@ -47,10 +47,14 @@
      (Math/abs (- y1 y2))))
 
 (defn gcd
-  [a b]
-  (cond (= a b) a
-        (> a b) (recur (- a b) b)
-        (< a b) (recur a (- b a))))
+  ([a b]
+   (cond (neg? a) (recur (- a) b)
+         (neg? b) (recur a (- b))
+         (= a b) a
+         (> a b) (recur (- a b) b)
+         (< a b) (recur a (- b a))))
+  ([a b & cs]
+   (reduce gcd a (cons b cs))))
 
 (defn lcm
   [a b]
