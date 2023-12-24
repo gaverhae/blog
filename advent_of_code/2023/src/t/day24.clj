@@ -118,19 +118,18 @@
 (defn gen-search
   [lines seed]
   (let [rng (java.util.Random. seed)
-        rand-big (fn [m] (bigint (* m (.nextDouble rng))))
-        rand-int (fn [m] (long (* m (.nextDouble rng))))
+        rand-int (fn [m] (bigint (* m (.nextDouble rng))))
         carousel (fn [p] (let [maxi (reduce max (map first p))
                                inverted (map (fn [[f i]] [(- maxi f) f i]) p)
                                total (reduce + (map first inverted))
-                               roll (rand-big total)]
+                               roll (rand-int total)]
                            (loop [r roll
                                   [[f' f s] & p] inverted]
                              (if (<= r f')
                                [f s]
                                (recur (- r f') p)))))
         num-lines (count lines)
-        max-time (long Integer/MAX_VALUE)
+        max-time Long/MAX_VALUE
         make-solution (fn []
                         (vec (repeatedly num-lines #(rand-int max-time))))
         fitness (fn [ts]
