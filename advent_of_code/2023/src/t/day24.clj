@@ -14,7 +14,7 @@
   (->> lines
        (map (fn [line]
               (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
-                (->> (mapv parse-long [x y z dx dy dz])
+                (->> (mapv (comp bigint parse-long) [x y z dx dy dz])
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
@@ -29,12 +29,11 @@
                  (+ (* d1 c2) (* -1 d2 c1)))
             a (/ (+ y1 (* b d1) (- x1))
                  c1)]
-        (when (and (>= a 0) (>= b 0)
-                   (->> (concat l1 l2)
+        (when (->> (concat l1 l2)
                    lib/transpose
                    (every? (fn [[xn cn yn dn]]
-                             (= (+ xn (* a cn)) (+ yn (* b dn)))))))
-          (->> l1 lib/transpose (map (fn [[xn cn]] (+ xn (* a cn))))))))))
+                             (= (+ xn (* a cn)) (+ yn (* b dn))))))
+          [a b (->> l1 lib/transpose (map (fn [[xn cn]] (+ xn (* a cn)))))])))))
 
 (defn part1
   [input min-c max-c]
@@ -47,8 +46,10 @@
                         (map (fn [l2] [l1 l2])))))
          (keep (fn [[l1 l2]]
                 (line-intersection l1 l2)))
-         (filter (fn [[x y]]
-                   (and (<= min-c x max-c)
+         (filter (fn [[a b [x y]]]
+                   (and (>= a 0)
+                        (>= b 0)
+                        (<= min-c x max-c)
                         (<= min-c y max-c))))
          count)))
 
@@ -110,7 +111,7 @@
                    (map vector input (iterate rest (rest input)))
                    (mapcat (fn [[l1 ls]]
                              (->> ls
-                                  (map (fn [l2] [l1 l2])))))
+                                  (mapcat (fn [l2] [[l1 l2] [l2 l1]])))))
                    ;; then, for each pair, we make a plane by assuming (for
                    ;; now) that the stone hits the first of the two hails at
                    ;; t = 0; we do not know when the stone will cut through
@@ -137,17 +138,37 @@
                                    (->> ps (every? #(is-point-on-line? line %))))))))
                    ;; we replace all the points with a single line
                    (map (fn [inters]
-                          (cons
-                            (->> inters
-                                 (remove (fn [[t _]] (= t :line)))
-                                 (map (fn [[_ p]] p))
-                                 (take 2)
-                                 (apply line-from-two-points))
-                            (->> inters
-                                 (filter (fn [[t _]] (= t :line)))
-                                 (map (fn [[_ line]] line))))))
-
-                   )]
+                          (->> inters
+                               (remove (fn [[t _]] (= t :line)))
+                               (map (fn [[_ p]] p))
+                               (take 2)
+                               (apply line-from-two-points))))
+                   ;; at this point we have the trajectory of the stone, but we
+                   ;; need to know its starting position; first, we compute the
+                   ;; intersection with each hail
+                   (map (fn [stone]
+                          [stone
+                           (->> input
+                                (map (fn [hail] (line-intersection hail stone)))
+                                ;; we care about timings, we don't care about
+                                ;; where intersections happen
+                                (map (fn [[a b _]] [a b])))]))
+                   ;; if things work out as expected, each [a b] tuple should
+                   ;; have the same (- b a) value, which is the skew between
+                   ;; the hail timeline and the stoen timeline (i.e. the
+                   ;; unknown offset we introduced when we decided to set t = 0
+                   ;; on the first step above)
+                   ;; with the adjusted t = 0 we get the initial position of the stone
+                   (map (fn [[stone times]]
+                          (if (->> times
+                                   (map (fn [[a b]] (- b a)))
+                                   (apply =))
+                            (let [[a b] (first times)
+                                  offset (- b a)
+                                  [p d] stone]
+                              (vector-plus p (scalar-mult offset d)))
+                            (throw (Exception. "Unexpected condition")))))
+                   (map (fn [[x y z]] (+ x y z))))]
     [(count plane) plane]))
 
 (lib/check
