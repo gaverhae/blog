@@ -1,4 +1,5 @@
 (ns t.day24
+  (:refer-clojure :exclude [rand-int])
   (:require [clojure.core.async :as async]
             [clojure.core.match :refer [match]]
             [clojure.data.int-map :as i]
@@ -114,17 +115,71 @@
   [[x y z]]
   (Math/sqrt (+ (* 1.0 x x) (* 1.0 y y) (* 1.0 z z))))
 
+(defn gen-search
+  [lines seed]
+  (let [rng (java.util.Random. seed)
+        rand-int (fn [m] (bigint (* m (.nextDouble rng))))
+        carousel (fn [p] (let [maxi (reduce max (map first p))
+                               inverted (map (fn [[f i]] [(- maxi f) f i]) p)
+                               total (reduce + (map first inverted))
+                               roll (rand-int total)]
+                           (loop [r roll
+                                  [[f' f s] & p] inverted]
+                             (if (<= r f')
+                               [f s]
+                               (recur (- r f') p)))))
+        num-lines (count lines)
+        max-time (bigint Long/MAX_VALUE)
+        make-solution (fn []
+                        (vec (repeatedly num-lines #(rand-int max-time))))
+        fitness (fn [ts]
+                  (->> (map vector lines ts)
+                       (map (fn [[[[x y z] [dx dy dz]] t]]
+                              [t
+                               (+ x (* t dx))
+                               (+ y (* t dy))
+                               (+ z (* y dz))]))
+                       sort
+                       (partition 2 1)
+                       (map (fn [[[_ x1 y1 z1] [x2 y2 z2]]]
+                              (let [dx (- x1 x2), dy (- y1 y2), dz (- z1 z2)]
+                                (+ (* dx dx) (* dy dy) (* dz dz)))))
+                       (reduce + 0)))
+        mutate (fn [ts]
+                 (assoc ts (rand-int num-lines) (rand-int max-time)))
+        crossover (fn [t1 t2]
+                    (let [cut (rand-int num-lines)]
+                      (vec (concat (take cut t1)
+                                   (drop cut t2)))))
+        init-pop (->> (repeatedly 100 make-solution)
+                      (map (fn [i] [(fitness i) i]))
+                      sort)
+        start-time (lib/now-millis)]
+    (loop [population init-pop
+           step 0]
+      (when (zero? (rem step 1000))
+        (prn [(lib/duration-since start-time) (ffirst population)]))
+      (if (zero? (ffirst population))
+        (second (first population))
+        (recur (let [survivors (concat (take 10 population)
+                                       (take 3 (reverse population)))
+                     new-spawns (->> (repeatedly 10 make-solution)
+                                     (map (fn [i] [(fitness i) i])))
+                     children (repeatedly
+                                77
+                                #(let [[_ parent1] (carousel population)
+                                       [_ parent2] (carousel population)
+                                       child (mutate (crossover parent1 parent2))]
+                                   [(fitness child) child]))]
+                 (sort (concat survivors new-spawns children)))
+               (inc step))))))
+
 (defn part2
   [input]
-  (let [[[a da] [b db] [c dc]] (take 3 input)
-        x a
-        dx (vector-minus (vector-plus b db) x)]
-    (prn (line-intersection [x dx] [a da]))
-    (prn (line-intersection [x dx] [b db]))
-    (prn (line-intersection [x dx] [c dc]))))
+  (gen-search input 0))
 
 (lib/check
   #_#_[part1 sample 7 27] 2
   #_#_[part1 puzzle 200000000000000 400000000000000] 20336
-  [part2 sample] 47
-  #_#_[part2 puzzle] 0)
+  #_#_[part2 sample] 47
+  [part2 puzzle] 0)
