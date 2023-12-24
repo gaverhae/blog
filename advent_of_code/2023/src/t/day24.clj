@@ -148,7 +148,7 @@
         mutate (fn [ts]
                  (assoc ts (rand-int num-lines) (rand-int max-time)))
         crossover (fn [t1 t2]
-                    (case (rand-int 2)
+                    (case (int (rand-int 2))
                       0 (let [cut (rand-int num-lines)]
                           (vec (concat (take cut t1)
                                        (drop cut t2))))
