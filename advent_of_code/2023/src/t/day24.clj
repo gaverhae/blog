@@ -175,4 +175,4 @@
   [part1 sample 7 27] 2
   [part1 puzzle 200000000000000 400000000000000] 20336
   [part2 sample] 47
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle] 0)
