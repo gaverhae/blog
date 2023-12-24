@@ -148,9 +148,19 @@
         mutate (fn [ts]
                  (assoc ts (rand-int num-lines) (rand-int max-time)))
         crossover (fn [t1 t2]
-                    (let [cut (rand-int num-lines)]
-                      (vec (concat (take cut t1)
-                                   (drop cut t2)))))
+                    (case (rand-int 2)
+                      0 (let [cut (rand-int num-lines)]
+                          (vec (concat (take cut t1)
+                                       (drop cut t2))))
+                      1 (let [start (rand-int num-lines)
+                              end (rand-int num-lines)
+                              [start end] (sort [start end])]
+                          (->> (map vector t1 t2)
+                               (map-indexed (fn [idx [p1 p2]]
+                                              (cond (< idx start) p1
+                                                    (<= start idx end) (/ (+ p1 p2) 2)
+                                                    (< end idx) p2)))
+                               vec))))
         init-pop (->> (repeatedly 100 make-solution)
                       (map (fn [i] [(fitness i) i]))
                       sort)
