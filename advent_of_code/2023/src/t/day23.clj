@@ -61,6 +61,7 @@
                                                       vec)])))))
                         (apply concat)
                         (into {}))
+        ;; TODO: merge contiguous segments
         neighs ^"[[J" (make-array Long/TYPE (* h w) 0)
         _ (doseq [[k vs] neighbours]
             (aset neighs k ^"[J" (into-array Long/TYPE vs)))
@@ -69,7 +70,8 @@
            best-cost-so-far 0
            prev-cost 0
            step 0]
-      (if (or (empty? todo) (= (* 20 1000 1000) step))
+      (if #_(or (empty? todo) (= (* 20 1000 1000) step))
+        (empty? todo)
         (do
           (println (format "%s[%12d]: %8d (%8.2f steps/ms)"
                            (lib/duration-since start-time)
@@ -87,8 +89,7 @@
                       (map (fn [p] [(inc cost) p (conj seen? p)]))
                       (reduce conj todo))
                  (long (cond-> best-cost-so-far
-                         (= end pos)
-                         (max cost)))
+                         (= end pos) (max cost)))
                  best-cost-so-far
                  (inc step)))))))
 
@@ -96,4 +97,4 @@
   #_#_[part1 sample] 94
   #_#_[part1 puzzle] 2202
   #_#_[part2 sample] 154
-  [part2 puzzle] 6226)
+  #_#_[part2 puzzle] 6226)
