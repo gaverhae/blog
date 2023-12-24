@@ -11,18 +11,53 @@
 
 (defn parse
   [lines]
-  lines)
+  (->> lines
+       (map (fn [line]
+              (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
+                (->> (mapv parse-long [x y z dx dy dz])
+                     ((fn [[x y z dx dy dz]]
+                        [[x y z] [dx dy dz]]))))))))
+
+(defn intersection
+  [l1 l2]
+  ;; DOES NOT COVER ALL CASES
+  ;; Input never has 0 as a direction (=> (not= c1 0))
+  (let [[[x1 x2] [c1 c2]] l1
+        [[y1 y2] [d1 d2]] l2]
+    (when-not (= (* d1 c2) (* d2 c1))
+      (let [b (/ (+ (* y2 c1) (* -1 x2 c1) (* -1 y1 c2) (* x1 c2))
+                 (+ (* d1 c2) (* -1 d2 c1)))
+            a (/ (+ y1 (* b d1) (- x1))
+                 c1)]
+        (when (and (>= a 0) (>= b 0)
+                   (->> (concat l1 l2)
+                   lib/transpose
+                   (every? (fn [[xn cn yn dn]]
+                             (= (+ xn (* a cn)) (+ yn (* b dn)))))))
+          (->> l1 lib/transpose (map (fn [[xn cn]] (+ xn (* a cn))))))))))
 
 (defn part1
-  [input]
-  input)
+  [input min-c max-c]
+  (let [input (->> input
+                   (map (fn [[[x y z] [dx dy dz]]]
+                          [[x y] [dx dy]])))]
+    (->> (map vector input (iterate rest (rest input)))
+         (mapcat (fn [[l1 ls]]
+                   (->> ls
+                        (map (fn [l2] [l1 l2])))))
+         (keep (fn [[l1 l2]]
+                (intersection l1 l2)))
+         (filter (fn [[x y]]
+                   (and (<= min-c x max-c)
+                        (<= min-c y max-c))))
+         count)))
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  #_#_[part1 sample] 0
+  [part1 sample 7 27] 2
   #_#_[part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
