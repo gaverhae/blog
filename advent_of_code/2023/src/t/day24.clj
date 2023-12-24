@@ -169,7 +169,20 @@
     (loop [population init-pop
            step 0]
       (when (zero? (rem step 1000))
-        (prn [(lib/duration-since start-time) (ffirst population)]))
+        (prn [(lib/duration-since start-time) (ffirst population)
+              (let [ps (->> population
+                            first
+                            second
+                            (map (fn [[[x y z] [dx dy dz]] t]
+                                   [(+ x (* t dx)) (+ y (* t dy)) (+ z (* t dz)) t])
+                                 lines))
+                    [lx ld] (line-from-two-points (first ps) (second ps))]
+                (->> ps
+                     (map (fn [[x0 y0 z0 t]]
+                            (let [[x1 y1 z1] (vector-plus (scalar-mult (bigint t) ld) lx)
+                                  dx (- x1 x0), dy (- y1 y0), dz (- y1 y0)]
+                              (+ (* 1N dx dx) (* 1N dy dy) (* 1N dz dz)))))
+                     (reduce + 0)))]))
       (if (and (zero? (rem step 1000))
                (let [ps (->> population
                              first
@@ -178,8 +191,8 @@
                                     [(+ x (* t dx)) (+ y (* t dy)) (+ z (* t dz))])
                                   lines))
                      line (line-from-two-points (first ps) (second ps))]
-                 (every? (fn [p] (is-point-on-line? line p))
-                         ps)))
+                 (->> ps
+                      (every? (fn [p] (is-point-on-line? line p))))))
         (->> population first second)
         (recur (let [survivors (concat (take 10 population)
                                        (take 3 (reverse population)))
