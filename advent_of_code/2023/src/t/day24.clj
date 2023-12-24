@@ -159,8 +159,17 @@
            step 0]
       (when (zero? (rem step 1000))
         (prn [(lib/duration-since start-time) (ffirst population)]))
-      (if (zero? (ffirst population))
-        (second (first population))
+      (if (and (zero? (rem step 1000))
+               (let [ps (->> population
+                             first
+                             second
+                             (map (fn [[[x y z] [dx dy dz]] t]
+                                    [(+ x (* t dx)) (+ y (* t dy)) (+ z (* t dz))])
+                                  lines))
+                     line (line-from-two-points (first ps) (second ps))]
+                 (every? (fn [p] (is-point-on-line? line p))
+                         ps)))
+        (->> population first second)
         (recur (let [survivors (concat (take 10 population)
                                        (take 3 (reverse population)))
                      new-spawns (->> (repeatedly 10 make-solution)
