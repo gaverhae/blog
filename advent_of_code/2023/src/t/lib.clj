@@ -143,6 +143,6 @@
   [start]
   (let [d (- (now-millis) start)]
     (format "%4d:%02d:%02d"
-            (-> d (quot 1000) (quot 60) (quot 24) (mod 60))
+            (-> d (quot 1000) (quot 60) (quot 60))
             (-> d (quot 1000) (quot 60) (mod 60))
             (-> d (quot 1000) (mod 60)))))
