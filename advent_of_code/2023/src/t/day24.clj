@@ -147,13 +147,18 @@
                        (reduce + 0N)))
         mutate (fn [ts]
                  (let [r (rand-int 10)]
-                   (if (zero? r)
-                     (->> ts
-                          (map (fn [t] [(rand-int max-time) t]))
-                          sort
-                          (map second)
-                          vec)
-                     (assoc ts (rand-int num-lines) (rand-int max-time)))))
+                   (case (long r)
+                     0 (->> ts
+                            (map (fn [t] [(rand-int max-time) t]))
+                            sort
+                            (map second)
+                            vec)
+                     1 (assoc ts (rand-int num-lines) (rand-int max-time))
+                     (let [idx (rand-int num-lines)
+                           t (get ts idx)
+                           prev (or (->> ts sort (remove #(>= % t)) last) 0)
+                           nxt (or (->> ts sort (filter #(> % t)) first) Long/MAX_VALUE)]
+                       (assoc ts idx (+ (rand-int (- nxt prev)) prev))))))
         crossover (fn [t1 t2]
                     (case (int (rand-int 2))
                       0 (let [cut (rand-int num-lines)]
