@@ -158,7 +158,7 @@
                           (->> (map vector t1 t2)
                                (map-indexed (fn [idx [p1 p2]]
                                               (cond (< idx start) p1
-                                                    (<= start idx end) (/ (+ p1 p2) 2)
+                                                    (<= start idx end) (quot (+ p1 p2) 2)
                                                     (< end idx) p2)))
                                vec))))
         init-pop (->> (repeatedly 100 make-solution)
