@@ -44,11 +44,20 @@
 
 (defn part1
   [input]
-  [(connected? input)
-   (connected? (-> input
-                   (remove-link ["hfx" "pzl"])
-                   (remove-link ["bvb" "cmg"])
-                   (remove-link ["nvd" "jqt"])))])
+  (let [links (->> input
+                  (mapcat (fn [[k vs]]
+                            (->> vs (map (fn [v] (-> [k v] sort vec))))))
+                  set
+                  sort
+                  vec)]
+    (for [idx1 (range (count links))
+          idx2 (range idx1 (count links))
+          idx3 (range idx2 (count links))
+          :when (not (connected? (-> input
+                                     (remove-link (get links idx1))
+                                     (remove-link (get links idx2))
+                                     (remove-link (get links idx3)))))]
+      (->> [idx1 idx2 idx3] (map (fn [idx] (get links idx)))))))
 
 (defn part2
   [input]
