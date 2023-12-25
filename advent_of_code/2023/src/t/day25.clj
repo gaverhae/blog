@@ -12,11 +12,22 @@
 
 (defn parse
   [lines]
-  lines)
+  (->> lines
+       (map (fn [line]
+              (s/split line #"[: ]+")))
+       (map (fn [[c1 & conns]]
+              (reduce (fn [acc el]
+                        (-> acc
+                            (update c1 (fnil conj #{}) el)
+                            (update el (fnil conj #{}) c1)))
+                      {}
+                      conns)))
+       (apply merge-with set/union)))
 
 (defn part1
   [input]
-  input)
+  (->> input
+       (filter (fn [[k vs]] (= 4 (count vs))))))
 
 (defn part2
   [input]
