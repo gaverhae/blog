@@ -24,10 +24,31 @@
                       conns)))
        (apply merge-with set/union)))
 
+(defn connected?
+  [links]
+  (loop [todo [(->> links keys first)]
+         found (set todo)]
+    (if (empty? todo)
+      (= found (->> links keys set))
+      (let [[node & todo] todo
+            nxt (->> (get links node)
+                     (remove found))]
+        (recur (reduce conj todo nxt)
+               (conj found node))))))
+
+(defn remove-link
+  [links [from to]]
+  (-> links
+      (update from disj to)
+      (update to disj from)))
+
 (defn part1
   [input]
-  (->> input
-       (filter (fn [[k vs]] (= 4 (count vs))))))
+  [(connected? input)
+   (connected? (-> input
+                   (remove-link ["hfx" "pzl"])
+                   (remove-link ["bvb" "cmg"])
+                   (remove-link ["nvd" "jqt"])))])
 
 (defn part2
   [input]
