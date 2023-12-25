@@ -68,7 +68,8 @@
                                          (remove (fn [[k v]] (get k t)))
                                          (into {}))
                                     (->> (graph t)
-                                         (remove #{s})))]))]
+                                         (remove #{s})))]))
+        start-time (lib/now-millis)]
     (loop [[graph weights] [graph (->> graph
                                        (mapcat (fn [[k vs]]
                                                  (->> vs
@@ -76,12 +77,13 @@
                                        set
                                        (map (fn [e] [e 1]))
                                        (into {}))]
-           [best-w best-part] [(count graph) #{}]
+           [best-w best-part] [Long/MAX_VALUE #{}]
            part #{}]
       (if (= 1 (count graph))
         best-part
         (let [[s t w] (step graph weights)
               new-part (conj part t)]
+          (prn [(lib/now) (lib/duration-since start-time) (count graph) best-w (->> weights vals (reduce + 0)) (get weights #{s t})])
           (recur (merge-vertices graph weights s t)
                  (if (< w best-w)
                    [w new-part]
@@ -92,6 +94,12 @@
   [input]
   (let [part (stoer-wagner input)
         c (count part)]
+    (prn [part (count part) (set/difference (->> input keys set) part) (count (set/difference (->> input keys set) part)) (- (count input) c)
+          (->> input
+               (mapcat (fn [[k vs]] (->> vs (map (fn [v] #{k v})))))
+               set
+               (filter (fn [s] (->> s (filter part) count (= 1)))))
+          ])
     (* c (- (count input) c))))
 
 (defn part2
@@ -100,6 +108,6 @@
 
 (lib/check
   [part1 sample] 54
-  #_#_[part1 puzzle] 0
+  [part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
