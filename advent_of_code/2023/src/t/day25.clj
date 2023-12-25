@@ -51,24 +51,26 @@
                               (disj candidates c)
                               (long w)))))))
         merge-vertices (fn [graph weights s t]
-                         (let [common (set/intersection (graph s) (graph t))]
-                           [(reduce (fn [acc el]
-                                      (-> acc
-                                          (update s conj el)
-                                          (update el conj s)))
-                                    (->> graph
-                                         (remove (fn [[k vs]] (= k t)))
-                                         (map (fn [[k vs]] [k (disj vs t)]))
-                                         (into {}))
-                                    (->> (graph t)
-                                         (remove #{s})))
-                            (reduce (fn [acc el]
-                                      (update acc #{el s} (fnil + 0) (get weights #{el t})))
-                                    (->> weights
-                                         (remove (fn [[k v]] (get k t)))
-                                         (into {}))
-                                    (->> (graph t)
-                                         (remove #{s})))]))
+                         (let [from-t (->> (get graph t)
+                                           (remove #{s}))
+                               t-weights (->> from-t
+                                              (map (fn [v] [v (get weights #{v t})])))]
+                           [(reduce (fn [g v]
+                                      (-> g
+                                          (update v disj t)
+                                          (update v conj s)))
+                                    (-> graph
+                                        (dissoc t)
+                                        (update s disj t)
+                                        (update s set/union from-t))
+                                    from-t)
+                            (reduce (fn [ws [v w]]
+                                      (-> ws
+                                          (dissoc #{t v})
+                                          (update #{s v} (fnil + 0) w)))
+                                    (-> weights
+                                        (dissoc #{s t}))
+                                    t-weights)]))
         start-time (lib/now-millis)]
     (loop [[graph weights] [graph (->> graph
                                        (mapcat (fn [[k vs]]
