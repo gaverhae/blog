@@ -42,6 +42,19 @@
       (update from disj to)
       (update to disj from)))
 
+(defn sizes
+  [links]
+  #_(loop [todo [(->> links keys first)]
+         found (set todo)
+         so-far [1]]
+    (if (empty? todo)
+      (= found (->> links keys set))
+      (let [[node & todo] todo
+            nxt (->> (get links node)
+                     (remove found))]
+        (recur (reduce conj todo nxt)
+               (conj found node))))))
+
 (defn part1
   [input]
   (let [links (->> input
@@ -57,7 +70,9 @@
                                      (remove-link (get links idx1))
                                      (remove-link (get links idx2))
                                      (remove-link (get links idx3)))))]
-      (->> [idx1 idx2 idx3] (map (fn [idx] (get links idx)))))))
+      (->> [idx1 idx2 idx3]
+           (map (fn [idx] (get links idx)))
+           sizes))))
 
 (defn part2
   [input]
@@ -65,6 +80,6 @@
 
 (lib/check
   [part1 sample] 0
-  #_#_[part1 puzzle] 0
+  [part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
