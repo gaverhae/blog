@@ -24,62 +24,82 @@
                       conns)))
        (apply merge-with set/union)))
 
-(defn connected?
-  [links]
-  (loop [todo [(->> links keys first)]
-         found (set todo)]
-    (if (empty? todo)
-      (= found (->> links keys set))
-      (let [[node & todo] todo
-            nxt (->> (get links node)
-                     (remove found))]
-        (recur (reduce conj todo nxt)
-               (conj found node))))))
-
-(defn remove-link
-  [links [from to]]
-  (-> links
-      (update from disj to)
-      (update to disj from)))
-
-(defn sizes
-  [links]
-  #_(loop [todo [(->> links keys first)]
-         found (set todo)
-         so-far [1]]
-    (if (empty? todo)
-      (= found (->> links keys set))
-      (let [[node & todo] todo
-            nxt (->> (get links node)
-                     (remove found))]
-        (recur (reduce conj todo nxt)
-               (conj found node))))))
+;; https://dl.acm.org/doi/10.1145/263867.263872
+(defn stoer-wagner
+  [graph]
+  (let [step (fn [graph weights]
+               (let [V (->> graph keys set)
+                     a (first V)]
+                 (loop [A #{a}
+                        ordered-A (list a)
+                        candidates (disj V a)
+                        last-weight 0]
+                   (if (empty? candidates)
+                     [(second ordered-A) (first ordered-A) last-weight]
+                     (let [[w c] (->> candidates
+                                      (map (fn [c]
+                                             [(->> (get graph c)
+                                                   (filter A)
+                                                   (map (fn [a]
+                                                          (get weights #{a c})))
+                                                   (reduce + 0))
+                                              c]))
+                                      sort
+                                      last)]
+                       (recur (conj A c)
+                              (conj ordered-A c)
+                              (disj candidates c)
+                              (long w)))))))
+        merge-vertices (fn [graph weights s t]
+                         (let [common (set/intersection (graph s) (graph t))]
+                           [(reduce (fn [acc el]
+                                      (-> acc
+                                          (update s conj el)
+                                          (update el conj s)))
+                                    (->> graph
+                                         (remove (fn [[k vs]] (= k t)))
+                                         (map (fn [[k vs]] [k (disj vs t)]))
+                                         (into {}))
+                                    (->> (graph t)
+                                         (remove #{s})))
+                            (reduce (fn [acc el]
+                                      (update acc #{el s} (fnil + 0) (get weights #{el t})))
+                                    (->> weights
+                                         (remove (fn [[k v]] (get k t)))
+                                         (into {}))
+                                    (->> (graph t)
+                                         (remove #{s})))]))]
+    (loop [[graph weights] [graph (->> graph
+                                       (mapcat (fn [[k vs]]
+                                                 (->> vs
+                                                      (map (fn [v] #{k v})))))
+                                       set
+                                       (map (fn [e] [e 1]))
+                                       (into {}))]
+           [best-w best-part] [(count graph) #{}]
+           part #{}]
+      (if (= 1 (count graph))
+        best-part
+        (let [[s t w] (step graph weights)
+              new-part (conj part t)]
+          (recur (merge-vertices graph weights s t)
+                 (if (< w best-w)
+                   [w new-part]
+                   [best-w best-part])
+                 new-part))))))
 
 (defn part1
   [input]
-  (let [links (->> input
-                  (mapcat (fn [[k vs]]
-                            (->> vs (map (fn [v] (-> [k v] sort vec))))))
-                  set
-                  sort
-                  vec)]
-    (for [idx1 (range (count links))
-          idx2 (range idx1 (count links))
-          idx3 (range idx2 (count links))
-          :when (not (connected? (-> input
-                                     (remove-link (get links idx1))
-                                     (remove-link (get links idx2))
-                                     (remove-link (get links idx3)))))]
-      (->> [idx1 idx2 idx3]
-           (map (fn [idx] (get links idx)))
-           sizes))))
+  (let [part (stoer-wagner input)
+        c (count part)]
+    (* c (- (count input) c))))
 
 (defn part2
   [input]
   input)
 
 (lib/check
-  [part1 sample] 0
-  [part1 puzzle] 0
+  [part1 sample] 54
+  #_#_[part1 puzzle] 0
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
