@@ -27,9 +27,9 @@
 ;; https://dl.acm.org/doi/10.1145/263867.263872
 (defn stoer-wagner
   [graph]
-  (let [step (fn [graph weights]
-               (let [V (->> graph keys set)
-                     a (first V)]
+  (let [a (->> graph keys first)
+        step (fn [graph weights]
+               (let [V (->> graph keys set)]
                  (loop [A #{a}
                         ordered-A (list a)
                         candidates (disj V a)
@@ -85,7 +85,7 @@
         best-part
         (let [[s t w] (step graph weights)
               new-part (conj part t)]
-          (prn [(lib/now) (lib/duration-since start-time) (count graph) best-w (->> weights vals (reduce + 0)) (get weights #{s t})])
+          (prn [(lib/now) (lib/duration-since start-time) (count graph) (->> weights vals (reduce + 0)) (get weights #{s t}) :best best-w (count best-part)])
           (recur (merge-vertices graph weights s t)
                  (if (< w best-w)
                    [w new-part]
@@ -96,11 +96,31 @@
   [input]
   (let [part (stoer-wagner input)
         c (count part)]
-    (prn [part (count part) (set/difference (->> input keys set) part) (count (set/difference (->> input keys set) part)) (- (count input) c)
+    (prn [:input (count input)
+          :partition (count part)
+          :diff (count (set/difference (->> input keys set) part))
+          :num-diff (- (count input) c)
+          :removed-edges
           (->> input
                (mapcat (fn [[k vs]] (->> vs (map (fn [v] #{k v})))))
                set
-               (filter (fn [s] (->> s (filter part) count (= 1)))))
+               (filter (fn [e] (->> e (filter part) count (= 1))))
+               count)
+          :edges-in-part
+          (->> input
+               (mapcat (fn [[k vs]] (->> vs (map (fn [v] #{k v})))))
+               set
+               (filter (fn [e] (->> e (filter part) count (= 2))))
+               count)
+          :edges-in-part2
+          (->> input
+               (mapcat (fn [[k vs]] (->> vs (map (fn [v] #{k v})))))
+               set
+               (filter (fn [e] (->> e (filter part) count (= 0))))
+               count)
+          :edges-in-graph (->> input
+                               (mapcat (fn [[k vs]] (map (fn [v] #{k v}) vs)))
+                               set count)
           ])
     (* c (- (count input) c))))
 
