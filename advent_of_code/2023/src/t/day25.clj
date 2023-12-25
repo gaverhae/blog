@@ -62,7 +62,7 @@
                                     (-> graph
                                         (dissoc t)
                                         (update s disj t)
-                                        (update s set/union from-t))
+                                        (update s set/union (set from-t)))
                                     from-t)
                             (reduce (fn [ws [v w]]
                                       (-> ws
