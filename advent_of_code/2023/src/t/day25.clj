@@ -85,7 +85,12 @@
         best-part
         (let [[s t w] (step graph weights)
               new-part (conj part t)]
-          (prn [(lib/now) (lib/duration-since start-time) (count graph) (->> weights vals (reduce + 0)) (get weights #{s t}) :best best-w (count best-part)])
+          (prn [(lib/now) (lib/duration-since start-time)
+                :graph (count graph)
+                :weights (->> weights vals (reduce + 0))
+                :s-t (get weights #{s t})
+                :cut [s t w]
+                :best best-w (count best-part)])
           (recur (merge-vertices graph weights s t)
                  (if (< w best-w)
                    [w new-part]
@@ -130,6 +135,6 @@
 
 (lib/check
   [part1 sample] 54
-  [part1 puzzle] 0
+  [part1 puzzle] 527790
   #_#_[part2 sample] 0
   #_#_[part2 puzzle] 0)
