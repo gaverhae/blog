@@ -50,11 +50,12 @@
                               (conj ordered-A c)
                               (disj candidates c)
                               (long w)))))))
-        merge-vertices (fn [graph weights s t]
+        merge-vertices (fn [graph weights merged s t]
                          (let [from-t (->> (get graph t)
                                            (remove #{s}))
                                t-weights (->> from-t
-                                              (map (fn [v] [v (get weights #{v t})])))]
+                                              (map (fn [v] [v (get weights #{v t})])))
+                               t-size (get merged t)]
                            [(reduce (fn [g v]
                                       (-> g
                                           (update v disj t)
@@ -70,19 +71,23 @@
                                           (update #{s v} (fnil + 0) w)))
                                     (-> weights
                                         (dissoc #{s t}))
-                                    t-weights)]))
+                                    t-weights)
+                            (-> merged
+                                (dissoc t)
+                                (update s + t-size))]))
         start-time (lib/now-millis)]
-    (loop [[graph weights] [graph (->> graph
-                                       (mapcat (fn [[k vs]]
-                                                 (->> vs
-                                                      (map (fn [v] #{k v})))))
-                                       set
-                                       (map (fn [e] [e 1]))
-                                       (into {}))]
-           [best-w best-part] [Long/MAX_VALUE #{}]
-           part #{}]
+    (loop [[graph weights merged] [graph
+                                   (->> graph
+                                        (mapcat (fn [[k vs]]
+                                                  (->> vs
+                                                       (map (fn [v] #{k v})))))
+                                        set
+                                        (map (fn [e] [e 1]))
+                                        (into {}))
+                                   (->> graph keys (map (fn [k] [k 1])) (into {}))]
+           [best-w part-size] [Long/MAX_VALUE 0]]
       (if (= 1 (count graph))
-        best-part
+        part-size
         (let [[s t w] (step graph weights)
               new-part (conj part t)]
           (prn [(lib/now) (lib/duration-since start-time)
@@ -90,17 +95,15 @@
                 :weights (->> weights vals (reduce + 0))
                 :s-t (get weights #{s t})
                 :cut [s t w]
-                :best best-w (count best-part)])
-          (recur (merge-vertices graph weights s t)
+                :best best-w part-size])
+          (recur (merge-vertices graph weights merged s t)
                  (if (< w best-w)
-                   [w new-part]
-                   [best-w best-part])
-                 new-part))))))
+                   [w (get merged t)]
+                   [best-w part-size])))))))
 
 (defn part1
   [input]
-  (let [part (stoer-wagner input)
-        c (count part)]
+  (let [c (stoer-wagner input)]
     (* c (- (count input) c))))
 
 (defn part2
