@@ -101,32 +101,6 @@
   [input]
   (let [part (stoer-wagner input)
         c (count part)]
-    (prn [:input (count input)
-          :partition (count part)
-          :diff (count (set/difference (->> input keys set) part))
-          :num-diff (- (count input) c)
-          :removed-edges
-          (->> input
-               (mapcat (fn [[k vs]] (->> vs (map (fn [v] #{k v})))))
-               set
-               (filter (fn [e] (->> e (filter part) count (= 1))))
-               count)
-          :edges-in-part
-          (->> input
-               (mapcat (fn [[k vs]] (->> vs (map (fn [v] #{k v})))))
-               set
-               (filter (fn [e] (->> e (filter part) count (= 2))))
-               count)
-          :edges-in-part2
-          (->> input
-               (mapcat (fn [[k vs]] (->> vs (map (fn [v] #{k v})))))
-               set
-               (filter (fn [e] (->> e (filter part) count (= 0))))
-               count)
-          :edges-in-graph (->> input
-                               (mapcat (fn [[k vs]] (map (fn [v] #{k v}) vs)))
-                               set count)
-          ])
     (* c (- (count input) c))))
 
 (defn part2
