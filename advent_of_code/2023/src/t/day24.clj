@@ -247,7 +247,83 @@
 
 (defn part2
   [input]
-  (let [rng (java.util.Random. 2)
+  (let [start-time (lib/now-millis)
+		plane (->> ;; we start by taking all pairs of lines
+				   (map vector input (iterate rest (rest input)))
+				   (mapcat (fn [[l1 ls]]
+							 (->> ls
+								  (mapcat (fn [l2] [[l1 l2] [l2 l1]])))))
+				   ((fn [x] (prn [(lib/duration-since start-time) :all-pairs (count x)]) x))
+				   ;; then, for each pair, we make a plane by assuming (for
+				   ;; now) that the stone hits the first of the two hails at
+				   ;; t = 0; we do not know when the stone will cut through
+				   ;; the second hail so we form a plane with the first hail
+				   ;; at t=0 (so just its position) and the second hail's
+				   ;; trajectory (any two points)
+				   (map (fn [[[x _] [y d]]]
+						  (plane-from-three-points x y (vector-plus y d))))
+				   ((fn [x] (prn [(lib/duration-since start-time) :planes (count x)]) x))
+				   ;; we keep the planes that intersect all the lines
+				   (filter (fn [plane]
+							 (->> input
+								  (every? (fn [line] (not= [:none] (plane-line-intersection line plane)))))))
+				   ((fn [x] (prn [(lib/duration-since start-time) :inters (count x)]) x))
+				   ;; for each plane, we keep all the intersections
+				   (map (fn [plane]
+						  (->> input (map (fn [line] (plane-line-intersection line plane))))))
+				   ((fn [x] (prn [(lib/duration-since start-time) :interlines (count x)]) x))
+				   ;; for a single candidate plane, all the points must form a line
+				   (filter (fn [inters]
+							 (let [points (->> inters (filter (fn [[t _]] (= t :point))) (map second))]
+							   (prn [(lib/duration-since start-time) :interline inters (= 2 (count points))
+									 (let [[p1 p2 & ps] points
+										   line (line-from-two-points p1 p2)]
+									   (->> ps (every? #(is-point-on-line? line %))))])
+							   (if (= 2 (count points))
+								 ;; two points always form a line
+								 true
+								 (let [[p1 p2 & ps] points
+									   line (line-from-two-points p1 p2)]
+								   (->> ps (every? #(is-point-on-line? line %))))))))
+				   ((fn [x] (prn [(lib/duration-since start-time) :points (count x)]) x))
+				   ;; we replace all the points with a single line
+				   (map (fn [inters]
+						  (->> inters
+							   (remove (fn [[t _]] (= t :line)))
+							   (map (fn [[_ p]] p))
+							   (take 2)
+							   (apply line-from-two-points))))
+				   ((fn [x] (prn [(lib/duration-since start-time) :lines (count x)]) x))
+				   ;; at this point we have the trajectory of the stone, but we
+				   ;; need to know its starting position; first, we compute the
+				   ;; intersection with each hail
+				   (map (fn [stone]
+						  [stone
+						   (->> input
+								(map (fn [hail] (line-intersection hail stone)))
+								;; we care about timings, we don't care about
+								;; where intersections happen
+								(map (fn [[a b _]] [a b])))]))
+				   ((fn [x] (prn [(lib/duration-since start-time) :stones (count x)]) x))
+				   ;; if things work out as expected, each [a b] tuple should
+				   ;; have the same (- b a) value, which is the skew between
+				   ;; the hail timeline and the stoen timeline (i.e. the
+				   ;; unknown offset we introduced when we decided to set t = 0
+				   ;; on the first step above)
+				   ;; with the adjusted t = 0 we get the initial position of the stone
+				   (map (fn [[stone times]]
+						  (if (->> times
+								   (map (fn [[a b]] (- b a)))
+								   (apply =))
+							(let [[a b] (first times)
+								  offset (- b a)
+								  [p d] stone]
+							  (vector-plus p (scalar-mult offset d)))
+							(throw (Exception. "Unexpected condition")))))
+				   ((fn [x] (prn [(lib/duration-since start-time) :starts (count x)]) x))
+				   (map (fn [[x y z]] (+ x y z))))]
+	[(count plane) plane])
+  #_(let [rng (java.util.Random. 2)
         rand-int (fn [m] (bigint (* m (.nextDouble rng))))
         [d1 d2 d3] input
         area (fn [[t1 t2 t3]]
