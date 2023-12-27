@@ -2,6 +2,8 @@
   (:refer-clojure :exclude [rand-int])
   (:require [clojure.core.async :as async]
             [clojure.core.match :refer [match]]
+            [clojure.core.matrix :as m]
+            [clojure.core.matrix.linear :as ml]
             [clojure.data.int-map :as i]
             [clojure.math :as math]
             [clojure.set :as set]
@@ -10,12 +12,13 @@
             [t.lib :as lib])
   (:import [java.util Arrays]))
 
+
 (defn parse
   [lines]
   (->> lines
        (map (fn [line]
               (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
-                (->> (mapv parse-long [x y z dx dy dz])
+                (->> (mapv (comp bigint parse-long) [x y z dx dy dz])
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
@@ -54,15 +57,72 @@
                         (<= min-c y max-c))))
          count)))
 
+(defn cross-product
+  [[a1 a2 a3] [b1 b2 b3]]
+  [(- (* a2 b3) (* a3 b2))
+   (- (* a3 b1) (* a1 b3))
+   (- (* a1 b2) (* a2 b1))])
+
+(defn vector-plus
+  [v1 v2]
+  (mapv (fn [a b] (+ a b)) v1 v2))
+
+(defn scalar-mult
+  [s v]
+  (mapv (fn [a] (* s a)) v))
+
+(defn vector-minus
+  [v1 v2]
+  (mapv (fn [a b] (- a b)) v1 v2))
+
 (defn part2
   [input]
-  (let [[[[a1 a2 a3] [da1 da2 da3]]
-         [[b1 b2 b3] [db1 db2 db3]]
-         [[c1 c2 c3] [dc1 dc2 dc3]]] input]
-    (prn (take 3 input))))
+  (let [[[x1 v1] [x2 v2] [x3 v3]] input
+        ;; for each i: x0 + ti * v0 = xi + ti * vi
+        ;; <=> (x0 - xi) = -ti * (v0 - vi)
+        ;; ==> (x0 - xi) and (v0 - vi) are parallel ==> (x0 - xi) * (v0 - vi) = 0
+        ;; (where * is cross product, x0/v0 is the stone and xi/ti are the hails)
+        ;;
+        ;; This can expand to
+        ;; (x0 * v0) - (x0 * vi) - (xi * v0) + (xi * vi) = 0
+        ;; which is not linear but only in the common term (x0 * v0), which we can
+        ;; equate between hails.
+        ;; Taking the first three hails, we get:
+        ;; (x1 * v1) - (x0 * v1) - (x1 * v0) = (x2 * v2) - (x0 * v2) - (x2 * v0)
+        ;; (x1 * v1) - (x0 * v1) - (x1 * v0) = (x3 * v3) - (x0 * v3) - (x3 * v0)
+        ;; which is a linear system of 6 equations with 6 unknowns
+        ;; Say we want AX = B, then B is given by (x1 * v1) - (x2 * v2) for its
+        ;; first three rows, then (x1 * v1) - (x3 * v3) for the last three.
+        x1v1 (cross-product x1 v1), x2v2 (cross-product x2 v2), x3v3 (cross-product x3 v3)
+        B (vec (concat (vector-minus x1v1 x2v2)
+                       (vector-minus x1v1 x3v3)))
+        ;; and A is given by (v1 - v2) * x0 + (x1 - x2) * v0 and idem for 3.
+        ;; We don't have x0 and v0 to make the cross-product, but if we do it
+        ;; algebraically we get:
+        ;; [a, b, c] * [x0, x1, x2] => [bx2 - cx1, cx0 - ax2, ax1 - bx0] which,
+        ;; in terms of a 3x3 square in the A matrix, yields:
+        ;; [[0, -c, b], [c, 0, -a], [-b, a, 0]] (where [a b c] is e.g. v1 - v2)
+        ;; so:
+        make-square (fn [[a b c]] [[0 (- c) b] [c 0 (- a)] [(- b) a 0]])
+        a11 (make-square (vector-minus v1 v2))
+        a12 (make-square (vector-minus x1 x2))
+        a21 (make-square (vector-minus v1 v3))
+        a22 (make-square (vector-minus x1 x3))
+        ;; can't think of a clever way to do this right now
+        A [(vec (concat (get a11 0) (get a12 0)))
+           (vec (concat (get a11 1) (get a12 1)))
+           (vec (concat (get a11 2) (get a12 2)))
+           (vec (concat (get a21 0) (get a22 0)))
+           (vec (concat (get a21 1) (get a22 1)))
+           (vec (concat (get a21 2) (get a22 2)))]]
+    (m/set-current-implementation :vectorz)
+    (->> (ml/solve (m/matrix A) (m/matrix B))
+         (reduce + 0)
+         long
+         -)))
 
 (lib/check
   [part1 sample 7 27] 2
   [part1 puzzle 200000000000000 400000000000000] 20336
   [part2 sample] 47
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle] 0)
