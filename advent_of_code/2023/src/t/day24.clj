@@ -365,22 +365,22 @@
                                            sort
                                            first)]
               (when (zero? (rem iter 1))
-                (println (format "%s: %16.14e %s"
+                (println (format "%s: Miss-by: %16.14e\n            Times: %s"
                                  (lib/duration-since start-time)
                                  (* 1.0 baseline)
                                  (pr-str [t1 t2]))))
-              (println (format "Direction: %s"(pr-str [dt1 dt2])))
+              (println (format "            Direction: %s"(pr-str [dt1 dt2])))
               (recur (inc iter)
                      (loop [prev baseline
                             step 1]
-                       (print (format "\rStep: %d..." step))
+                       (print (format "\r            Step: %d ..." step))
                        (flush)
                        (let [new-step (* 2 step)
                              new-baseline (miss-by (+ t1 (* new-step dt1))
                                                    (+ t2 (* new-step dt2)))]
                          (if (< new-baseline prev)
                            (recur new-baseline new-step)
-                           (do (println (format "\rStep: %d." step))
+                           (do (println (format "\rStep: %d" step))
                                [(+ t1 (* step dt1))
                                 (+ t2 (* step dt2))])))))))]
               r)
