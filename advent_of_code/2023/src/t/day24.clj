@@ -25,13 +25,13 @@
   ;; Input never has 0 as a direction (=> (not= c1 0))
   (let [[[x1 x2] [c1 c2]] l1
         [[y1 y2] [d1 d2]] l2]
-    (prn [:d (* d1 c2) (* d2 c1)])
+    #_(prn [:d (* d1 c2) (* d2 c1)])
     (when-not (= (* d1 c2) (* d2 c1))
       (let [b (/ (+ (* y2 c1) (* -1 x2 c1) (* -1 y1 c2) (* x1 c2))
                  (+ (* d1 c2) (* -1 d2 c1)))
             a (/ (+ y1 (* b d1) (- x1))
                  c1)]
-        (prn [:c (->> (concat l1 l2)
+        #_(prn [:c (->> (concat l1 l2)
                       lib/transpose
                       (map (fn [[xn cn yn dn]]
                              [(+ xn (* a cn)) (+ yn (* b dn))])))])
@@ -252,7 +252,7 @@
        (mapcat (fn [[l1 ls]]
                  (->> ls
                       (mapcat (fn [l2] [[l1 l2] [l2 l1]])))))
-       ((fn [x] (prn [(lib/duration-since start-time) :all-pairs (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :all-pairs (count x)]) x))
        ;; we keep just one for now
        (take 1)
        ;; then, for each pair, we make a plane by assuming (for
@@ -265,20 +265,20 @@
               (plane-from-three-points (point-at-time d1 n)
                                        (point-at-time d2 0)
                                        (point-at-time d2 1))))
-       ((fn [x] (prn [(lib/duration-since start-time) :planes (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :planes (count x)]) x))
        ;; we keep the planes that intersect all the lines
        (filter (fn [plane]
                  (->> input
                       (every? (fn [line] (not= [:none] (plane-line-intersection line plane)))))))
-       ((fn [x] (prn [(lib/duration-since start-time) :inters (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :inters (count x)]) x))
        ;; for each plane, we keep all the intersections
        (map (fn [plane]
               (->> input (map (fn [line] (plane-line-intersection line plane))))))
-       ((fn [x] (prn [(lib/duration-since start-time) :interlines (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :interlines (count x)]) x))
        ;; for a single candidate plane, all the points must form a line
        (filter (fn [inters]
                  (let [points (->> inters (filter (fn [[t _]] (= t :point))) (map second))]
-                   (prn [(lib/duration-since start-time) :interline inters (= 2 (count points))
+                   #_(prn [(lib/duration-since start-time) :interline inters (= 2 (count points))
                          (let [[p1 p2 & ps] points
                                line (line-from-two-points p1 p2)]
                            (->> ps (every? #(is-point-on-line? line %))))])
@@ -288,7 +288,7 @@
                      (let [[p1 p2 & ps] points
                            line (line-from-two-points p1 p2)]
                        (->> ps (every? #(is-point-on-line? line %))))))))
-       ((fn [x] (prn [(lib/duration-since start-time) :points (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :points (count x)]) x))
        ;; we replace all the points with a single line
        (map (fn [inters]
               (->> inters
@@ -296,7 +296,7 @@
                    (map (fn [[_ p]] p))
                    (take 2)
                    (apply line-from-two-points))))
-       ((fn [x] (prn [(lib/duration-since start-time) :lines (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :lines (count x)]) x))
        ;; at this point we have the trajectory of the stone, but we
        ;; need to know its starting position; first, we compute the
        ;; intersection with each hail
@@ -307,7 +307,7 @@
                     ;; we care about timings, we don't care about
                     ;; where intersections happen
                     (map (fn [[a b _]] [a b])))]))
-       ((fn [x] (prn [(lib/duration-since start-time) :stones (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :stones (count x)]) x))
        ;; if things work out as expected, each [a b] tuple should
        ;; have the same (- b a) value, which is the skew between
        ;; the hail timeline and the stoen timeline (i.e. the
@@ -323,13 +323,15 @@
                       [p d] stone]
                   (vector-plus p (scalar-mult offset d)))
                 (throw (Exception. "Unexpected condition")))))
-       ((fn [x] (prn [(lib/duration-since start-time) :starts (count x)]) x))
+       #_((fn [x] (prn [(lib/duration-since start-time) :starts (count x)]) x))
        (map (fn [[x y z]] (+ x y z)))))
 
 (defn part2
   [input]
-  (let [start-time (lib/now-millis)]
+  #_(let [start-time (lib/now-millis)]
     (loop [n 0]
+      (when (zero? (rem n 10000))
+        (println (format "%s: %d" (lib/duration-since start-time) n)))
       (if-let [p (seq (do-the-thing input start-time n))]
         (first p)
         (recur (inc n)))))
@@ -369,7 +371,7 @@
                   #_(loop [prev-times times
                          step (* 1N 1024 1024 1024 1024 1024 1024 1024)
                          prev-size tri]
-                    (prn [:internal prev-times (* dir step) prev-size])
+                    #_(prn [:internal prev-times (* dir step) prev-size])
                     (let [new-times (update prev-times to-adjust #(max 0N (+ (* dir step) %)))
                           new-size (area new-times)]
                       (cond (< step 1) prev-times
@@ -380,5 +382,5 @@
 (lib/check
   #_#_[part1 sample 7 27] 2
   #_#_[part1 puzzle 200000000000000 400000000000000] 20336
-  [part2 sample] 47
-  #_#_[part2 puzzle] 0)
+  #_#_[part2 sample] 47
+  [part2 puzzle] 0)
