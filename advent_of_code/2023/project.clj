@@ -1,12 +1,13 @@
 (defproject t "app"
-  :dependencies [[org.clojure/clojure "1.11.1"]
+  :dependencies [[com.taoensso/tufte "2.4.5"]
+                 [criterium "0.4.6"]
+                 [expresso "0.2.4"]
+                 [hato "0.9.0"]
+                 [instaparse "1.4.12"]
+                 [org.clojure/clojure "1.11.1"]
                  [org.clojure/core.async "1.6.681"]
                  [org.clojure/core.match "1.0.0"]
-                 [org.clojure/data.int-map "1.2.1"]
-                 [instaparse "1.4.12"]
-                 [criterium "0.4.6"]
-                 [com.taoensso/tufte "2.4.5"]
-                 [hato "0.9.0"]]
+                 [org.clojure/data.int-map "1.2.1"]]
   :global-vars {*warn-on-reflection* true}
   :main ^:skip-aot t.core
   :jvm-opts ["-Xverify:none"]
