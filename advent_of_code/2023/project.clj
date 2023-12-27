@@ -10,7 +10,8 @@
   :global-vars {*warn-on-reflection* true}
   :main ^:skip-aot t.core
   :jvm-opts ["-Xverify:none"]
-  :plugins [[com.jakemccrary/lein-test-refresh "0.25.0"]]
+  :plugins [[com.jakemccrary/lein-test-refresh "0.25.0"]
+            [lein-auto "0.1.3"]]
   :target-path "target/%s"
   :test-refresh {:quiet true
                  :changes-only true}
