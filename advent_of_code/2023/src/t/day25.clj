@@ -118,6 +118,7 @@
 
     (* c (- (count input) c))))
 
+(comment
 (stoer-wagner {"qnr" #{"nvd" "cmg"},
              "bvb" #{"xhk" "cmg"},
              "jqt" #{"nvd" "xhk"}
@@ -129,6 +130,7 @@
 
 (stoer-wagner @sample)
 [9 #{"lhk" "qnr" "lsr" "rzs" "frs" "nvd" "cmg" "pzl" "rsh"}]
+)
 
 (defn part2
   [input]

@@ -154,13 +154,21 @@
                             (map second)
                             vec)
                      1 (assoc ts (rand-int num-lines) (rand-int max-time))
+                     2 (let [idx (rand-int num-lines)]
+                         (update ts idx inc))
+                     3 (let [idx (rand-int num-lines)]
+                         (update ts idx #(max 0 (dec %))))
+                     4 (let [idx (rand-int num-lines)]
+                         (update ts idx * 3))
+                     5 (let [idx (rand-int num-lines)]
+                         (update ts idx quot 3))
                      (let [idx (rand-int num-lines)
                            t (get ts idx)
                            prev (or (->> ts sort (remove #(>= % t)) last) 0)
                            nxt (or (->> ts sort (filter #(> % t)) first) Long/MAX_VALUE)]
                        (assoc ts idx (+ (rand-int (- nxt prev)) prev))))))
         crossover (fn [t1 t2]
-                    (case (int (rand-int 2))
+                    (case (int (rand-int 3))
                       0 (let [cut (rand-int num-lines)]
                           (vec (concat (take cut t1)
                                        (drop cut t2))))
@@ -172,7 +180,10 @@
                                               (cond (< idx start) p1
                                                     (<= start idx end) (quot (+ p1 p2) 2)
                                                     (< end idx) p2)))
-                               vec))))
+                               vec))
+                      2 (->> (map (fn [p1 p2] (get [p1 p2] (rand-int 1)))
+                                  t1 t2)
+                             vec)))
         init-pop (->> (repeatedly 100 make-solution)
                       (map (fn [i] [(fitness i) i]))
                       sort)
@@ -193,7 +204,8 @@
                             (let [[x1 y1 z1] (vector-plus (scalar-mult (bigint t) ld) lx)
                                   dx (- x1 x0), dy (- y1 y0), dz (- y1 y0)]
                               (+ (* 1N dx dx) (* 1N dy dy) (* 1N dz dz)))))
-                     (reduce + 0)))]))
+                     (reduce + 0)))
+              (->> population first second)]))
       (if (and (zero? (rem step 1000))
                (let [ps (->> population
                              first
@@ -218,12 +230,69 @@
                  (sort (concat survivors new-spawns children)))
                (inc step))))))
 
+(defn triangle-area
+  [a b c]
+  (let [ab (vector-minus b a)
+        ac (vector-minus c a)
+        dist-ab (vector-length ab)
+        dist-ac (vector-length ac)
+        dot (dot-product ab ac)
+        cos (/ 1.0 dot dist-ab dist-ac)
+        sin (Math/sqrt (- 1.0 (* cos cos)))]
+    (* 0.5 dist-ab dist-ac sin)))
+
+(defn point-at-time
+  [[x dx] t]
+  (vector-plus x (scalar-mult t dx)))
+
 (defn part2
   [input]
-  (gen-search input 0))
+  (let [rng (java.util.Random. 2)
+        rand-int (fn [m] (bigint (* m (.nextDouble rng))))
+        [d1 d2 d3] input
+        area (fn [[t1 t2 t3]]
+               (triangle-area (point-at-time d1 t1)
+                              (point-at-time d2 t2)
+                              (point-at-time d3 t3)))
+        start-time (lib/now-millis)
+        [t1 t2 t3]
+        (loop [iter 0
+               times [(rand-int Long/MAX_VALUE)
+                      (rand-int Long/MAX_VALUE)
+                      (rand-int Long/MAX_VALUE)]]
+          (let [tri (area times)]
+            (when (zero? (rem iter 100))
+              (println (format "%s: %16.14e %s"
+                               (lib/duration-since start-time)
+                               tri
+                               (pr-str times))))
+            (if (zero? tri)
+              times
+              (recur
+                (inc iter)
+                (let [to-adjust (rand-int 3)
+                      min-step (loop [step 1N]
+                                 (cond (> step (* 1N 1024 1024 1024 1024 1024 1024)) 0
+                                       (< (area (update times to-adjust + step)) tri) step
+                                       (< (area (update times to-adjust - step)) tri) (- step)
+                                       :else (recur (* 2 step))))]
+                  (loop [step min-step]
+                    (if (< (area (update times to-adjust + step)) tri)
+                      (recur (* 10N step))
+                      (update times to-adjust + (quot step 10))))
+                  #_(loop [prev-times times
+                         step (* 1N 1024 1024 1024 1024 1024 1024 1024)
+                         prev-size tri]
+                    (prn [:internal prev-times (* dir step) prev-size])
+                    (let [new-times (update prev-times to-adjust #(max 0N (+ (* dir step) %)))
+                          new-size (area new-times)]
+                      (cond (< step 1) prev-times
+                            (< new-size prev-size) (recur new-times step new-size)
+                            :else (recur prev-times (bigint (/ step 2)) prev-size)))))))))]
+    [t1 t2 t3]))
 
 (lib/check
   #_#_[part1 sample 7 27] 2
   #_#_[part1 puzzle 200000000000000 400000000000000] 20336
   #_#_[part2 sample] 47
-  #_#_[part2 puzzle] 0)
+  [part2 puzzle] 0)
