@@ -348,6 +348,7 @@
                           [[t x] [dt dx]] d]
                       (->> input
                            (drop 2)
+                           (take 10)
                            (map (fn [[[xn] [dxn]]]
                                   (let [[ti xi] (line-intersection d [[0 xn] [1 dxn]])
                                         dist (- xi
@@ -372,7 +373,7 @@
               (flush)
               (recur (inc iter)
                      (loop [prev baseline
-                            step 1]
+                            step 1N]
                        (print (format "\r%12s %14.6e %25s %25s %8s %20s"
                                       (lib/duration-since start-time)
                                       (* 1.0 baseline)
