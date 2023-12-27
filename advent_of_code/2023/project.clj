@@ -1,7 +1,6 @@
 (defproject t "app"
   :dependencies [[com.taoensso/tufte "2.4.5"]
                  [criterium "0.4.6"]
-                 [expresso "0.2.4"]
                  [hato "0.9.0"]
                  [instaparse "1.4.12"]
                  [org.clojure/clojure "1.11.1"]
