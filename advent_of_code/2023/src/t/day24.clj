@@ -337,66 +337,59 @@
 (defn part2
   [input]
   (let [start-time (lib/now-millis)]
-    (->> (map vector input (iterate rest (rest input)))
-         (mapcat (fn [[l1 ls]]
-                   (->> ls
-                        (mapcat (fn [l2] [[l1 l2] [l2 l1]])))))
-         (map (fn [[l1 l2]]
-                [(distance-between-lines l1 l2) l1 l2]))
-         (map (fn [[d [x dx] [y dy]]]
-                (let [n (cross-product dx dy)]
-                  [(/ (dot-product (cross-product dx n)
-                                   (vector-minus y x))
-                      (dot-product n n))
-                   (/ (dot-product (cross-product dy n)
-                                   (vector-minus y x))
-                      (dot-product n n))])))
-         (filter (fn [[x y]] (or (integer? x) (integer? y)))))
-    #_[(/ (dot-product (cross-product dx n)
-                       (vector-minus y x))
-          (dot-product n n))
-       (/ (dot-product (cross-product dy n)
-                       (vector-minus y x))
-          (dot-product n n))]
-    #_(loop [n (dec (- (long d)))]
-        (when (zero? (rem n 10000))
-          (println (format "%s: %dk" (lib/duration-since start-time) (quot n 1000))))
-        (let [plane (plane-from-three-points (point-at-time d1 n) p2 p3)
-              inters (->> input (map (fn [line] (plane-line-intersection line plane))))]
-          (if (and (->> inters (every? (fn [inter] (not= [:none] inter))))
-                   (let [[p1 p2 & ps] (->> inters
-                                           (filter (fn [[t _]] (= t :point)))
-                                           (map second))
-                         line (line-from-two-points p1 p2)]
-                     (->> ps (every? #(is-point-on-line? line %)))))
-            n
-            (recur (inc n)))))
-    #_(loop [n 0]
-        (when (zero? (rem n 10000))
-          (println (format "%s: %d" (lib/duration-since start-time) n)))
-        (if-let [p (seq (do-the-thing input start-time n))]
-          (first p)
-          (recur (inc n)))))
-  #_(let [rng (java.util.Random. 2)
+    (let [rng (java.util.Random. 0)
           rand-int (fn [m] (bigint (* m (.nextDouble rng))))
-          [d1 d2 d3] input
-          area (fn [[t1 t2 t3]]
-                 (triangle-area (point-at-time d1 t1)
-                                (point-at-time d2 t2)
-                                (point-at-time d3 t3)))
-          start-time (lib/now-millis)
-          [t1 t2 t3]
+          [[[x1] [dx1]] [[x2] [dx2]]] input
+          miss-by (fn [t1 t2]
+                    (let [p1 (+ x1 (* t1 dx1))
+                          p2 (+ x2 (* t2 dx2))
+                          d [[t1 x1] [(- t2 t1) (- p2 p1)]]
+                          [[t x] [dt dx]] d]
+                      (->> input
+                           (drop 2)
+                           (map (fn [[[xn] [dxn]]]
+                                  (let [[ti xi] (line-intersection d [[0 xn] [1 dxn]])
+                                        dist (- xi
+                                                (+ xn (* ti dxn)))]
+                                    (* dist dist))))
+                           (reduce + 0))))
+          r
           (loop [iter 0
-                 times [(rand-int Long/MAX_VALUE)
-                        (rand-int Long/MAX_VALUE)
-                        (rand-int Long/MAX_VALUE)]]
-            (let [tri (area times)]
-              (when (zero? (rem iter 100))
+                 [t1 t2] [(rand-int Long/MAX_VALUE)
+                          (rand-int Long/MAX_VALUE)]]
+            (let [baseline (miss-by t1 t2)
+                  [_ [dt1 dt2]] (->> [[-1 0] [1 0] [0 -1] [0 1]]
+                                           (map (fn [[dt1 dt2]]
+                                                  [(- (miss-by (+ t1 dt1) (+ t2 dt2)) baseline)
+                                                   [dt1 dt2]]))
+                                           sort
+                                           first)]
+              (when (zero? (rem iter 1))
+                (println (format "%s: %16.14e %s"
+                                 (lib/duration-since start-time)
+                                 (* 1.0 baseline)
+                                 (pr-str [t1 t2]))))
+              (println (format "Direction: %s"(pr-str [dt1 dt2])))
+              (recur (inc iter)
+                     (loop [prev baseline
+                            step 1]
+                       (print (format "\rStep: %d..." step))
+                       (flush)
+                       (let [new-step (* 2 step)
+                             new-baseline (miss-by (+ t1 (* new-step dt1))
+                                                   (+ t2 (* new-step dt2)))]
+                         (if (< new-baseline prev)
+                           (recur new-baseline new-step)
+                           (do (println (format "\rStep: %d." step))
+                               [(+ t1 (* step dt1))
+                                (+ t2 (* step dt2))])))))))]
+              r)
+            #_(when (zero? (rem iter 100))
                 (println (format "%s: %16.14e %s"
                                  (lib/duration-since start-time)
                                  tri
                                  (pr-str times))))
-              (if (zero? tri)
+            #_(if (zero? tri)
                 times
                 (recur
                   (inc iter)
@@ -418,8 +411,91 @@
                               new-size (area new-times)]
                           (cond (< step 1) prev-times
                                 (< new-size prev-size) (recur new-times step new-size)
-                                :else (recur prev-times (bigint (/ step 2)) prev-size)))))))))]
-      [t1 t2 t3]))
+                                :else (recur prev-times (bigint (/ step 2)) prev-size)))))))
+
+            #_(->> (map vector input (iterate rest (rest input)))
+                   (mapcat (fn [[l1 ls]]
+                             (->> ls
+                                  (mapcat (fn [l2] [[l1 l2] [l2 l1]])))))
+                   (map (fn [[l1 l2]]
+                          [(distance-between-lines l1 l2) l1 l2]))
+                   (map (fn [[d [x dx] [y dy]]]
+                          (let [n (cross-product dx dy)]
+                            [(/ (dot-product (cross-product dx n)
+                                             (vector-minus y x))
+                                (dot-product n n))
+                             (/ (dot-product (cross-product dy n)
+                                             (vector-minus y x))
+                                (dot-product n n))])))
+                   (filter (fn [[x y]] (or (integer? x) (integer? y)))))
+            #_[(/ (dot-product (cross-product dx n)
+                               (vector-minus y x))
+                  (dot-product n n))
+               (/ (dot-product (cross-product dy n)
+                               (vector-minus y x))
+                  (dot-product n n))]
+            #_(loop [n (dec (- (long d)))]
+                (when (zero? (rem n 10000))
+                  (println (format "%s: %dk" (lib/duration-since start-time) (quot n 1000))))
+                (let [plane (plane-from-three-points (point-at-time d1 n) p2 p3)
+                      inters (->> input (map (fn [line] (plane-line-intersection line plane))))]
+                  (if (and (->> inters (every? (fn [inter] (not= [:none] inter))))
+                           (let [[p1 p2 & ps] (->> inters
+                                                   (filter (fn [[t _]] (= t :point)))
+                                                   (map second))
+                                 line (line-from-two-points p1 p2)]
+                             (->> ps (every? #(is-point-on-line? line %)))))
+                    n
+                    (recur (inc n)))))
+            #_(loop [n 0]
+                (when (zero? (rem n 10000))
+                  (println (format "%s: %d" (lib/duration-since start-time) n)))
+                (if-let [p (seq (do-the-thing input start-time n))]
+                  (first p)
+                  (recur (inc n)))))
+          #_(let [rng (java.util.Random. 2)
+                  rand-int (fn [m] (bigint (* m (.nextDouble rng))))
+                  [d1 d2 d3] input
+                  area (fn [[t1 t2 t3]]
+                         (triangle-area (point-at-time d1 t1)
+                                        (point-at-time d2 t2)
+                                        (point-at-time d3 t3)))
+                  start-time (lib/now-millis)
+                  [t1 t2 t3]
+                  (loop [iter 0
+                         times [(rand-int Long/MAX_VALUE)
+                                (rand-int Long/MAX_VALUE)
+                                (rand-int Long/MAX_VALUE)]]
+                    (let [tri (area times)]
+                      (when (zero? (rem iter 100))
+                        (println (format "%s: %16.14e %s"
+                                         (lib/duration-since start-time)
+                                         tri
+                                         (pr-str times))))
+                      (if (zero? tri)
+                        times
+                        (recur
+                          (inc iter)
+                          (let [to-adjust (rand-int 3)
+                                min-step (loop [step 1N]
+                                           (cond (> step (* 1N 1024 1024 1024 1024 1024 1024)) 0
+                                                 (< (area (update times to-adjust + step)) tri) step
+                                                 (< (area (update times to-adjust - step)) tri) (- step)
+                                                 :else (recur (* 2 step))))]
+                            (loop [step min-step]
+                              (if (< (area (update times to-adjust + step)) tri)
+                                (recur (* 10N step))
+                                (update times to-adjust + (quot step 10))))
+                            #_(loop [prev-times times
+                                     step (* 1N 1024 1024 1024 1024 1024 1024 1024)
+                                     prev-size tri]
+                                #_(prn [:internal prev-times (* dir step) prev-size])
+                                (let [new-times (update prev-times to-adjust #(max 0N (+ (* dir step) %)))
+                                      new-size (area new-times)]
+                                  (cond (< step 1) prev-times
+                                        (< new-size prev-size) (recur new-times step new-size)
+                                        :else (recur prev-times (bigint (/ step 2)) prev-size)))))))))]
+              [t1 t2 t3]))
 
 (lib/check
   #_#_[part1 sample 7 27] 2
