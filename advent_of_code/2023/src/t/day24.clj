@@ -340,25 +340,24 @@
     (println (format "%12s %14s %25s %25s %8s %20s" "Time" "Miss-by" "t1" "t2" "Dir" "Step"))
     (let [rng (java.util.Random. 0)
           rand-int (fn [m] (bigint (* m (.nextDouble rng))))
-          [[[x1] [dx1]] [[x2] [dx2]]] input
+          [d1 d2] input
           miss-by (fn [t1 t2]
-                    (let [p1 (+ x1 (* t1 dx1))
-                          p2 (+ x2 (* t2 dx2))
-                          d [[t1 x1] [(- t2 t1) (- p2 p1)]]
+                    (let [p1 (point-at-time d1 t1)
+                          p2 (point-at-time d2 t2)
+                          d (line-from-two-points p1 p2)
                           [[t x] [dt dx]] d]
                       (->> input
                            (drop 2)
-                           (take 10)
-                           (map (fn [[[xn] [dxn]]]
-                                  (let [[ti xi] (line-intersection d [[0 xn] [1 dxn]])
-                                        dist (- xi
-                                                (+ xn (* ti dxn)))]
-                                    (* dist dist))))
-                           (reduce + 0))))
+                           (take 20)
+                           (map (fn [line]
+                                  (when-let [[t-line t-d point] (line-intersection d line)]
+                                    (let [dist (- t-line t-d)]
+                                      (* dist dist)))
+                                  Long/MAX_VALUE))
+                           (reduce + 0N))))
           r
           (loop [iter 0
-                 [t1 t2] [(rand-int Long/MAX_VALUE)
-                          (rand-int Long/MAX_VALUE)]]
+                 [t1 t2] [0 10]]
             (let [baseline (miss-by t1 t2)
                   [_ [dt1 dt2]] (->> [[-1 0] [1 0] [0 -1] [0 1]]
                                            (map (fn [[dt1 dt2]]
@@ -366,25 +365,27 @@
                                                    [dt1 dt2]]))
                                            sort
                                            first)]
-              (print (format "%12s %14.6e %25s %25s %8s %20s"
-                             (lib/duration-since start-time)
-                             (* 1.0 baseline)
-                             t1 t2 (pr-str [dt1 dt2]) 1))
-              (flush)
+              (when (zero? (rem iter 100))
+                (print (format "%12s %14.6e %25s %25s %8s %20s"
+                               (lib/duration-since start-time)
+                               (* 1.0 baseline)
+                               t1 t2 (pr-str [dt1 dt2]) 1))
+                (flush))
               (recur (inc iter)
                      (loop [prev baseline
                             step 1N]
-                       (print (format "\r%12s %14.6e %25s %25s %8s %20s"
-                                      (lib/duration-since start-time)
-                                      (* 1.0 baseline)
-                                      t1 t2 (pr-str [dt1 dt2]) step))
-                       (flush)
+                       (when (zero? (rem iter 100))
+                         (print (format "\r%12s %14.6e %25s %25s %8s %20s"
+                                        (lib/duration-since start-time)
+                                        (* 1.0 baseline)
+                                        t1 t2 (pr-str [dt1 dt2]) step))
+                         (flush))
                        (let [new-step (* 2 step)
                              new-baseline (miss-by (+ t1 (* new-step dt1))
                                                    (+ t2 (* new-step dt2)))]
                          (if (< new-baseline prev)
                            (recur new-baseline new-step)
-                           (do (println)
+                           (do (when (zero? (rem iter 100)) (println))
                                [(+ t1 (* step dt1))
                                 (+ t2 (* step dt2))])))))))]
               r)
