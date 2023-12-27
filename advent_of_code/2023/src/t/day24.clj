@@ -16,7 +16,7 @@
   (->> lines
        (map (fn [line]
               (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
-                (->> (mapv (comp bigint parse-long) [x y z dx dy dz])
+                (->> (mapv parse-long [x y z dx dy dz])
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
@@ -61,21 +61,17 @@
          [[b1 b2 b3] [db1 db2 db3]]
          [[c1 c2 c3] [dc1 dc2 dc3]]] input]
     (ex/solve '[x1 x2 x3 dx1 dx2 dx3 t1 t2 t3]
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= dx1 (/ (+ a1 (- b1) (* t1 da1) (- (* t2 db1)))
-                                                                (- t1 t2))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= dx2 (/ (+ a2 (- b2) (* t1 da2) (- (* t2 db2)))
-                                                                (- t1 t2))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= dx3 (/ (+ a3 (- b3) (* t1 da3) (- (* t2 db3)))
-                                                                (- t1 t2))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x1 (* t1 dx1)) (+ a1 (* t1 da1))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x2 (* t1 dx2)) (+ a2 (* t1 da2))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x3 (* t1 dx3)) (+ a3 (* t1 da3))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x1 (* t2 dx1)) (+ b1 (* t2 db1))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x2 (* t2 dx2)) (+ b2 (* t2 db2))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x3 (* t2 dx3)) (+ b3 (* t2 db3))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x1 (* t3 dx1)) (+ c1 (* t3 dc1))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x2 (* t3 dx2)) (+ c2 (* t3 dc2))))
-              (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x3 (* t3 dx3)) (+ c3 (* t3 dc3)))))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x1 (* t1 dx1)) (+ a1 (* t1 da1))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x2 (* t1 dx2)) (+ a2 (* t1 da2))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x3 (* t1 dx3)) (+ a3 (* t1 da3))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x1 (* t2 dx1)) (+ b1 (* t2 db1))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x2 (* t2 dx2)) (+ b2 (* t2 db2))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x3 (* t2 dx3)) (+ b3 (* t2 db3))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x1 (* t3 dx1)) (+ c1 (* t3 dc1))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x2 (* t3 dx2)) (+ c2 (* t3 dc2))))
+                (ex/ex' [x1 x2 x3 dx1 dx2 dx3 t1 t2 t3] (= (+ x3 (* t3 dx3)) (+ c3 (* t3 dc3)))))
+
+    ))
 
 (lib/check
   [part1 sample 7 27] 2
