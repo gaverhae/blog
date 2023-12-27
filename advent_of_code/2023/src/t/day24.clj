@@ -337,6 +337,7 @@
 (defn part2
   [input]
   (let [start-time (lib/now-millis)]
+    (println (format "%12s %14s %25s %25s %8s %20s" "Time" "Miss-by" "t1" "t2" "Dir" "Step"))
     (let [rng (java.util.Random. 0)
           rand-int (fn [m] (bigint (* m (.nextDouble rng))))
           [[[x1] [dx1]] [[x2] [dx2]]] input
@@ -364,23 +365,25 @@
                                                    [dt1 dt2]]))
                                            sort
                                            first)]
-              (when (zero? (rem iter 1))
-                (println (format "%s: Miss-by: %16.14e\n            Times: %s"
-                                 (lib/duration-since start-time)
-                                 (* 1.0 baseline)
-                                 (pr-str [t1 t2]))))
-              (println (format "            Direction: %s"(pr-str [dt1 dt2])))
+              (print (format "%12s %14.6e %25s %25s %8s %20s"
+                             (lib/duration-since start-time)
+                             (* 1.0 baseline)
+                             t1 t2 (pr-str [dt1 dt2]) 1))
+              (flush)
               (recur (inc iter)
                      (loop [prev baseline
                             step 1]
-                       (print (format "\r            Step: %d ..." step))
+                       (print (format "\r%12s %14.6e %25s %25s %8s %20s"
+                                      (lib/duration-since start-time)
+                                      (* 1.0 baseline)
+                                      t1 t2 (pr-str [dt1 dt2]) step))
                        (flush)
                        (let [new-step (* 2 step)
                              new-baseline (miss-by (+ t1 (* new-step dt1))
                                                    (+ t2 (* new-step dt2)))]
                          (if (< new-baseline prev)
                            (recur new-baseline new-step)
-                           (do (println (format "\rStep: %d" step))
+                           (do (println)
                                [(+ t1 (* step dt1))
                                 (+ t2 (* step dt2))])))))))]
               r)
