@@ -78,25 +78,27 @@
 (defn part2
   [input]
   (let [[[x1 v1] [x2 v2] [x3 v3]] input
-        ;; for each i: x0 + ti * v0 = xi + ti * vi
+        ;; for each i: x0 + (ti * v0) = xi + (ti * vi)
         ;; <=> (x0 - xi) = -ti * (v0 - vi)
         ;; ==> (x0 - xi) and (v0 - vi) are parallel ==> (x0 - xi) * (v0 - vi) = 0
         ;; (where * is cross product, x0/v0 is the stone and xi/ti are the hails)
         ;;
-        ;; This can expand to
+        ;; This can expand to (cross product is distributive over addition):
         ;; (x0 * v0) - (x0 * vi) - (xi * v0) + (xi * vi) = 0
-        ;; which is not linear but only in the common term (x0 * v0), which we can
-        ;; equate between hails.
+        ;; which is not linear but only in the common term (x0 * v0), which we
+        ;; can equate between hails.
         ;; Taking the first three hails, we get:
         ;; (x1 * v1) - (x0 * v1) - (x1 * v0) = (x2 * v2) - (x0 * v2) - (x2 * v0)
         ;; (x1 * v1) - (x0 * v1) - (x1 * v0) = (x3 * v3) - (x0 * v3) - (x3 * v0)
-        ;; which is a linear system of 6 equations with 6 unknowns
+        ;; which is a linear system of 6 equations with 6 unknowns.
         ;; Say we want AX = B, then B is given by (x1 * v1) - (x2 * v2) for its
         ;; first three rows, then (x1 * v1) - (x3 * v3) for the last three.
         x1v1 (cross-product x1 v1), x2v2 (cross-product x2 v2), x3v3 (cross-product x3 v3)
         B (vec (concat (vector-minus x1v1 x2v2)
                        (vector-minus x1v1 x3v3)))
-        ;; and A is given by (v1 - v2) * x0 + (x1 - x2) * v0 and idem for 3.
+        ;; and A is given by (v2 - v1) * x0 + (x1 - x2) * v0 and idem for 3.
+        ;; (Note that it's v2-v1 and not v1-v2 because the cross product is
+        ;; anti-commutative.)
         ;; We don't have x0 and v0 to make the cross-product, but if we do it
         ;; algebraically we get:
         ;; [a, b, c] * [x0, x1, x2] => [bx2 - cx1, cx0 - ax2, ax1 - bx0] which,
@@ -104,9 +106,9 @@
         ;; [[0, -c, b], [c, 0, -a], [-b, a, 0]] (where [a b c] is e.g. v1 - v2)
         ;; so:
         make-square (fn [[a b c]] [[0 (- c) b] [c 0 (- a)] [(- b) a 0]])
-        a11 (make-square (vector-minus v1 v2))
+        a11 (make-square (vector-minus v2 v1))
         a12 (make-square (vector-minus x1 x2))
-        a21 (make-square (vector-minus v1 v3))
+        a21 (make-square (vector-minus v3 v1))
         a22 (make-square (vector-minus x1 x3))
         ;; can't think of a clever way to do this right now
         A [(vec (concat (get a11 0) (get a12 0)))
