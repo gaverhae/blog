@@ -15,7 +15,7 @@
   (->> lines
        (map (fn [line]
               (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
-                (->> (mapv parse-long [x y z dx dy dz])
+                (->> (mapv (comp bigint parse-long) [x y z dx dy dz])
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
