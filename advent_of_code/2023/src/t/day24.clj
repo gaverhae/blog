@@ -328,8 +328,25 @@
 
 (defn part2
   [input]
-  #_(let [start-time (lib/now-millis)]
+  (let [start-time (lib/now-millis)
+        d1 (first input)
+        d2 (second input)
+        p2 (point-at-time d2 0)
+        p3 (point-at-time d2 1)]
     (loop [n 0]
+      (when (zero? (rem n 10000))
+        (println (format "%s: %dk" (lib/duration-since start-time) (quot n 1000))))
+      (let [plane (plane-from-three-points (point-at-time d1 n) p2 p3)
+            inters (->> input (map (fn [line] (plane-line-intersection line plane))))]
+        (if (and (->> inters (every? (fn [inter] (not= [:none] inter))))
+                 (let [[p1 p2 & ps] (->> inters
+                                         (filter (fn [[t _]] (= t :point)))
+                                         (map second))
+                       line (line-from-two-points p1 p2)]
+                   (->> ps (every? #(is-point-on-line? line %)))))
+          n
+          (recur (inc n)))))
+    #_(loop [n 0]
       (when (zero? (rem n 10000))
         (println (format "%s: %d" (lib/duration-since start-time) n)))
       (if-let [p (seq (do-the-thing input start-time n))]
