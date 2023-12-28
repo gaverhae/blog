@@ -70,12 +70,12 @@
 (defn solve
   ;; https://www.baeldung.com/cs/solving-system-linear-equations
   [a b]
-  (let [a
+  (let [[a b]
         (loop [j 0
                [a b] [a b]]
           (prn [:loop a b])
           (if (= j (count a))
-            a
+            [a b]
             (recur (inc j)
                    (let [[a b] (if (zero? (get-in a [j j]))
                                  (let [[big, krow]
