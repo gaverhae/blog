@@ -24,7 +24,6 @@
                first)})
 
 (def memo (atom {}))
-(def counter (atom {:mem 0, :cpu 0}))
 
 (defn walk-one-map
   [grid]
@@ -32,8 +31,7 @@
         w (-> grid first count)
         helper (fn [start-ps]
                  (if-let [res (@memo start-ps)]
-                   (do (swap! counter update :mem inc)
-                       res)
+                   res
                    (let [res (loop [step 0
                                     filled? {}
                                     exits {}
@@ -66,7 +64,6 @@
                                        filled? (reduce #(assoc %1 %2 step) filled? cur)]
                                    (recur (inc step) filled? exits nxt cur))))]
                      (swap! memo assoc start-ps res)
-                     (swap! counter update :cpu inc)
                      res)))]
     (fn [step start-ps]
       (let [ps (->> start-ps
@@ -96,6 +93,7 @@
 
 (defn part2
   [input max-steps]
+  (reset! memo {})
   (let [f (walk-one-map (:grid input))
         _ (println (format "Starting at: %s" (subs (str (java.time.LocalDateTime/now)) 0 19)))
         start-time (System/currentTimeMillis)]
@@ -114,7 +112,7 @@
                                (-> d (quot 1000) (quot 60) (mod 60))
                                (-> d (quot 1000) (mod 60))
                                steps-so-far
-                               [:todo (count todo) :done? (count done?) :memo (count @memo) :counter @counter]))))
+                               [:todo (count todo) :done? (count done?) :memo (count @memo)]))))
           (if (done? grid)
             (recur todo filled done? (inc n))
             (let [[grid-filled grid-exits] (f steps-so-far entry-point)]
@@ -154,8 +152,9 @@
   #_#_[part2 puzzle 100] 8829
   #_#_[part2 puzzle 200] 34889
   #_#_[part2 puzzle 400] 138314
-  #_#_[part2 puzzle 1000] 862969
-  #_#_[part2 puzzle 2000] 3445428
+  [part2 puzzle 1000] 862969
+  [part2 puzzle 2000] 3445428
+  [part2 puzzle 5000] 21527301
   #_#_[part2 puzzle 26501365] 0)
 
 (defn benchmark
