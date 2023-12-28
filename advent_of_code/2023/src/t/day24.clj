@@ -70,49 +70,50 @@
 (defn solve
   ;; https://www.baeldung.com/cs/solving-system-linear-equations
   [a b]
-  (let [a (loop [j 0
-                 [a b] [a b]]
-            (prn [:loop a b])
-            (if (= j (count a))
-              a
-              (recur (inc j)
-                     (let [[a b] (if (zero? (get-in a [j j]))
-                                   (let [[big, krow]
-                                         (loop [big 0
-                                                krow j
-                                                k (inc j)]
-                                           (if (= k (count a))
-                                             [big krow]
-                                             (if (> (abs (get-in a [k j])) big)
-                                               (recur (long (abs (get-in a [k j]))) k (inc k))
-                                               (recur big krow (inc k)))))
-                                         a (loop [l j, a a]
-                                             (if (= l (count a))
-                                               a
-                                               (recur (inc l)
-                                                      (-> a
-                                                          (assoc-in [j l] (get-in a [krow l]))
-                                                          (assoc-in [krow l] (get-in a [j l]))))))
-                                         b (-> b
-                                               (assoc j (get b krow))
-                                               (assoc krow (get b j)))]
-                                     [a b])
+  (let [a
+        (loop [j 0
+               [a b] [a b]]
+          (prn [:loop a b])
+          (if (= j (count a))
+            a
+            (recur (inc j)
+                   (let [[a b] (if (zero? (get-in a [j j]))
+                                 (let [[big, krow]
+                                       (loop [big 0
+                                              krow j
+                                              k (inc j)]
+                                         (if (= k (count a))
+                                           [big krow]
+                                           (if (> (abs (get-in a [k j])) big)
+                                             (recur (long (abs (get-in a [k j]))) k (inc k))
+                                             (recur big krow (inc k)))))
+                                       a (loop [l j, a a]
+                                           (if (= l (count a))
+                                             a
+                                             (recur (inc l)
+                                                    (-> a
+                                                        (assoc-in [j l] (get-in a [krow l]))
+                                                        (assoc-in [krow l] (get-in a [j l]))))))
+                                       b (-> b
+                                             (assoc j (get b krow))
+                                             (assoc krow (get b j)))]
                                    [a b])
-                           pivot (get-in a [j j])]
-                       (if (zero? pivot)
-                         (throw (Exception. "Singular matrix."))
-                         (loop [i (inc j)
-                                [a b] [a b]]
-                           (if (= (count a) i)
-                             [a b]
-                             (let [mult (/ (get-in a [i j]) pivot)
-                                   a (loop [l j, a a]
-                                       (if (= l (count a))
-                                         a
-                                         (recur (inc l)
-                                                (assoc-in a [i l] (- (get-in a [i l]) (* mult (get-in a [j l])))))))
-                                   b (assoc b i (- (get b i) (* mult (get b j))))]
-                               (recur (inc i) [a b])))))))))]
+                                 [a b])
+                         pivot (get-in a [j j])]
+                     (if (zero? pivot)
+                       (throw (Exception. "Singular matrix."))
+                       (loop [i (inc j)
+                              [a b] [a b]]
+                         (if (= (count a) i)
+                           [a b]
+                           (let [mult (/ (get-in a [i j]) pivot)
+                                 a (loop [l j, a a]
+                                     (if (= l (count a))
+                                       a
+                                       (recur (inc l)
+                                              (assoc-in a [i l] (- (get-in a [i l]) (* mult (get-in a [j l])))))))
+                                 b (assoc b i (- (get b i) (* mult (get b j))))]
+                             (recur (inc i) [a b])))))))))]
     (loop [i (dec (count a))
            x (vec (repeat (count b) nil))]
       (if (= -1 i)
