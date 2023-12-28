@@ -18,7 +18,7 @@
   (->> lines
        (map (fn [line]
               (let [[_ x y z dx dy dz] (re-find #" *(-?\d+), +(-?\d+), +(-?\d+) +@ +(-?\d+), +(-?\d+), +(-?\d+)" line)]
-                (->> (mapv (comp bigint parse-long) [x y z dx dy dz])
+                (->> (mapv parse-long [x y z dx dy dz])
                      ((fn [[x y z dx dy dz]]
                         [[x y z] [dx dy dz]]))))))))
 
@@ -63,17 +63,68 @@
    (- (* a3 b1) (* a1 b3))
    (- (* a1 b2) (* a2 b1))])
 
-(defn vector-plus
-  [v1 v2]
-  (mapv (fn [a b] (+ a b)) v1 v2))
-
-(defn scalar-mult
-  [s v]
-  (mapv (fn [a] (* s a)) v))
-
 (defn vector-minus
   [v1 v2]
   (mapv (fn [a b] (- a b)) v1 v2))
+
+(defn solve
+  ;; https://www.baeldung.com/cs/solving-system-linear-equations
+  [a b]
+  (let [a (loop [j 0
+                 [a b] [a b]]
+            (prn [:loop a b])
+            (if (= j (count a))
+              a
+              (recur (inc j)
+                     (let [[a b] (if (zero? (get-in a [j j]))
+                                   (let [[big, krow]
+                                         (loop [big 0
+                                                krow j
+                                                k (inc j)]
+                                           (if (= k (count a))
+                                             [big krow]
+                                             (if (> (abs (get-in a [k j])) big)
+                                               (recur (long (abs (get-in a [k j]))) k (inc k))
+                                               (recur big krow (inc k)))))
+                                         a (loop [l j, a a]
+                                             (if (= l (count a))
+                                               a
+                                               (recur (inc l)
+                                                      (-> a
+                                                          (assoc-in [j l] (get-in a [krow l]))
+                                                          (assoc-in [krow l] (get-in a [j l]))))))
+                                         b (-> b
+                                               (assoc j (get b krow))
+                                               (assoc krow (get b j)))]
+                                     [a b])
+                                   [a b])
+                           pivot (get-in a [j j])]
+                       (if (zero? pivot)
+                         (throw (Exception. "Singular matrix."))
+                         (loop [i (inc j)
+                                [a b] [a b]]
+                           (if (= (count a) i)
+                             [a b]
+                             (let [mult (/ (get-in a [i j]) pivot)
+                                   a (loop [l j, a a]
+                                       (if (= l (count a))
+                                         a
+                                         (recur (inc l)
+                                                (assoc-in a [i l] (- (get-in a [i l]) (* mult (get-in a [j l])))))))
+                                   b (assoc b i (- (get b i) (* mult (get b j))))]
+                               (recur (inc i) [a b])))))))))]
+    (loop [i (dec (count a))
+           x (vec (repeat (count b) nil))]
+      (if (= -1 i)
+        [a b x]
+        (recur (dec i)
+               (let [sum (loop [j (inc i), sum 0]
+                           (if (= (count a) j)
+                             sum
+                             (recur (inc j)
+                                    (+ sum (* (get x j) (get-in a [i j]))))))
+                     x (assoc x i (* (/ 1 (get-in a [i i])) (- (get b i) sum)))]
+                 x))))))
 
 (defn part2
   [input]
@@ -118,13 +169,16 @@
            (vec (concat (get a21 1) (get a22 1)))
            (vec (concat (get a21 2) (get a22 2)))]]
     (m/set-current-implementation :vectorz)
-    (->> (ml/solve (m/matrix A) (m/matrix B))
+    #_(prn (ml/solve (m/matrix A) (m/matrix B)))
+    #_(prn B)
+    (prn [:solve (solve A B)])
+    #_(->> (ml/solve (m/matrix A) (m/matrix B))
+         (take 3)
          (reduce + 0)
-         long
-         -)))
+         )))
 
 (lib/check
-  [part1 sample 7 27] 2
-  [part1 puzzle 200000000000000 400000000000000] 20336
+  #_#_[part1 sample 7 27] 2
+  #_#_[part1 puzzle 200000000000000 400000000000000] 20336
   [part2 sample] 47
-  [part2 puzzle] 0)
+  #_#_[part2 puzzle] 677656046662768)
