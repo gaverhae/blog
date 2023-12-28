@@ -117,7 +117,7 @@
     (loop [i (dec (count a))
            x (vec (repeat (count b) nil))]
       (if (= -1 i)
-        [a b x]
+        x
         (recur (dec i)
                (let [sum (loop [j (inc i), sum 0]
                            (if (= (count a) j)
@@ -169,17 +169,12 @@
            (vec (concat (get a21 0) (get a22 0)))
            (vec (concat (get a21 1) (get a22 1)))
            (vec (concat (get a21 2) (get a22 2)))]]
-    (m/set-current-implementation :vectorz)
-    #_(prn (ml/solve (m/matrix A) (m/matrix B)))
-    #_(prn B)
-    (prn [:solve (solve A B)])
-    #_(->> (ml/solve (m/matrix A) (m/matrix B))
+    (->> (solve A B)
          (take 3)
-         (reduce + 0)
-         )))
+         (reduce + 0))))
 
 (lib/check
   #_#_[part1 sample 7 27] 2
   #_#_[part1 puzzle 200000000000000 400000000000000] 20336
   [part2 sample] 47
-  #_#_[part2 puzzle] 677656046662768)
+  [part2 puzzle] 677656046662770)
