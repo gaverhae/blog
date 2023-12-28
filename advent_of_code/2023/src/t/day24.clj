@@ -2,8 +2,6 @@
   (:refer-clojure :exclude [rand-int])
   (:require [clojure.core.async :as async]
             [clojure.core.match :refer [match]]
-            [clojure.core.matrix :as m]
-            [clojure.core.matrix.linear :as ml]
             [clojure.data.int-map :as i]
             [clojure.math :as math]
             [clojure.set :as set]
@@ -73,7 +71,6 @@
   (let [[a b]
         (loop [j 0
                [a b] [a b]]
-          (prn [:loop a b])
           (if (= j (count a))
             [a b]
             (recur (inc j)
@@ -119,7 +116,7 @@
       (if (= -1 i)
         x
         (recur (dec i)
-               (let [sum (loop [j (inc i), sum 0]
+               (let [sum (loop [j (inc i), sum 0N]
                            (if (= (count a) j)
                              sum
                              (recur (inc j)
@@ -174,7 +171,7 @@
          (reduce + 0))))
 
 (lib/check
-  #_#_[part1 sample 7 27] 2
-  #_#_[part1 puzzle 200000000000000 400000000000000] 20336
+  [part1 sample 7 27] 2
+  [part1 puzzle 200000000000000 400000000000000] 20336
   [part2 sample] 47
   [part2 puzzle] 677656046662770)

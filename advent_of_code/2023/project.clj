@@ -3,8 +3,6 @@
                  [criterium "0.4.6"]
                  [hato "0.9.0"]
                  [instaparse "1.4.12"]
-                 [net.mikera/core.matrix "0.63.0"]
-                 [net.mikera/vectorz-clj "0.48.0"]
                  [org.clojure/clojure "1.11.1"]
                  [org.clojure/core.async "1.6.681"]
                  [org.clojure/core.match "1.0.0"]
