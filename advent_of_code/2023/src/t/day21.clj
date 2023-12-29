@@ -35,7 +35,10 @@
                cur (get start-ps step)
                prev #{}]
           (if (empty? cur)
-            [filled? exits]
+            [filled?
+             (->> filled? (map second) (reduce max))
+             (->> filled? (map second) (reduce (fn [acc el] (update acc (mod el 2) inc)) {0 0, 1 0}))
+             exits]
             (let [t (->> cur
                          (mapcat (fn [[y x]]
                                    (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
@@ -97,7 +100,7 @@
             (let [ps (->> entry-point
                           (map (fn [[k v]] [(- k steps-so-far) v]))
                           (into {}))
-                  [grid-filled grid-exits] (f ps)]
+                  [grid-filled max-s-in-grid precomputed-increases grid-exits] (f ps)]
               (recur (->> grid-exits
                           (keep (fn [[[dy dx] m]]
                                   (let [s (->> m keys (reduce min) (+ steps-so-far))]
@@ -110,18 +113,23 @@
                           (remove (fn [[_ grid _]] (done? grid)))
                           (reduce conj todo)
                           (sort-by first))
-                     (reduce (fn [acc [_ s]]
-                               (if (<= (+ s steps-so-far) max-steps)
-                                 (update acc (mod (+ s steps-so-far) 2) inc)
-                                 acc))
-                             filled
-                             grid-filled)
+                     (if (<= (+ steps-so-far max-s-in-grid) max-steps)
+                       (let [m (mod steps-so-far 2)]
+                         (-> filled
+                             (update 0 + (get precomputed-increases m))
+                             (update 1 + (get precomputed-increases (- 1 m)))))
+                       (reduce (fn [acc [_ s]]
+                                 (if (<= (+ s steps-so-far) max-steps)
+                                   (update acc (mod (+ s steps-so-far) 2) inc)
+                                   acc))
+                               filled
+                               grid-filled))
                      (conj done? grid)
                      (inc n)))))))))
 
 (lib/check
-  #_#_[part1 sample 6] 16
-  #_#_[part1 puzzle 64] 3639
+  [part1 sample 6] 16
+  [part1 puzzle 64] 3639
   #_#_[part2 sample 6] 16
   #_#_[part2 sample 10] 50
   #_#_[part2 sample 50] 1594
