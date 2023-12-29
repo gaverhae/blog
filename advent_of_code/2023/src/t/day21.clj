@@ -98,9 +98,6 @@
                           (map (fn [[k v]] [(- k steps-so-far) v]))
                           (into {}))
                   [grid-filled grid-exits] (f ps)
-                  grid-filled (->> grid-filled
-                                   (map (fn [[k v]] [k (+ v steps-so-far)]))
-                                   (into {}))
                   grid-exits (->> grid-exits
                                   (map (fn [[direction m]]
                                          [direction (->> m
@@ -117,8 +114,8 @@
                           (reduce conj todo)
                           (sort-by first))
                      (reduce (fn [acc [_ s]]
-                               (if (<= s max-steps)
-                                 (update acc (mod s 2) inc)
+                               (if (<= (+ s steps-so-far) max-steps)
+                                 (update acc (mod (+ s steps-so-far) 2) inc)
                                  acc))
                              filled
                              grid-filled)
