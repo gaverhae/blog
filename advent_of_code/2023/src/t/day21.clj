@@ -97,19 +97,16 @@
                                [:todo (count todo) :done? (count done?)]))))
           (if (done? grid)
             (recur todo filled done? (inc n))
-            (let [ps (->> entry-point
-                          (map (fn [[k v]] [(- k steps-so-far) v]))
-                          (into {}))
-                  [grid-filled max-s-in-grid precomputed-increases grid-exits] (f ps)]
+            (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-point)]
               (recur (->> grid-exits
                           (keep (fn [[[dy dx] m]]
-                                  (let [s (->> m keys (reduce min) (+ steps-so-far))]
-                                    (when (<= s max-steps)
+                                  (let [s-min (->> m keys (reduce min) (+ steps-so-far))]
+                                    (when (<= s-min max-steps)
                                       (let [m (->> m
                                                    (map (fn [[s positions]]
-                                                          [(+ steps-so-far s) positions]))
+                                                          [(- (+ steps-so-far s) s-min) positions]))
                                                    (into {}))]
-                                        [s [(+ gy dy) (+ gx dx)] m])))))
+                                        [s-min [(+ gy dy) (+ gx dx)] m])))))
                           (remove (fn [[_ grid _]] (done? grid)))
                           (reduce conj todo)
                           (sort-by first))
