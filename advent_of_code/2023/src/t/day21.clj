@@ -66,20 +66,7 @@
                      (swap! memo assoc start-ps res)
                      res)))]
     (fn [step start-ps]
-      (let [ps (->> start-ps
-                    (map (fn [[k v]] [(- k step) v]))
-                    (into {}))
-            [filled? exits] (helper ps)]
-        [(->> filled?
-              (map (fn [[k v]] [k (+ v step)]))
-              (into {}))
-         (->> exits
-              (map (fn [[direction m]]
-                     [direction (->> m
-                                     (map (fn [[s positions]]
-                                            [(+ step s) positions]))
-                                     (into {}))]))
-              (into {}))]))))
+      (helper start-ps))))
 
 (defn part1
   [input max-steps]
@@ -115,7 +102,20 @@
                                [:todo (count todo) :done? (count done?) :memo (count @memo)]))))
           (if (done? grid)
             (recur todo filled done? (inc n))
-            (let [[grid-filled grid-exits] (f steps-so-far entry-point)]
+            (let [ps (->> entry-point
+                          (map (fn [[k v]] [(- k steps-so-far) v]))
+                          (into {}))
+                  [grid-filled grid-exits] (f steps-so-far ps)
+                  grid-filled (->> grid-filled
+                                   (map (fn [[k v]] [k (+ v steps-so-far)]))
+                                   (into {}))
+                  grid-exits (->> grid-exits
+                                  (map (fn [[direction m]]
+                                         [direction (->> m
+                                                         (map (fn [[s positions]]
+                                                                [(+ steps-so-far s) positions]))
+                                                         (into {}))]))
+                                  (into {}))]
               (recur (->> grid-exits
                           (map (fn [[[dy dx] m]]
                                  (let [s (->> m keys (reduce min))]
