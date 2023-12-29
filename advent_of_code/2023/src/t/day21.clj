@@ -23,48 +23,43 @@
                (apply concat)
                first)})
 
-(def memo (atom {}))
-
 (defn walk-one-map
   [grid]
   (let [h (-> grid count)
         w (-> grid first count)]
-    (fn [start-ps]
-      (if-let [res (@memo start-ps)]
-        res
-        (let [res (loop [step 0
-                         filled? {}
-                         exits {}
-                         cur (get start-ps step)
-                         prev #{}]
-                    (if (empty? cur)
-                      [filled? exits]
-                      (let [t (->> cur
-                                   (mapcat (fn [[y x]]
-                                             (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
-                                                   :let [y (+ y dy)
-                                                         x (+ x dx)
-                                                         dst (get-in grid [y x] :out)]
-                                                   :when (and (#{\. :out} dst)
-                                                              (not (prev [y x])))]
-                                               [dst [y x] [dy dx]]))))
-                            nxt (->> t
-                                     (filter (comp #{\.} first))
-                                     (map second)
-                                     (concat (get start-ps (inc step)))
-                                     set)
-                            exits (->> t
-                                       (filter (comp #{:out} first))
-                                       (reduce (fn [acc [_ [y x] d]]
-                                                 (update-in acc
-                                                            [d (inc step)]
-                                                            (fnil conj #{})
-                                                            [(mod y h) (mod x w)]))
-                                               exits))
-                            filled? (reduce #(assoc %1 %2 step) filled? cur)]
-                        (recur (inc step) filled? exits nxt cur))))]
-          (swap! memo assoc start-ps res)
-          res)))))
+    (memoize
+      (fn [start-ps]
+        (loop [step 0
+               filled? {}
+               exits {}
+               cur (get start-ps step)
+               prev #{}]
+          (if (empty? cur)
+            [filled? exits]
+            (let [t (->> cur
+                         (mapcat (fn [[y x]]
+                                   (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
+                                         :let [y (+ y dy)
+                                               x (+ x dx)
+                                               dst (get-in grid [y x] :out)]
+                                         :when (and (#{\. :out} dst)
+                                                    (not (prev [y x])))]
+                                     [dst [y x] [dy dx]]))))
+                  nxt (->> t
+                           (filter (comp #{\.} first))
+                           (map second)
+                           (concat (get start-ps (inc step)))
+                           set)
+                  exits (->> t
+                             (filter (comp #{:out} first))
+                             (reduce (fn [acc [_ [y x] d]]
+                                       (update-in acc
+                                                  [d (inc step)]
+                                                  (fnil conj #{})
+                                                  [(mod y h) (mod x w)]))
+                                     exits))
+                  filled? (reduce #(assoc %1 %2 step) filled? cur)]
+              (recur (inc step) filled? exits nxt cur))))))))
 
 (defn part1
   [input max-steps]
@@ -78,7 +73,6 @@
 
 (defn part2
   [input max-steps]
-  (reset! memo {})
   (let [f (walk-one-map (:grid input))
         _ (println (format "Starting at: %s" (subs (str (java.time.LocalDateTime/now)) 0 19)))
         start-time (System/currentTimeMillis)]
@@ -97,7 +91,7 @@
                                (-> d (quot 1000) (quot 60) (mod 60))
                                (-> d (quot 1000) (mod 60))
                                steps-so-far
-                               [:todo (count todo) :done? (count done?) :memo (count @memo)]))))
+                               [:todo (count todo) :done? (count done?)]))))
           (if (done? grid)
             (recur todo filled done? (inc n))
             (let [ps (->> entry-point
