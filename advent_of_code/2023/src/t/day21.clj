@@ -100,13 +100,13 @@
             (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-point)]
               (recur (->> grid-exits
                           (keep (fn [[[dy dx] m]]
-                                  (let [s-min (->> m keys (reduce min) (+ steps-so-far))]
-                                    (when (<= s-min max-steps)
+                                  (let [s-min (->> m keys (reduce min))]
+                                    (when (<= s-min (- max-steps steps-so-far))
                                       (let [m (->> m
                                                    (map (fn [[s positions]]
-                                                          [(- (+ steps-so-far s) s-min) positions]))
+                                                          [(- s s-min) positions]))
                                                    (into {}))]
-                                        [s-min [(+ gy dy) (+ gx dx)] m])))))
+                                        [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))))
                           (remove (fn [[_ grid _]] (done? grid)))
                           (reduce conj todo)
                           (sort-by first))
