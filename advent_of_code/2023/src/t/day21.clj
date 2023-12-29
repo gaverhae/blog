@@ -38,7 +38,14 @@
             [filled?
              (->> filled? (map second) (reduce max))
              (->> filled? (map second) (reduce (fn [acc el] (update acc (mod el 2) inc)) {0 0, 1 0}))
-             exits]
+             (->> exits
+                  (map (fn [[[dy dx] m]]
+                         (let [s-min (->> m keys (reduce min))
+                               m (->> m
+                                      (map (fn [[s positions]]
+                                             [(- s s-min) positions]))
+                                      (into {}))]
+                           [[dy dx] m s-min]))))]
             (let [t (->> cur
                          (mapcat (fn [[y x]]
                                    (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
@@ -99,14 +106,9 @@
             (recur todo filled done? (inc n))
             (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-point)]
               (recur (->> grid-exits
-                          (keep (fn [[[dy dx] m]]
-                                  (let [s-min (->> m keys (reduce min))]
-                                    (when (<= s-min (- max-steps steps-so-far))
-                                      (let [m (->> m
-                                                   (map (fn [[s positions]]
-                                                          [(- s s-min) positions]))
-                                                   (into {}))]
-                                        [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))))
+                          (keep (fn [[[dy dx] m s-min]]
+                                  (when (<= s-min (- max-steps steps-so-far))
+                                    [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))
                           (remove (fn [[_ grid _]] (done? grid)))
                           (reduce conj todo)
                           (sort-by first))
