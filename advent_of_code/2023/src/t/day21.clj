@@ -97,17 +97,14 @@
             (let [ps (->> entry-point
                           (map (fn [[k v]] [(- k steps-so-far) v]))
                           (into {}))
-                  [grid-filled grid-exits] (f ps)
-                  grid-exits (->> grid-exits
-                                  (map (fn [[direction m]]
-                                         [direction (->> m
-                                                         (map (fn [[s positions]]
-                                                                [(+ steps-so-far s) positions]))
-                                                         (into {}))]))
-                                  (into {}))]
+                  [grid-filled grid-exits] (f ps)]
               (recur (->> grid-exits
                           (map (fn [[[dy dx] m]]
-                                 (let [s (->> m keys (reduce min))]
+                                 (let [m (->> m
+                                              (map (fn [[s positions]]
+                                                     [(+ steps-so-far s) positions]))
+                                              (into {}))
+                                       s (->> m keys (reduce min))]
                                    [s [(+ gy dy) (+ gx dx)] m])))
                           (remove (fn [[_ grid _]] (done? grid)))
                           (filter (fn [[s _ _]] (<= s max-steps)))
