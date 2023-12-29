@@ -99,15 +99,15 @@
                           (into {}))
                   [grid-filled grid-exits] (f ps)]
               (recur (->> grid-exits
-                          (map (fn [[[dy dx] m]]
-                                 (let [m (->> m
-                                              (map (fn [[s positions]]
-                                                     [(+ steps-so-far s) positions]))
-                                              (into {}))
-                                       s (->> m keys (reduce min))]
-                                   [s [(+ gy dy) (+ gx dx)] m])))
+                          (keep (fn [[[dy dx] m]]
+                                  (let [s (->> m keys (reduce min) (+ steps-so-far))]
+                                    (when (<= s max-steps)
+                                      (let [m (->> m
+                                                   (map (fn [[s positions]]
+                                                          [(+ steps-so-far s) positions]))
+                                                   (into {}))]
+                                        [s [(+ gy dy) (+ gx dx)] m])))))
                           (remove (fn [[_ grid _]] (done? grid)))
-                          (filter (fn [[s _ _]] (<= s max-steps)))
                           (reduce conj todo)
                           (sort-by first))
                      (reduce (fn [acc [_ s]]
