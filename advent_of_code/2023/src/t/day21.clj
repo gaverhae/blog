@@ -84,8 +84,6 @@
 (defn part2
   [input max-steps]
   (let [f (walk-one-map (:grid input))
-        _ (println (format "Starting at: %s" (subs (str (java.time.LocalDateTime/now)) 0 19)))
-        start-time (System/currentTimeMillis)
         grids (loop [todo [[0 [0 0] {0 #{(:start input)}}]]
                      grids {}]
                 (if (= (count grids) 13)
@@ -95,9 +93,8 @@
                       (recur todo grids)
                       (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)]
                         (recur (->> grid-exits
-                                    (keep (fn [[[dy dx] m s-min]]
-                                            (when (<= s-min (- max-steps steps-so-far))
-                                              [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))
+                                    (map (fn [[[dy dx] m s-min]]
+                                           [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m]))
                                     (remove (fn [[_ grid _]] (grids grid)))
                                     (reduce conj todo)
                                     (sort-by first))
@@ -116,27 +113,34 @@
         ;;                   G( 2, 0)
         ;; where the small gs are unique and the big Gs repeat ad infinitum.
         ;;
-        ;; So the total area will be given by however many Gs it takes to fille up,
-        ;; plus special cases for the frontier.
+        ;; So the total area will be given by however many Gs it takes to fill
+        ;; up, plus special cases for the frontier.
         ;; To start, let's compute how many grids we have in each direction:
-        max-cards (->> [[-1 0] [0 1] [1 0] [0 -1]]
+        #_#_max-cards (->> [[-1 0] [0 1] [1 0] [0 -1]]
                        (map (fn [[dy dx]]
                               [[dy dx] (-> max-steps
                                            (- (get-in grids [[0 0] :exits [dy dx]]))
                                            (- (get-in grids [[dy dx] :exits [dy dx]]))
                                            (/ (get-in grids [[(* 2 dy) (* 2 dx)] :exits [dy dx]]))
-                                           long)])))]
-    max-cards))
+                                           long)]))
+                       (into {}))
+        #_#_middle-line (let [max-left (get max-cards [0 -1])
+                          max-right (get max-cards [0 1])]
+                      {0 (+ (get-in grids [[0 0] :precomputed 0])
+                            (get-in grids [[0 -1] :precomputed (-> (get-in grids [[0 0] :exits [0 -1]]) (mod 2))])
+                            (if (-> (get-in grids [[0 -1] :exits [0 -1]]) (mod 2) (= 0))
+                              (* (max-cards [-1 0]) (get-in grids [[0 -1] :precomputed]))))})]
+    (cond (< max-steps (-> grids (get [0 0]) :exits (->> (map (fn [[_ s]] s)) (reduce min))))
+          (part1 input max-steps))))
 
 
 (lib/check
-  #_#_[part1 sample 6] 16
-  #_#_[part1 puzzle 64] 3639
+  [part1 sample 6] 16
+  [part1 puzzle 64] 3639
+  [part2 sample 1] 2
   #_#_[part2 sample 6] 16
   #_#_[part2 sample 10] 50
   #_#_[part2 sample 50] 1594
-  #_#_[part2 sample 1] 2
-  #_#_[part2 sample 10] 50
   #_#_[part2 sample 100] 6536
   #_#_[part2 sample 200] 26538
   #_#_[part2 sample 300] 59895
@@ -148,10 +152,10 @@
   #_#_[part2 puzzle 100] 8829
   #_#_[part2 puzzle 200] 34889
   #_#_[part2 puzzle 400] 138314
-  [part2 puzzle 1000] 862969
+  #_#_[part2 puzzle 1000] 862969
   #_#_[part2 puzzle 2000] 3445428
   #_#_[part2 puzzle 5000] 21527301
-  [part2 puzzle 26501365] 0)
+  #_#_[part2 puzzle 26501365] 0)
 
 (defn benchmark
   []
