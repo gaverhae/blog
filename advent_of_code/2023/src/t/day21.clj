@@ -131,15 +131,20 @@
                             (if (-> (get-in grids [[0 -1] :exits [0 -1]]) (mod 2) (= 0))
                               (* (max-cards [-1 0]) (get-in grids [[0 -1] :precomputed]))))})]
     (cond (< max-steps (-> grids (get [0 0]) :exits (->> (map (fn [[_ s]] s)) (reduce min))))
-          (part1 input max-steps))))
+          (part1 input max-steps)
+          (< max-steps (+ (-> grids (get [0 0]) :exits (->> (map (fn [[_ s]] s)) (reduce min)))
+                          (->> [[0 -1] [1 0] [-1 0] [0 1]]
+                               (map (fn [d] (->> (grids d) :exits (map (fn [[_ s]] s)) (reduce min)))))))
+          (+ (part1 input max-steps)))))
+
 
 
 (lib/check
   [part1 sample 6] 16
   [part1 puzzle 64] 3639
   [part2 sample 1] 2
-  #_#_[part2 sample 6] 16
-  #_#_[part2 sample 10] 50
+  [part2 sample 6] 16
+  [part2 sample 10] 50
   #_#_[part2 sample 50] 1594
   #_#_[part2 sample 100] 6536
   #_#_[part2 sample 200] 26538
