@@ -212,25 +212,25 @@
         (recur todo' filled'))))))
 
 (lib/check
-  #_#_[part1 sample 6] 16
-  #_#_[part1 puzzle 64] 3639
-  #_#_[part2 sample 1] 2
-  #_#_[part2 sample 6] 16
-  #_#_[part2 sample 10] 50
-  #_#_[part2 sample 50] 1594
-  #_#_[part2 sample 100] 6536
-  #_#_[part2 sample 200] 26538
-  #_#_[part2 sample 300] 59895
-  #_#_[part2 sample 400] 106776
-  #_#_[part2 sample 500] 167004
-  #_#_[part2 sample 1000] 668697
-  #_#_[part2 sample 2000] 2677337
+  [part1 sample 6] 16
+  [part1 puzzle 64] 3639
+  [part2 sample 1] 2
+  [part2 sample 6] 16
+  [part2 sample 10] 50
+  [part2 sample 50] 1594
+  [part2 sample 100] 6536
+  [part2 sample 200] 26538
+  [part2 sample 300] 59895
+  [part2 sample 400] 106776
+  [part2 sample 500] 167004
+  [part2 sample 1000] 668697
+  [part2 sample 2000] 2677337
   [part2 sample 5000] 16733044
-  #_#_[part2 puzzle 100] 8829
-  #_#_[part2 puzzle 200] 34889
-  #_#_[part2 puzzle 400] 138314
-  #_#_[part2 puzzle 1000] 862969
-  #_#_[part2 puzzle 2000] 3445428
+  [part2 puzzle 100] 8829
+  [part2 puzzle 200] 34889
+  [part2 puzzle 400] 138314
+  [part2 puzzle 1000] 862969
+  [part2 puzzle 2000] 3445428
   [part2 puzzle 5000] 21527301
   #_#_[part2 puzzle 26501365] 0)
 
