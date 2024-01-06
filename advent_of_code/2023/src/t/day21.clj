@@ -181,13 +181,13 @@
                                                  :else (throw (RuntimeException. "Invalid assumption.")))))))))
            filled filled
            iter 0]
-      (when (zero? (mod iter 10000))
+      (when (zero? (mod iter 100))
         (when-let [step (->> todo first second first)]
           (print "\r")
           (pr [(lib/duration-since start-time)
                (format "%5.2f" (/ step max-steps 0.01))])
           (flush)))
-      (when (zero? (mod iter 1000000))
+      (when (zero? (mod iter (* 1000 10)))
         (println))
       (if (empty? todo)
         (filled (mod max-steps 2))
@@ -223,27 +223,27 @@
         (recur todo' filled' (inc iter)))))))
 
 (lib/check
-  [part1 sample 6] 16
-  [part1 puzzle 64] 3639
-  [part2 sample 1] 2
-  [part2 sample 6] 16
-  [part2 sample 10] 50
-  [part2 sample 50] 1594
-  [part2 sample 100] 6536
-  [part2 sample 200] 26538
-  [part2 sample 300] 59895
-  [part2 sample 400] 106776
-  [part2 sample 500] 167004
-  [part2 sample 1000] 668697
-  [part2 sample 2000] 2677337
-  [part2 sample 5000] 16733044
-  [part2 puzzle 100] 8829
-  [part2 puzzle 200] 34889
-  [part2 puzzle 400] 138314
-  [part2 puzzle 1000] 862969
-  [part2 puzzle 2000] 3445428
-  [part2 puzzle 5000] 21527301
-  #_#_[part2 puzzle 26501365] 0)
+  #_#_[part1 sample 6] 16
+  #_#_[part1 puzzle 64] 3639
+  #_#_[part2 sample 1] 2
+  #_#_[part2 sample 6] 16
+  #_#_[part2 sample 10] 50
+  #_#_[part2 sample 50] 1594
+  #_#_[part2 sample 100] 6536
+  #_#_[part2 sample 200] 26538
+  #_#_[part2 sample 300] 59895
+  #_#_[part2 sample 400] 106776
+  #_#_[part2 sample 500] 167004
+  #_#_[part2 sample 1000] 668697
+  #_#_[part2 sample 2000] 2677337
+  #_#_[part2 sample 5000] 16733044
+  #_#_[part2 puzzle 100] 8829
+  #_#_[part2 puzzle 200] 34889
+  #_#_[part2 puzzle 400] 138314
+  #_#_[part2 puzzle 1000] 862969
+  #_#_[part2 puzzle 2000] 3445428
+  #_#_[part2 puzzle 5000] 21527301
+  [part2 puzzle 26501365] 604592315958630)
 
 (defn benchmark
   []
