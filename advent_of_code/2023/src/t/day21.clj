@@ -88,22 +88,12 @@
         start-time (System/currentTimeMillis)]
     (loop [todo [[0 [0 0] {0 #{(:start input)}}]]
            filled [0 0]
-           done? #{}
-           n 0]
+           done? #{}]
       (if (empty? todo)
         (filled (mod max-steps 2))
         (let [[[steps-so-far [gy gx :as grid] entry-point] & todo] todo]
-          (when (zero? (mod n 10000))
-            (let [now (System/currentTimeMillis)
-                  d (- now start-time)]
-              (println (format "%02d:%02d:%02d[%10d]: %s"
-                               (-> d (quot 1000) (quot 60) (quot 24) (mod 60))
-                               (-> d (quot 1000) (quot 60) (mod 60))
-                               (-> d (quot 1000) (mod 60))
-                               steps-so-far
-                               [:todo (count todo) :done? (count done?)]))))
           (if (done? grid)
-            (recur todo filled done? (inc n))
+            (recur todo filled done?)
             (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-point)]
               (recur (->> grid-exits
                           (keep (fn [[[dy dx] m s-min]]
@@ -123,8 +113,7 @@
                                    acc))
                                filled
                                grid-filled))
-                     (conj done? grid)
-                     (inc n)))))))))
+                     (conj done? grid)))))))))
 
 (lib/check
   [part1 sample 6] 16
