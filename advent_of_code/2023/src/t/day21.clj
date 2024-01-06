@@ -98,6 +98,12 @@
         [todo filled] (loop [todo {{0 #{(:start input)}} {0 #{[0 0]}}}
                              filled [0 0]
                              n 0]
+                        (prn (->> todo
+                                  (map (fn [[_ m]]
+                                            (->> m
+                                                 (map (fn [[s gs]]
+                                                        [s (count gs)])))))))
+
                         (if (= n 10)
                           [todo filled]
                           (let [todo' (->> todo
@@ -144,6 +150,14 @@
                                                      filled))]
                             (recur todo' filled' (inc n)))))]
     (loop [todo todo
+           #_(->> todo
+                     (mapcat (fn [[e m]]
+                               (->> m
+                                    (mapcat (fn [[s gs]]
+                                              (cond (and (= 1 (count gs))
+                                                         (= 0 (-> gs first (get 0)))
+                                                         (pos? (-> gs first (get 1))))
+                                                    [[0 1] [s e 1]])))))))
            filled filled]
       (if (empty? todo)
         (filled (mod max-steps 2))
