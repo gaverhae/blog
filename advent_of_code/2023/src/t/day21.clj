@@ -98,12 +98,6 @@
         [todo filled] (loop [todo {{0 #{(:start input)}} {0 #{[0 0]}}}
                              filled [0 0]
                              n 0]
-                        (prn (->> todo
-                                  (map (fn [[_ m]]
-                                            (->> m
-                                                 (map (fn [[s gs]]
-                                                        [s (count gs)])))))))
-
                         (if (= n 10)
                           [todo filled]
                           (let [todo' (->> todo
@@ -148,61 +142,73 @@
                                              (reduce (fn [[y0 x0] [y1 x1]]
                                                        [(+ y0 y1) (+ x0 x1)])
                                                      filled))]
-                            (recur todo' filled' (inc n)))))]
-    (loop [todo todo
-           #_(->> todo
+                            (recur todo' filled' (inc n)))))
+        sign (fn [x] (cond (pos? x) 1, (zero? x) 0, (neg? x) -1))]
+    (loop [todo (->> todo
                      (mapcat (fn [[e m]]
                                (->> m
-                                    (mapcat (fn [[s gs]]
-                                              (cond (and (= 1 (count gs))
-                                                         (= 0 (-> gs first (get 0)))
-                                                         (pos? (-> gs first (get 1))))
-                                                    [[0 1] [s e 1]])))))))
+                                    (map (fn [[s gs]]
+                                           (cond (and (= 1 (count gs))
+                                                      (= 0 (-> gs first (get 0)))
+                                                      (pos? (-> gs first (get 1))))
+                                                 [[0 1] [s e 1]]
+                                                 (and (= 1 (count gs))
+                                                      (= 0 (-> gs first (get 0)))
+                                                      (neg? (-> gs first (get 1))))
+                                                 [[0 -1] [s e 1]]
+                                                 (and (= 1 (count gs))
+                                                      (pos? (-> gs first (get 0)))
+                                                      (= 0 (-> gs first (get 1))))
+                                                 [[1 0] [s e 1]]
+                                                 (and (= 1 (count gs))
+                                                      (neg? (-> gs first (get 0)))
+                                                      (= 0 (-> gs first (get 1))))
+                                                 [[-1 0] [s e 1]]
+                                                 (and (every? pos? (->> gs (map first)))
+                                                      (every? pos? (->> gs (map second))))
+                                                 [[1 1] [s e (count gs)]]
+                                                 (and (every? pos? (->> gs (map first)))
+                                                      (every? neg? (->> gs (map second))))
+                                                 [[1 -1] [s e (count gs)]]
+                                                 (and (every? neg? (->> gs (map first)))
+                                                      (every? pos? (->> gs (map second))))
+                                                 [[-1 1] [s e (count gs)]]
+                                                 (and (every? neg? (->> gs (map first)))
+                                                      (every? neg? (->> gs (map second))))
+                                                 [[-1 -1] [s e (count gs)]]
+                                                 :else (throw (RuntimeException. "Invalid assumption.")))))))))
            filled filled]
       (if (empty? todo)
         (filled (mod max-steps 2))
-        (let [todo' (->> todo
-                         (mapcat (fn [[entry-points steps-to-grids]]
-                                   (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)]
-                                     (->> steps-to-grids
-                                          (mapcat (fn [[steps-so-far grids]]
-                                                    (->> grids
-                                                         (mapcat (fn [[gy gx :as grid]]
-                                                                   (->> grid-exits
-                                                                        (keep (fn [[[dy dx] m s-min]]
-                                                                                (when (<= s-min (- max-steps steps-so-far))
-                                                                                  [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))))))))))))
-                         (reduce (fn [acc [steps-so-far grid entry-points]]
-                                   (update acc grid (fn [[s0 ep0 :as e] [s1 ep1]]
-                                                      (if e
-                                                        [(min s0 s1) (merge-with set/union ep0 ep1)]
-                                                        [s1 ep1]))
-                                           [steps-so-far entry-points]))
-                                 {})
-                         (reduce (fn [acc [g [s e]]]
-                                   (update-in acc [e s] (fnil conj #{}) g))
-                                 {}))
-            filled' (->> todo
-                         (mapcat (fn [[entry-points steps-to-grids]]
-                                   (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)]
-                                     (->> steps-to-grids
-                                          (map (fn [[steps-so-far grids]]
-                                                 (let [c (count grids)
-                                                       updates (if (<= (+ steps-so-far max-s-in-grid) max-steps)
-                                                                 (let [m (mod steps-so-far 2)]
-                                                                   (-> [0 0]
-                                                                       (update 0 + (* c (get precomputed-increases m)))
-                                                                       (update 1 + (* c (get precomputed-increases (- 1 m))))))
-                                                                 (reduce (fn [acc [_ s]]
-                                                                           (if (<= (+ s steps-so-far) max-steps)
-                                                                             (update acc (mod (+ s steps-so-far) 2) + c)
-                                                                             acc))
-                                                                         [0 0]
-                                                                         grid-filled))]
-                                                   updates)))))))
-                         (reduce (fn [[y0 x0] [y1 x1]]
-                                   [(+ y0 y1) (+ x0 x1)])
-                                 filled))]
+        (let [new-steps (->> todo
+                             (mapcat (fn [[[gy gx] [steps-so-far entry-points _]]]
+                                       (let [[_ _ _ grid-exits] (f entry-points)]
+                                         (->> grid-exits
+                                              (keep (fn [[[dy dx] _ s-min]]
+                                                      (when (<= s-min (- max-steps steps-so-far))
+                                                        [[(sign (+ gy dy)) (sign (+ gx dx))] (+ s-min steps-so-far)])))))))
+                             (reduce (fn [acc [k s]]
+                                       (update acc k (fnil min Long/MAX_VALUE) s))
+                                     {}))
+              todo' (->> todo (keep (fn [[k [_ e c]]] (when-let [new-s (new-steps k)]
+                                                         [k [new-s e (if (= 1 c) 1 (inc c))]]))))
+              filled' (->> todo
+                           (map (fn [[_ [steps-so-far entry-points c]]]
+                                  (let [[grid-filled max-s-in-grid precomputed-increases _] (f entry-points)]
+                                    (if (<= (+ steps-so-far max-s-in-grid) max-steps)
+                                      (let [m (mod steps-so-far 2)]
+                                        (-> [0 0]
+                                            (update 0 + (* c (get precomputed-increases m)))
+                                            (update 1 + (* c (get precomputed-increases (- 1 m))))))
+                                      (reduce (fn [acc [_ s]]
+                                                (if (<= (+ s steps-so-far) max-steps)
+                                                  (update acc (mod (+ s steps-so-far) 2) + c)
+                                                  acc))
+                                              [0 0]
+                                              grid-filled)))))
+                           (reduce (fn [[y0 x0] [y1 x1]]
+                                     [(+ y0 y1) (+ x0 x1)])
+                                   filled))]
         (recur todo' filled'))))))
 
 (lib/check
