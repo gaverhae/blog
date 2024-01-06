@@ -134,6 +134,23 @@
                                      [(+ y0 y1) (+ x0 x1)])
                                    filled))
               done' (->> todo (map (fn [[_ grid _]] grid)) (reduce conj done?))]
+          (prn [:updates (->> todo
+                              (map (fn [[steps-so-far [gy gx :as grid] entry-points]]
+                                     (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)
+                                           updates (if (<= (+ steps-so-far max-s-in-grid) max-steps)
+                                                     (let [m (mod steps-so-far 2)]
+                                                       (-> [0 0]
+                                                           (update 0 + (get precomputed-increases m))
+                                                           (update 1 + (get precomputed-increases (- 1 m)))))
+                                                     (reduce (fn [acc [_ s]]
+                                                               (if (<= (+ s steps-so-far) max-steps)
+                                                                 (update acc (mod (+ s steps-so-far) 2) inc)
+                                                                 acc))
+                                                             [0 0]
+                                                             grid-filled))]
+                                       updates)))
+                              frequencies)
+                :steps (->> todo' (map (fn [[s _ _]] s)) frequencies)])
           (recur todo' filled' done'))))))
 
 (lib/check
