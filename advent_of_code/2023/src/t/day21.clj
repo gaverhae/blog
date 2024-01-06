@@ -84,7 +84,6 @@
 (defn part2
   [input max-steps]
   (let [f (walk-one-map (:grid input))
-        _ (println (format "Starting at: %s" (subs (str (java.time.LocalDateTime/now)) 0 19)))
         start-time (System/currentTimeMillis)]
     (loop [todo [[0 [0 0] {0 #{(:start input)}}]]
            filled [0 0]
