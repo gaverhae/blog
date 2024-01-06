@@ -38,14 +38,22 @@
             [filled?
              (->> filled? (map second) (reduce max))
              (->> filled? (map second) (reduce (fn [acc el] (update acc (mod el 2) inc)) {0 0, 1 0}))
-             (->> exits
-                  (map (fn [[[dy dx] m]]
-                         (let [s-min (->> m keys (reduce min))
-                               m (->> m
-                                      (map (fn [[s positions]]
-                                             [(- s s-min) positions]))
-                                      (into {}))]
-                           [[dy dx] m s-min]))))]
+             (let [entry-dir? (->> (start-ps 0)
+                                   (keep (fn [[y x]]
+                                           (cond (= y 0) [-1 0]
+                                                 (= x 0) [0 -1]
+                                                 (= y (dec h)) [1 0]
+                                                 (= x (dec w)) [0 1])))
+                                   (into #{}))]
+               (->> exits
+                    (map (fn [[[dy dx] m]]
+                           (let [s-min (->> m keys (reduce min))
+                                 m (->> m
+                                        (map (fn [[s positions]]
+                                               [(- s s-min) positions]))
+                                        (into {}))]
+                             [[dy dx] m s-min])))
+                    (remove (fn [[d m s-min]] (entry-dir? d)))))]
             (let [t (->> cur
                          (mapcat (fn [[y x]]
                                    (for [[dy dx] [[-1 0] [1 0] [0 1] [0 -1]]
