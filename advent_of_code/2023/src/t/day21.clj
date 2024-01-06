@@ -134,6 +134,18 @@
                            (reduce (fn [[y0 x0] [y1 x1]]
                                      [(+ y0 y1) (+ x0 x1)])
                                    filled))]
+          (prn [:eps (->> todo
+                          (mapcat (fn [[steps-so-far [gy gx :as grid] entry-points]]
+                                    (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)]
+                                      (->> grid-exits
+                                           (keep (fn [[[dy dx] m s-min]]
+                                                   (when (<= s-min (- max-steps steps-so-far))
+                                                     [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))))))
+                          (map (fn [[s g ep]] ep))
+                          frequencies
+                          vals
+                          frequencies
+                          )])
           #_(prn [:updates (->> todo
                               (map (fn [[steps-so-far [gy gx :as grid] entry-points]]
                                      (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)
