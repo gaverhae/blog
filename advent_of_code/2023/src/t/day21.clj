@@ -38,12 +38,15 @@
             [filled?
              (->> filled? (map second) (reduce max))
              (->> filled? (map second) (reduce (fn [acc el] (update acc (mod el 2) inc)) {0 0, 1 0}))
-             (let [entry-dir? (->> (start-ps 0)
-                                   (keep (fn [[y x]]
-                                           (cond (= y 0) [-1 0]
-                                                 (= x 0) [0 -1]
-                                                 (= y (dec h)) [1 0]
-                                                 (= x (dec w)) [0 1])))
+             (let [entry-dir? (->> start-ps
+                                   (mapcat val)
+                                   (remove #{[0 0] [(dec h) 0] [0 (dec w)] [(dec h) (dec w)]})
+                                   (mapcat (fn [[y x]]
+                                             (->> [(when (= y 0) [-1 0])
+                                                   (when (= x 0) [0 -1])
+                                                   (when (= y (dec h)) [1 0])
+                                                   (when (= x (dec w)) [0 1])]
+                                                  (keep identity))))
                                    (into #{}))]
                (->> exits
                     (map (fn [[[dy dx] m]]
@@ -94,8 +97,7 @@
   (let [f (walk-one-map (:grid input))
         start-time (System/currentTimeMillis)]
     (loop [todo [[0 [0 0] {0 #{(:start input)}}]]
-           filled [0 0]
-           done? #{}]
+           filled [0 0]]
       (if (empty? todo)
         (filled (mod max-steps 2))
         (let [todo' (->> todo
@@ -104,8 +106,7 @@
                                      (->> grid-exits
                                           (keep (fn [[[dy dx] m s-min]]
                                                   (when (<= s-min (- max-steps steps-so-far))
-                                                    [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))
-                                          (remove (fn [[_ grid _]] (done? grid)))))))
+                                                    [(+ s-min steps-so-far) [(+ gy dy) (+ gx dx)] m])))))))
                          (reduce (fn [acc [steps-so-far grid entry-points]]
                                    (update acc grid (fn [[s0 ep0 :as e] [s1 ep1]]
                                                       (if e
@@ -113,7 +114,7 @@
                                                         [s1 ep1]))
                                                     [steps-so-far entry-points]))
                                  {})
-                         (map (fn [[k [s e]]] [s k e]))
+                         (map (fn [[g [s e]]] [s g e]))
                          vec)
               filled' (->> todo
                            (map (fn [[steps-so-far [gy gx :as grid] entry-points]]
@@ -132,9 +133,8 @@
                                     updates)))
                            (reduce (fn [[y0 x0] [y1 x1]]
                                      [(+ y0 y1) (+ x0 x1)])
-                                   filled))
-              done' (->> todo (map (fn [[_ grid _]] grid)) (reduce conj done?))]
-          (prn [:updates (->> todo
+                                   filled))]
+          #_(prn [:updates (->> todo
                               (map (fn [[steps-so-far [gy gx :as grid] entry-points]]
                                      (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)
                                            updates (if (<= (+ steps-so-far max-s-in-grid) max-steps)
@@ -151,7 +151,7 @@
                                        updates)))
                               frequencies)
                 :steps (->> todo' (map (fn [[s _ _]] s)) frequencies)])
-          (recur todo' filled' done'))))))
+          (recur todo' filled'))))))
 
 (lib/check
   #_#_[part1 sample 6] 16
