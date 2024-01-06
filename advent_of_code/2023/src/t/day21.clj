@@ -96,8 +96,14 @@
   [input max-steps]
   (let [f (walk-one-map (:grid input))
         start-time (System/currentTimeMillis)]
+    (println)
     (loop [todo {{0 #{(:start input)}} {0 #{[0 0]}}}
            filled [0 0]]
+      (when-not (empty? todo)
+        (print "\r")
+        (pr [(lib/duration-since start-time)
+             (format "%05.2f" (/ (->> todo first val keys (reduce min)) max-steps 0.01))])
+        (flush))
       (if (empty? todo)
         (filled (mod max-steps 2))
         (let [todo' (->> todo
@@ -158,14 +164,14 @@
   #_#_[part2 sample 500] 167004
   #_#_[part2 sample 1000] 668697
   #_#_[part2 sample 2000] 2677337
-  [part2 sample 5000] 16733044
+  #_#_[part2 sample 5000] 16733044
   #_#_[part2 puzzle 100] 8829
   #_#_[part2 puzzle 200] 34889
   #_#_[part2 puzzle 400] 138314
   #_#_[part2 puzzle 1000] 862969
   #_#_[part2 puzzle 2000] 3445428
-  [part2 puzzle 5000] 21527301
-  #_#_[part2 puzzle 26501365] 0)
+  #_#_[part2 puzzle 5000] 21527301
+  [part2 puzzle 26501365] 0)
 
 (defn benchmark
   []
