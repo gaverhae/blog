@@ -95,6 +95,7 @@
 (defn part2
   [input max-steps]
   (let [f (walk-one-map (:grid input))
+        start-time (lib/now-millis)
         [todo filled] (loop [todo {{0 #{(:start input)}} {0 #{[0 0]}}}
                              filled [0 0]
                              n 0]
@@ -144,6 +145,7 @@
                                                      filled))]
                             (recur todo' filled' (inc n)))))
         sign (fn [x] (cond (pos? x) 1, (zero? x) 0, (neg? x) -1))]
+    (prn [(lib/duration-since start-time) :first-10])
     (loop [todo (->> todo
                      (mapcat (fn [[e m]]
                                (->> m
@@ -177,7 +179,16 @@
                                                       (every? neg? (->> gs (map second))))
                                                  [[-1 -1] [s e (count gs)]]
                                                  :else (throw (RuntimeException. "Invalid assumption.")))))))))
-           filled filled]
+           filled filled
+           iter 0]
+      (when (zero? (mod iter 10000))
+        (when-let [step (->> todo first second first)]
+          (print "\r")
+          (pr [(lib/duration-since start-time)
+               (format "%5.2f" (/ step max-steps 0.01))])
+          (flush)))
+      (when (zero? (mod iter 1000000))
+        (println))
       (if (empty? todo)
         (filled (mod max-steps 2))
         (let [new-steps (->> todo
@@ -209,7 +220,7 @@
                            (reduce (fn [[y0 x0] [y1 x1]]
                                      [(+ y0 y1) (+ x0 x1)])
                                    filled))]
-        (recur todo' filled'))))))
+        (recur todo' filled' (inc iter)))))))
 
 (lib/check
   [part1 sample 6] 16
