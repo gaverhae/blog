@@ -95,7 +95,6 @@
 (defn part2
   [input max-steps]
   (let [f (walk-one-map (:grid input))
-        start-time (lib/now-millis)
         [todo filled] (loop [todo {{0 #{(:start input)}} {0 #{[0 0]}}}
                              filled [0 0]
                              n 0]
@@ -145,7 +144,6 @@
                                                      filled))]
                             (recur todo' filled' (inc n)))))
         sign (fn [x] (cond (pos? x) 1, (zero? x) 0, (neg? x) -1))]
-    (prn [(lib/duration-since start-time) :first-10])
     (loop [todo (->> todo
                      (mapcat (fn [[e m]]
                                (->> m
