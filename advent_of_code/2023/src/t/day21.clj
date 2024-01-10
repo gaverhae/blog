@@ -102,7 +102,7 @@
                           [todo filled]
                           (let [todo' (->> todo
                                            (mapcat (fn [[entry-points steps-to-grids]]
-                                                     (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)]
+                                                     (let [[_ _ _ grid-exits] (f entry-points)]
                                                        (->> steps-to-grids
                                                             (mapcat (fn [[steps-so-far grids]]
                                                                       (->> grids
@@ -123,7 +123,7 @@
                                                    {}))
                                 filled' (->> todo
                                              (mapcat (fn [[entry-points steps-to-grids]]
-                                                       (let [[grid-filled max-s-in-grid precomputed-increases grid-exits] (f entry-points)]
+                                                       (let [[grid-filled max-s-in-grid precomputed-increases _] (f entry-points)]
                                                          (->> steps-to-grids
                                                               (map (fn [[steps-so-far grids]]
                                                                      (let [c (count grids)
@@ -148,35 +148,9 @@
                      (mapcat (fn [[e m]]
                                (->> m
                                     (map (fn [[s gs]]
-                                           (cond (and (= 1 (count gs))
-                                                      (= 0 (-> gs first (get 0)))
-                                                      (pos? (-> gs first (get 1))))
-                                                 [[0 1] [s e 1]]
-                                                 (and (= 1 (count gs))
-                                                      (= 0 (-> gs first (get 0)))
-                                                      (neg? (-> gs first (get 1))))
-                                                 [[0 -1] [s e 1]]
-                                                 (and (= 1 (count gs))
-                                                      (pos? (-> gs first (get 0)))
-                                                      (= 0 (-> gs first (get 1))))
-                                                 [[1 0] [s e 1]]
-                                                 (and (= 1 (count gs))
-                                                      (neg? (-> gs first (get 0)))
-                                                      (= 0 (-> gs first (get 1))))
-                                                 [[-1 0] [s e 1]]
-                                                 (and (every? pos? (->> gs (map first)))
-                                                      (every? pos? (->> gs (map second))))
-                                                 [[1 1] [s e (count gs)]]
-                                                 (and (every? pos? (->> gs (map first)))
-                                                      (every? neg? (->> gs (map second))))
-                                                 [[1 -1] [s e (count gs)]]
-                                                 (and (every? neg? (->> gs (map first)))
-                                                      (every? pos? (->> gs (map second))))
-                                                 [[-1 1] [s e (count gs)]]
-                                                 (and (every? neg? (->> gs (map first)))
-                                                      (every? neg? (->> gs (map second))))
-                                                 [[-1 -1] [s e (count gs)]]
-                                                 :else (throw (RuntimeException. "Invalid assumption.")))))))))
+                                           [[(-> gs first (get 0) sign)
+                                             (-> gs first (get 1) sign)]
+                                            [s e (count gs)]]))))))
            filled filled
            iter 0]
       (if (empty? todo)
