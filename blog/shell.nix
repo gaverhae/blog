@@ -12,6 +12,6 @@ pkgs.mkShell {
     pkgs.imagemagick
     pkgs.jdk
     pkgs.jq
-    pkgs.terraform_0_14
+    pkgs.terraform
   ];
 }
