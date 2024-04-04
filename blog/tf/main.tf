@@ -4,11 +4,49 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 3.0"
     }
+    dnsimple = {
+      source  = "dnsimple/dnsimple"
+      version = "~> 1.5"
+    }
   }
 }
 
 provider "aws" {
   region = "us-east-1"
+}
+
+provider "dnsimple" {
+}
+
+locals {
+  domain = "cuddly-octo-palm-tree.com"
+}
+
+resource "dnsimple_zone" "domain" {
+  name   = local.domain
+  active = true
+}
+
+resource "dnsimple_email_forward" "all" {
+  domain            = local.domain
+  alias_name        = ".*"
+  destination_email = "gary.verhaegen+cuddly@gmail.com"
+}
+
+resource "dnsimple_zone_record" "primary" {
+  zone_name = local.domain
+  name      = ""
+  type      = "A"
+  ttl       = "3600"
+  value     = "52.204.159.248"
+}
+
+resource "dnsimple_zone_record" "www" {
+  zone_name = local.domain
+  name      = "www"
+  type      = "A"
+  ttl       = "3600"
+  value     = "52.204.159.248"
 }
 
 variable "deployed_json" {
