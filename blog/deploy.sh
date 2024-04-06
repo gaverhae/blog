@@ -81,5 +81,5 @@ update_deploy_set '.[0:1]'
 deploy
 
 git add tf/deployed
-git commit -m "auto: deployed $VERSION"
+git commit -m "[blog] auto: deployed $VERSION"
 git push
