@@ -21,7 +21,7 @@ update_deploy_set() {
 deploy() {
     local var
     var="-var=deployed_json=$(cat tf/deployed)"
-    ( cd tf && terraform plan "$var" && terraform apply "$var" -auto-approve)
+    ( cd tf && tofu plan "$var" && tofu apply "$var" -auto-approve)
 }
 
 wait_for() {
