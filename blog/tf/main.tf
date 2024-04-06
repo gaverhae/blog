@@ -4,11 +4,49 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 3.0"
     }
+    dnsimple = {
+      source  = "dnsimple/dnsimple"
+      version = "~> 1.5"
+    }
   }
 }
 
 provider "aws" {
   region = "us-east-1"
+}
+
+provider "dnsimple" {
+}
+
+locals {
+  domain = "cuddly-octo-palm-tree.com"
+}
+
+resource "dnsimple_zone" "domain" {
+  name   = local.domain
+  active = true
+}
+
+resource "dnsimple_email_forward" "all" {
+  domain            = local.domain
+  alias_name        = ".*"
+  destination_email = "gary.verhaegen+cuddly@gmail.com"
+}
+
+resource "dnsimple_zone_record" "primary" {
+  zone_name = local.domain
+  name      = ""
+  type      = "A"
+  ttl       = "3600"
+  value     = "52.204.159.248"
+}
+
+resource "dnsimple_zone_record" "www" {
+  zone_name = local.domain
+  name      = "www"
+  type      = "A"
+  ttl       = "3600"
+  value     = "52.204.159.248"
 }
 
 variable "deployed_json" {
@@ -221,38 +259,4 @@ resource "local_file" "deployed" {
 resource "aws_eip" "ip" {
   instance   = aws_instance.web[local.deployed[0]["version"]].id
   depends_on = [aws_internet_gateway.gw]
-}
-
-resource "aws_route53_zone" "primary" {
-  name = "cuddly-octo-palm-tree.com"
-}
-
-data "aws_kms_key" "dns_key" {
-  key_id = "alias/dns_key"
-}
-
-resource "aws_route53_key_signing_key" "dnssec" {
-  hosted_zone_id             = aws_route53_zone.primary.id
-  key_management_service_arn = data.aws_kms_key.dns_key.arn
-  name                       = "dnssec"
-}
-
-resource "aws_route53_hosted_zone_dnssec" "dnssec" {
-  hosted_zone_id = aws_route53_key_signing_key.dnssec.hosted_zone_id
-}
-
-resource "aws_route53_record" "primary" {
-  zone_id = aws_route53_zone.primary.zone_id
-  name    = aws_route53_zone.primary.name
-  type    = "A"
-  ttl     = "30"
-  records = ["52.204.159.248"]
-}
-
-resource "aws_route53_record" "www" {
-  zone_id = aws_route53_zone.primary.zone_id
-  name    = "www.${aws_route53_zone.primary.name}"
-  type    = "A"
-  ttl     = "30"
-  records = ["52.204.159.248"]
 }
