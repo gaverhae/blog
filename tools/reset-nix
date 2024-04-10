@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+run() (
+  echo -e "\t$@"
+  $@
+)
+
+ifrm() (
+  if [ -e "$1" ]; then
+    run rm -rf "$1"
+  fi
+)
+
+ifchmod() (
+  if [ -e "$1" ]; then
+    run chmod -R +w "$1"
+  fi
+)
+
+echo "Removing Nix"
+for f in $HOME/{.nix-channels,.nix-defexpr,.nix-profile,.config/nixpkgs,.cache/nix,.local/state/nix}; do
+  ifrm $f
+done
+
+ifchmod /nix/store
+ifrm /nix/store
+ifrm /nix/var
+
+echo "Installing fresh Nix"
+(
+  set -euo pipefail
+  cd $(mktemp -d)
+  curl https://releases.nixos.org/nix/nix-2.10.3/nix-2.10.3-x86_64-darwin.tar.xz > tarball
+  tar xzf tarball
+  cd nix-2.10.3-x86_64-darwin
+  printf '64d\nw\n' | ed -s install
+  ./install --no-daemon
+)
+nix upgrade-nix
