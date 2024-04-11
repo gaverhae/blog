@@ -230,6 +230,10 @@ resource "aws_instance" "web" {
 
   iam_instance_profile = aws_iam_instance_profile.read-blog.name
 
+  metadata_options {
+    http_tokens = "required"
+  }
+
   user_data = templatefile("init.sh", { version = each.value["version"] })
 
   tags = {
