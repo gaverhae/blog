@@ -6,6 +6,18 @@ apt-get upgrade -q -y
 
 apt-get install -q -y nginx certbot python3-certbot-nginx awscli
 
+## Disable IP website
+
+cat <<'END_DISABLE_IP' > /etc/nginx/sites-available/default
+server {
+  listen 80 default_server;
+  listen 443 ssl default_server;
+  ssl_certificate /etc/letsencrypt/live/${tofu_domain}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${tofu_domain}/privkey.pem;
+  return 444;
+}
+END_DISABLE_IP
+
 DOMAIN=cuddly-octo-palm-tree.com
 mkdir -p /var/www/$DOMAIN/html
 
