@@ -79,7 +79,3 @@ wait_for redirect
 
 update_deploy_set '.[0:1]'
 deploy
-
-git add tf/deployed
-git commit -m "[blog] auto: deployed $VERSION"
-git push
