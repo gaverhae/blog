@@ -10,6 +10,7 @@ pkgs.mkShell {
     imagemagick
     jdk
     jq
+    leiningen
     opentofu
   ];
 }
