@@ -1,4 +1,10 @@
 terraform {
+  backend "s3" {
+    bucket         = "sotenj.tfstate"
+    key            = "cuddly"
+    region         = "us-east-1"
+    dynamodb_table = "sotenj.tfstate.locks"
+  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -135,7 +141,6 @@ resource "aws_security_group" "allow_ssh" {
 
 resource "aws_s3_bucket" "bucket" {
   bucket = "cuddly-octo-palm-tree"
-  acl    = "private"
 }
 
 resource "aws_iam_instance_profile" "read-blog" {
