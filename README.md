@@ -6,7 +6,7 @@ Pull requests generally not accepted.
 
 ## Copyright
 
-This repo is © 2024 Gary Verhaegen. The entirety of this repo is licensed under
+This repo is © 2025 Gary Verhaegen. The entirety of this repo is licensed under
 [CC BY-NC-ND 4.0], i.e. you are free to read and share (with attribution), but
 basically nothing else.
 
