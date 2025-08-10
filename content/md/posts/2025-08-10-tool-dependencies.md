@@ -10,11 +10,11 @@ For the past six years, I have lived in a world where:
 - This installation is completely isolated to that one project; there is no
   risk of conflict with other projects or polluting the user's global `$PATH`
   with any of it.
-- Yet there is still cross-project caching: if two projects use the same tool,
-  it's only downloaded once.
+- Yet there is still cross-project caching: if two projects use the (exact)
+  same tool, it's only downloaded once.
 
 If you enjoy spending days following manual installation instructions from
-every README, only to discover that the listed dependencies cannot be installed
+a README, only to discover that the listed dependencies cannot be installed
 in that way on your machine, or that the README describes an installation
 method that leaves the tool globally installed, or that you already have that
 tool but another, incompatible version, or that the list of dependencies
@@ -51,6 +51,11 @@ a compiler (or interpreter) as well as a dependency manager. Projects also tend
 to grow to require more tools over time (frequent examples include `bash`,
 `curl`, `jq`, etc.).
 
+For example, I would use this approach to provide my environment with `npm`,
+but I would then use that `npm` to manage my `packages.json` and
+`node_modules` etc. in the usual way; I would not recommend trying to use Nix
+itself to provide individual Node packages.
+
 The approach I am recommending (and using) is to use Nix to provide those
 tools, so you don't need to have them installed "globally". Then, within your
 poject, you simply use those tools like you're used to, with the added
@@ -61,7 +66,7 @@ confidence that:
   other projects.
 - You are using the exact same version of these tools as everyone else on your
   team, reducing the chances for subtle version-dependent bugs (or outright
-  confusing for some tools where multiple completely different tools of the
+  confusion for some tools where multiple completely different tools of the
   same name exist, such as `yq`).
 
 ### The end goal
@@ -104,7 +109,7 @@ projects.
 For this to work, you need to have [direnv] installed and properly set up,
 which in most cases will involve adding one line to your shell configuration
 file. In my case, I install it by running `brew install direnv` once per
-comuter, and I set it up by adding this one line to my `.zshrc`: `eval
+computer, and I set it up by adding this one line to my `.zshrc`: `eval
 "$(direnv hook zsh)"`.
 
 Once that is done, within each project, all you really need is a file called
@@ -224,10 +229,9 @@ This is the easiest one: you just remove the corresponding entry in the
 #### Adding a dependency
 
 If you know the name of the Nix package you want to add, you can just add it to
-the `buildInputs` list. If you don't know the name of the package, though, how
-do you find it? I personally use the [search.nixos.org] site, where you can
-search for packages either by approximate name, or by name of (one of) the
-executables the package provides.
+the `buildInputs` list. If you don't know the name of the package, you can use
+the [search.nixos.org] site, where you can search for packages either by
+approximate name, or by name of (one of) the executables the package provides.
 
 What if your dependency is not in the package registry at all? Well, at that
 point you have a choice to make. Either you delve into Nix a bit more, looking
@@ -258,9 +262,12 @@ Under those assumptions, upgrading your snapshot means updating the `commit`
 and `sha` values of the `spec`. You can find the latest commit by looking at
 the `nixpkgs-unstable` [branch] of the nixpkgs repo. (You can use other
 branches; this one has worked well for me.) Finding the corresponding `sha`
-value is a bit more tricky. The easiest way I've found is to put garbage in the
-`shell.nix` file and try to run it, which will print an error telling you what
-the value should be.
+value is a bit more tricky. The easiest way I've found is to put garbage[^sha]
+in the `shell.nix` file and try to run it, which will print an error telling
+you what the value should be.
+
+[^sha]: The garbage value still needs to look like a valid value to Nix, or you
+    will get a formatting error instead.
 
 So the process would be:
 
@@ -357,6 +364,56 @@ I know that, realistically, by the time we've found the correct value for
 `sha`, `bb` is likely already fixed, but it can take some time for updates to
 get through to nixpkgs.
 
+### A complete list
+
+I mentioned multiple times that I was confident the list of dependencies in
+`shell.nix` was _complete_, yet as I've decribed it so far it's only adding
+entries to the `$PATH`[^libs]. Am I too trusting in my and my coworker's
+discipline?
+
+[^libs]: Though I haven't used it much myself, as I generally work in
+    higher-level, dynamic languages, the Nix shell can also set up native
+    libraries in `LD_LIBRARY_PATH` and so on.
+
+Well, definitely not in mine. I forget stuff all the time. But Nix has another
+tool that can help us here; when running on CI, or for local testing, you can
+run the `shell.nix` file in "pure" mode, where, instead of adding to your
+current shell, it creates a new shell that has in its `$PATH` only exactly what
+is described in the `shell.nix` file. This way, you don't get any pollution
+from your global environment, and you can verify that the set of dependencies
+you've defined in `shell.nix` is indeed sufficient to run all of your CI tasks.
+
+You may be wondering why pure mode is not the default. The answer is that there
+are things you want on your `$PATH` as a developer that do not make sense as
+project dependencies, a big one being your editor.
+
+To start a pure shell using the minimal `shell.nix` above, simply run:
+
+```
+nix-shell shell.nix --pure
+```
+
+To run commands on CI, you can give that an argument of the command to run, say:
+
+```
+nix-shell shell.nix --pure "lein test"
+```
+
+On CI, you may need to "activate" Nix. Locally, this will be done through your
+shell configuration file, directly by the Nix installer, but on CI you will
+typically need to add it yourself, so a running step on GitHub Actions would
+for example look like this:
+
+```
+    - name: run tests
+      run: |
+        . /home/runner/.nix-profile/etc/profile.d/nix.sh
+        nix-shell shell.nix --pure --run "lein test"
+```
+
+You'll obviously also need to have Nix installed in your CI environment
+somehow. You generally do not need direnv in CI, though.
+
 ### My own tooling
 
 The above should be enough to get you started, perhaps experiment a bit. Some
@@ -407,7 +464,7 @@ secure". That is likely very true if you are in one of these two situations:
 This brings me to my own preference for a single-user install. Most notably:
 
 - The multi-user install requires root access during installation, and sinks
-  its deepth fairly deeply into the system, creating multiple users and
+  its teeth fairly deeply into the system, creating multiple users and
   spilling files in various "system" places.
 - Uninstalling a multi-user Nix installation is relatively well documented, but
   it is a bit of a hazardous and very tedious task.
@@ -472,23 +529,42 @@ writing) to see what that entails:
   ./install --no-daemon
 ```
 
-Once you have one Nix installed (here 2.10.3), it's pretty easy to ask itself
-to upgrade by running `nix upgrade-nix`, if you want to.
+The important line here is:
+
+```
+  printf '64d\n230d\nw\n' | ed -s install
+```
+
+which runs `ed`, the original true `ed`itor, to delete lines `64` then `230`
+(so `231` if you look at the file before the removal of `64`). Line `64` is the
+aforementioned `exit 1` line; line `231` is the one that adds a line to
+`~/.zshrc` to source the Nix files, which I am disabling here because I already
+have it. If you run my [reset-nix] script as is, and you're using zsh, you'll
+need to manually add this line to your `.zshrc` (once):
+
+```
+f="$HOME/.nix-profile/etc/profile.d/nix.sh"; if [ -f "$f" ]; then . "$f"; fi
+```
+
+Once you have one Nix installed (here 2.10.3), it's pretty easy to ask it to
+upgrade itself by running `nix upgrade-nix`, if you want to. Though, if you're
+not getting into Nix more seriously than I suggest here, it's likely you won't
+really see any difference between 2.10.3 and more recent versions.
 
 This [reset-nix] script also takes care of another issue that will come up if
 you adopt this approach more broadly: garbage collection. If you follow the
 approach I have outlined in this post, you will over time accumulate things you
-no longer need under `/nix`. I personally run the `reset-nix` script about
+no longer need under `/nix`. I personally run the [reset-nix] script about
 every other month.
 
 ### Conclusion
 
-I'm hoping you see the value of this approach, and that this level has the
-right level of detail to help you adopt it.
+I'm hoping you see the value of this approach, and that this post has the right
+level of detail to help you adopt it.
 
-If not, pelase let me know! This approach is unfortunately simple enough that I
+If not, please let me know! This approach is unfortunately simple enough that I
 don't really see a good way to make it its own GitHub repository, meaning this
-page is the only place where I can explain and promote it. So any feedback that
+page is the only place where I can explain and promote it. Any feedback that
 would allow me to make this page better is very welcome, even if it's
 thoroughly negative.
 
@@ -501,5 +577,5 @@ so much unnecessary pain.
 [search.nixos.org]: https://search.nixos.org/packages
 [branch]: https://github.com/NixOS/nixpkgs/tree/nixpkgs-unstable
 [init-nix]: https://github.com/gaverhae/dotfiles/blob/main/home/bin/init-nix
-[reset-nit]: https://github.com/gaverhae/dotfiles/blob/main/home/bin/reset-nix
+[reset-nix]: https://github.com/gaverhae/dotfiles/blob/main/home/bin/reset-nix
 [nix-pills]: https://nixos.org/guides/nix-pills/
