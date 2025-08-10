@@ -4,8 +4,18 @@ set -euo pipefail
 apt-get update
 apt-get upgrade -q -y
 
-apt-get install -q -y nginx certbot python3-certbot-nginx logrotate
-snap install aws-cli --classic
+apt-get install -q -y nginx certbot python3-certbot-nginx logrotate unzip
+
+temp_aws_dir=$(mktemp -d)
+(
+  cd $temp_aws_dir
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  unzip awscliv2.zip
+  ./aws/install --install-dir /usr/local/aws-cli --bin-dir /usr/local/bin
+)
+rm -rf $temp_aws_dir
+
+
 
 ## Disable IP website
 
