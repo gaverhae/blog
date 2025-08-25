@@ -4,7 +4,7 @@ set -euo pipefail
 apt-get update
 apt-get upgrade -q -y
 
-apt-get install -q -y nginx certbot python3-certbot-nginx
+apt-get install -q -y nginx certbot python3-certbot-nginx logrotate
 snap install aws-cli --classic
 
 ## Disable IP website
@@ -95,7 +95,7 @@ cat <<LOGROTATE > /etc/logrotate.d/nginx
   compress
   daily
   dateext
-  dateformat -%Y-%m-%d-$INSTANCE_ID
+  dateformat -%Y-%m-%d-%H-%M-%S-$INSTANCE_ID
   nomail
   missingok
   sharedscripts
@@ -125,7 +125,7 @@ set -euo pipefail
 cd /var/log/nginx
 for f in access.log error.log; do
   gzip -9 \$f
-  /usr/bin/aws s3 cp \$f.gz s3://cuddly-octo-palm-tree/logs/\$f-\$(date +%Y-%m-%d)-$INSTANCE_ID-shutdown.gz
+  aws s3 cp \$f.gz s3://cuddly-octo-palm-tree/logs/\$f-\$(date +%Y-%m-%d-%H-%M-%S)-$INSTANCE_ID-shutdown.gz
 done
 SAVE_LOGS
 chmod +x $SERVICE
