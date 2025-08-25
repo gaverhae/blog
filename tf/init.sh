@@ -133,13 +133,13 @@ chmod +x $SERVICE
 cat <<SERVICE_DEFINITION > $SERVICE.service
 [Unit]
 Description=
-Before=shutdown.target reboot.target
+Requires=network-online.target
+After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/true
 ExecStop=$SERVICE
-RemainAfterExit=yes
+RemainAfterExit=true
 
 [Install]
 WantedBy=multi-user.target
