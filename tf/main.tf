@@ -1,7 +1,30 @@
 terraform {
-  backend "local" {
+  backend "s3" {
+    bucket       = "tf-state"
+    key          = "blog"
+    region       = "auto"
+    use_lockfile = true
+
+    # from https://developers.cloudflare.com/terraform/advanced-topics/remote-backend/
+    skip_credentials_validation = true
+    skip_metadata_api_check     = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_s3_checksum            = true
+    use_path_style              = true
+
+    # because we _also_ use AWS as a provider, we cannot rely on the default env vars here (or there)
+    access_key = var.cloudflare_s3_access_key
+    secret_key = var.cloudflare_s3_secret_key
+    endpoints = {
+      s3 = var.cloudflare_s3_endpoint
+    }
   }
   required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5"
+    }
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
@@ -13,11 +36,18 @@ terraform {
   }
 }
 
+variable "cloudflare_s3_access_key" {}
+variable "cloudflare_s3_secret_key" {}
+variable "cloudflare_s3_endpoint" {}
+
 provider "aws" {
   region = "us-east-1"
 }
 
 provider "dnsimple" {
+}
+
+provider "cloudflare" {
 }
 
 locals {
