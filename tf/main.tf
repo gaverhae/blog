@@ -59,12 +59,6 @@ resource "dnsimple_zone" "domain" {
   active = true
 }
 
-resource "dnsimple_email_forward" "all" {
-  domain            = local.domain
-  alias_name        = ".*"
-  destination_email = "gary.verhaegen+cuddly@gmail.com"
-}
-
 resource "dnsimple_zone_record" "primary" {
   zone_name = local.domain
   name      = ""
