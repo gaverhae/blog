@@ -64,7 +64,7 @@ resource "dnsimple_zone_record" "primary" {
   name      = ""
   type      = "A"
   ttl       = "3600"
-  value     = "52.204.159.248"
+  value     = aws_eip.ip.public_ip
 }
 
 resource "dnsimple_zone_record" "www" {
@@ -72,7 +72,7 @@ resource "dnsimple_zone_record" "www" {
   name      = "www"
   type      = "A"
   ttl       = "3600"
-  value     = "52.204.159.248"
+  value     = aws_eip.ip.public_ip
 }
 
 variable "deployed_json" {
