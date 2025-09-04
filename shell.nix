@@ -12,5 +12,7 @@ pkgs.mkShell {
     jq
     leiningen
     opentofu
+    nodejs
+    wrangler
   ];
 }
