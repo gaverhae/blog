@@ -51,6 +51,12 @@ provider "dnsimple" {
 provider "cloudflare" {
 }
 
+variable "r2_token" {}
+provider "cloudflare" {
+  alias     = "r2"
+  api_token = var.r2_token
+}
+
 locals {
   domain = "cuddly-octo-palm-tree.com"
 }
@@ -305,7 +311,14 @@ resource "cloudflare_zone" "blog" {
 }
 
 resource "cloudflare_zone_setting" "https" {
-  zone_id = cloudflare_zone.blog.id
+  zone_id    = cloudflare_zone.blog.id
   setting_id = "always_use_https"
-  value = "on"
+  value      = "on"
+}
+
+resource "cloudflare_r2_bucket" "logs" {
+  provider   = cloudflare.r2
+  account_id = var.cloudflare_account_id
+  name       = "blog"
+  location   = "WEUR"
 }

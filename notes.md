@@ -10,6 +10,8 @@ Deploying this blog requires the following env vars:
 - `DNSIMPLE_ACCOUNT` and `DNSIMPLE_TOKEN` for DNS name management.
 - `CLOUDFLARE_API_TOKEN` for CloudFlare workers.
 - `TF_VAR_cloudflare_account_id` because apparently CloudFlare needs it.
+- `CLOUDFLARE_ACCOUNT_ID` because `wrangler` also needs it (same value as above).
+- `TF_VAR_r2_token` because apparently the R2 API needs its own, separate token.
 
 ## Wrangler
 
