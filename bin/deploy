@@ -37,5 +37,5 @@ mv public wrang/public
 cd wrang
 npm install
 echo "$VERSION" > public/version.txt
-echo "$VERSION" > deployed
 wrangler deploy
+echo "$VERSION" > deployed

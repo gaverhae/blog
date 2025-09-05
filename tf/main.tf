@@ -309,21 +309,3 @@ resource "cloudflare_zone_setting" "https" {
   setting_id = "always_use_https"
   value = "on"
 }
-
-resource "cloudflare_dns_record" "root" {
-  zone_id = cloudflare_zone.blog.id
-  name    = "@"
-  type    = "A"
-  ttl     = "1"
-  content = aws_eip.ip.public_ip
-  proxied = true
-}
-
-resource "cloudflare_dns_record" "www" {
-  zone_id = cloudflare_zone.blog.id
-  name    = "www"
-  type    = "A"
-  ttl     = "1"
-  content = aws_eip.ip.public_ip
-  proxied = true
-}
