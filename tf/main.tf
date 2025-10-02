@@ -275,11 +275,6 @@ resource "local_file" "deployed" {
   ])
 }
 
-resource "aws_eip" "ip" {
-  instance   = aws_instance.web[local.deployed[0]["version"]].id
-  depends_on = [aws_internet_gateway.gw]
-}
-
 resource "cloudflare_zone" "blog" {
   account = {
     id = var.cloudflare_account_id
