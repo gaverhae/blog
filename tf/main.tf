@@ -65,12 +65,8 @@ resource "dnsimple_domain_delegation" "blog" {
   name_servers = ["elaine.ns.cloudflare.com", "kobe.ns.cloudflare.com"]
 }
 
-variable "deployed_json" {
-  type = string
-}
-
 locals {
-  deployed = jsondecode(var.deployed_json)
+  deployed = [{"ami":"ami-0b4c74ae0c6164c48","version":"20250810-1703-924699e0"}]
 }
 
 
