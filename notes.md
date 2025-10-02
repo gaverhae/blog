@@ -6,7 +6,6 @@ Deploying this blog requires the following env vars:
 
 - `TF_VAR_cloudflare_s3_{access_key,secret_key,endpoint}` for the Terraform
   State stored in CloudFlare R2 masquerading as S3.
-- `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY` for the AWS resources.
 - `DNSIMPLE_ACCOUNT` and `DNSIMPLE_TOKEN` for DNS name management.
 - `CLOUDFLARE_API_TOKEN` for CloudFlare workers.
 - `TF_VAR_cloudflare_account_id` because apparently CloudFlare needs it.
