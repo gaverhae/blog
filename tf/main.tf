@@ -69,23 +69,6 @@ locals {
   deployed = [{"ami":"ami-0b4c74ae0c6164c48","version":"20250810-1703-924699e0"}]
 }
 
-
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu-minimal/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-minimal-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
-}
-
 resource "aws_s3_bucket" "bucket" {
   bucket = "cuddly-octo-palm-tree"
 }
