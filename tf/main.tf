@@ -222,38 +222,6 @@ resource "aws_iam_role_policy_attachment" "read-blog" {
   policy_arn = aws_iam_policy.read-blog.arn
 }
 
-resource "aws_instance" "web" {
-  for_each      = { for spec in local.deployed : spec.version => spec }
-  ami           = coalesce(each.value["ami"], data.aws_ami.ubuntu.id)
-  instance_type = "t3.nano"
-  subnet_id     = aws_subnet.open.id
-
-  associate_public_ip_address = true
-
-  root_block_device {
-    volume_size = 20
-  }
-
-  vpc_security_group_ids = [
-    aws_security_group.allow_http.id,
-    #aws_security_group.allow_ssh.id,
-  ]
-
-  iam_instance_profile = aws_iam_instance_profile.read-blog.name
-
-  metadata_options {
-    http_tokens = "required"
-  }
-
-  user_data = templatefile("init.sh", { version = each.value["version"] })
-
-  tags = {
-    Name = each.value["version"]
-  }
-
-  depends_on = [aws_internet_gateway.gw]
-}
-
 resource "cloudflare_zone" "blog" {
   account = {
     id = var.cloudflare_account_id
