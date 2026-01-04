@@ -65,10 +65,6 @@ resource "dnsimple_domain_delegation" "blog" {
   name_servers = ["elaine.ns.cloudflare.com", "kobe.ns.cloudflare.com"]
 }
 
-locals {
-  deployed = [{"ami":"ami-0b4c74ae0c6164c48","version":"20250810-1703-924699e0"}]
-}
-
 resource "aws_s3_bucket" "bucket" {
   bucket = "cuddly-octo-palm-tree"
 }
