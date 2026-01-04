@@ -39,6 +39,7 @@ terraform {
 variable "cloudflare_s3_access_key" {}
 variable "cloudflare_s3_secret_key" {}
 variable "cloudflare_s3_endpoint" {}
+variable "cloudflare_account_id" {}
 
 provider "aws" {
   region = "us-east-1"
@@ -288,4 +289,30 @@ resource "local_file" "deployed" {
 resource "aws_eip" "ip" {
   instance   = aws_instance.web[local.deployed[0]["version"]].id
   depends_on = [aws_internet_gateway.gw]
+}
+
+resource "cloudflare_zone" "blog" {
+  account = {
+    id = var.cloudflare_account_id
+  }
+  name = "cuddly-octo-palm-tree.com"
+  type = "full"
+}
+
+resource "cloudflare_dns_record" "root" {
+  zone_id = cloudflare_zone.blog.id
+  name    = "@"
+  type    = "A"
+  ttl     = "3600"
+  content = aws_eip.ip.public_ip
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "www" {
+  zone_id = cloudflare_zone.blog.id
+  name    = "www"
+  type    = "A"
+  ttl     = "3600"
+  content = aws_eip.ip.public_ip
+  proxied = true
 }
