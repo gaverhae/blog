@@ -65,10 +65,6 @@ resource "dnsimple_domain_delegation" "blog" {
   name_servers = ["elaine.ns.cloudflare.com", "kobe.ns.cloudflare.com"]
 }
 
-resource "aws_s3_bucket" "bucket" {
-  bucket = "cuddly-octo-palm-tree"
-}
-
 resource "cloudflare_zone" "blog" {
   account = {
     id = var.cloudflare_account_id
