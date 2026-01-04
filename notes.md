@@ -12,6 +12,7 @@ Deploying this blog requires the following env vars:
 - `TF_VAR_cloudflare_account_id` because apparently CloudFlare needs it.
 - `CLOUDFLARE_ACCOUNT_ID` because `wrangler` also needs it (same value as above).
 - `TF_VAR_r2_token` because apparently the R2 API needs its own, separate token.
+- `TF_VAR_r2_{access,secret}_key` because apparently CloudFlare interacts with its own R2 storage through its S3-compatible API.
 
 ## Wrangler
 
