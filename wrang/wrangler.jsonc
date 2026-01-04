@@ -11,8 +11,10 @@
     "enabled": true
   },
   "workers_dev": true,
-  "routes": [{
-    "pattern": "beta.cuddly-octo-palm-tree.com",
-    "custom_domain": true
-  }]
+  "routes": [
+    {"pattern": "cuddly-octo-palm-tree.com",
+     "custom_domain": true},
+    {"pattern": "www.cuddly-octo-palm-tree.com",
+     "custom_domain": true}
+  ]
 }
