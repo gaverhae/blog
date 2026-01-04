@@ -16,6 +16,5 @@
      "custom_domain": true},
     {"pattern": "www.cuddly-octo-palm-tree.com",
      "custom_domain": true}
-  ],
-  "logpush": true
+  ]
 }
