@@ -25,10 +25,6 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5"
     }
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
     dnsimple = {
       source  = "dnsimple/dnsimple"
       version = "~> 1.5"
@@ -41,15 +37,9 @@ variable "cloudflare_s3_secret_key" {}
 variable "cloudflare_s3_endpoint" {}
 variable "cloudflare_account_id" {}
 
-provider "aws" {
-  region = "us-east-1"
-}
+provider "dnsimple" {}
 
-provider "dnsimple" {
-}
-
-provider "cloudflare" {
-}
+provider "cloudflare" {}
 
 locals {
   domain = "cuddly-octo-palm-tree.com"
