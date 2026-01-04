@@ -60,6 +60,11 @@ resource "dnsimple_zone" "domain" {
   active = true
 }
 
+resource "dnsimple_domain_delegation" "blog" {
+  domain       = local.domain
+  name_servers = ["elaine.ns.cloudflare.com", "kobe.ns.cloudflare.com"]
+}
+
 resource "dnsimple_zone_record" "primary" {
   zone_name = local.domain
   name      = ""
