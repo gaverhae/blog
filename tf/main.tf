@@ -65,22 +65,6 @@ resource "dnsimple_domain_delegation" "blog" {
   name_servers = ["elaine.ns.cloudflare.com", "kobe.ns.cloudflare.com"]
 }
 
-resource "dnsimple_zone_record" "primary" {
-  zone_name = local.domain
-  name      = ""
-  type      = "A"
-  ttl       = "3600"
-  value     = aws_eip.ip.public_ip
-}
-
-resource "dnsimple_zone_record" "www" {
-  zone_name = local.domain
-  name      = "www"
-  type      = "A"
-  ttl       = "3600"
-  value     = aws_eip.ip.public_ip
-}
-
 variable "deployed_json" {
   type = string
 }
