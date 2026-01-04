@@ -304,11 +304,17 @@ resource "cloudflare_zone" "blog" {
   type = "full"
 }
 
+resource "cloudflare_zone_setting" "https" {
+  zone_id = cloudflare_zone.blog.id
+  setting_id = "always_use_https"
+  value = "on"
+}
+
 resource "cloudflare_dns_record" "root" {
   zone_id = cloudflare_zone.blog.id
   name    = "@"
   type    = "A"
-  ttl     = "3600"
+  ttl     = "1"
   content = aws_eip.ip.public_ip
   proxied = true
 }
@@ -317,7 +323,7 @@ resource "cloudflare_dns_record" "www" {
   zone_id = cloudflare_zone.blog.id
   name    = "www"
   type    = "A"
-  ttl     = "3600"
+  ttl     = "1"
   content = aws_eip.ip.public_ip
   proxied = true
 }

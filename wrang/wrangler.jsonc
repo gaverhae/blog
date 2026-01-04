@@ -9,5 +9,10 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  "workers_dev": true,
+  "routes": [{
+    "pattern": "beta.cuddly-octo-palm-tree.com",
+    "custom_domain": true
+  }]
 }
