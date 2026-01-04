@@ -254,17 +254,6 @@ resource "aws_instance" "web" {
   depends_on = [aws_internet_gateway.gw]
 }
 
-resource "local_file" "deployed" {
-  filename = "deployed"
-  content = jsonencode([
-    for m in local.deployed :
-    {
-      ami     = coalesce(m.ami, aws_instance.web[m.version].ami)
-      version = m.version
-    }
-  ])
-}
-
 resource "cloudflare_zone" "blog" {
   account = {
     id = var.cloudflare_account_id
