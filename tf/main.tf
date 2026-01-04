@@ -1,9 +1,5 @@
 terraform {
-  backend "s3" {
-    bucket         = "sotenj.tfstate"
-    key            = "cuddly"
-    region         = "us-east-1"
-    dynamodb_table = "sotenj.tfstate.locks"
+  backend "local" {
   }
   required_providers {
     aws = {
