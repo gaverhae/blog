@@ -258,12 +258,6 @@ resource "aws_instance" "web" {
   depends_on = [aws_internet_gateway.gw]
 }
 
-resource "local_file" "out" {
-  count    = length(local.deployed) - 1
-  filename = "out"
-  content  = aws_instance.web[local.deployed[1]["version"]].public_ip
-}
-
 resource "local_file" "deployed" {
   filename = "deployed"
   content = jsonencode([
