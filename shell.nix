@@ -13,6 +13,5 @@ pkgs.mkShell {
     leiningen
     opentofu
     nodejs
-    wrangler
   ];
 }
